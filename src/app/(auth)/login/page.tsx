@@ -19,7 +19,6 @@ import {
   Mountain,
   Plane,
 } from "lucide-react";
-import styles from "./login.module.css";
 
 /* ── Animation Variants ── */
 const fadeUp = {
@@ -81,7 +80,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className="flex min-h-screen">
       {/* ── Left Panel: Branding ── */}
       <div className="hidden lg:flex lg:w-[55%] items-center justify-center bg-sidebar relative overflow-hidden">
         {/* Animated gradient orbs */}

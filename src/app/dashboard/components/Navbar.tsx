@@ -1,37 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/constants";
 import { logoutAdmin } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
-  Search,
-  Bell,
-  LogOut,
-  User,
-  ChevronDown,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Avatar,
+  AvatarFallback,
+} from "@/components/ui/avatar";
+import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -45,74 +37,69 @@ export default function Navbar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
+    <div className="flex h-full items-center justify-between pr-6">
       {/* Left — Search */}
       <div className="relative max-w-md flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
+        <Input
           type="text"
           placeholder="Tìm kiếm người dùng, chuyến đi…"
-          className="h-10 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-9 pl-9 pr-4 text-sm bg-background"
         />
       </div>
 
       {/* Right — Actions */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer">
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
-        </button>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+          <Bell className="h-4 w-4 text-muted-foreground" />
+          <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
+        </Button>
 
-        {/* Divider */}
-        <div className="mx-2 h-8 w-px bg-border" />
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
         {/* User Dropdown */}
-        <div ref={dropdownRef} className="relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-muted cursor-pointer"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <User className="h-4 w-4 text-primary-dark" />
-            </div>
-            <div className="hidden text-left sm:block">
-              <p className="text-sm font-semibold text-foreground leading-tight">
-                Quản trị viên
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                admin@travelbuddy.vn
-              </p>
-            </div>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform",
-                dropdownOpen && "rotate-180"
-              )}
-            />
-          </button>
-
-          {/* Dropdown */}
-          {dropdownOpen && (
-            <div className="animate-slide-down absolute right-0 top-full mt-2 w-52 rounded-xl border border-border bg-card p-1.5 shadow-lg">
-              <div className="border-b border-border px-3 py-2.5 sm:hidden">
-                <p className="text-sm font-semibold text-foreground">Quản trị viên</p>
-                <p className="text-xs text-muted-foreground">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 px-2 py-1.5 h-auto"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary-dark">
+                  QT
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden text-left sm:block">
+                <p className="text-sm font-semibold leading-tight">
+                  Quản trị viên
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight">
                   admin@travelbuddy.vn
                 </p>
               </div>
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50 cursor-pointer"
-              >
-                <LogOut className="h-4 w-4" />
-                {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
-              </button>
-            </div>
-          )}
-        </div>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="sm:hidden">
+              <p className="font-semibold">Quản trị viên</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                admin@travelbuddy.vn
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="sm:hidden" />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="text-destructive focus:text-destructive cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </header>
+    </div>
   );
 }
