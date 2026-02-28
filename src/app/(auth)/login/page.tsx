@@ -19,6 +19,7 @@ import {
   Mountain,
   Plane,
 } from "lucide-react";
+import styles from "./login.module.css";
 
 /* ── Animation Variants ── */
 const fadeUp = {
@@ -70,7 +71,7 @@ export default function LoginPage() {
 
     try {
       await loginAdmin(email, password);
-      router.push(ROUTES.ADMIN_DASHBOARD);
+      router.push(ROUTES.DASHBOARD);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
@@ -80,7 +81,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className={styles.container}>
       {/* ── Left Panel: Branding ── */}
       <div className="hidden lg:flex lg:w-[55%] items-center justify-center bg-sidebar relative overflow-hidden">
         {/* Animated gradient orbs */}
@@ -91,15 +92,8 @@ export default function LoginPage() {
               background:
                 "radial-gradient(circle, rgba(252,210,64,0.12) 0%, transparent 70%)",
             }}
-            animate={{
-              x: [0, 30, 0],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
             className="absolute -bottom-40 -right-40 h-[600px] w-[600px] rounded-full"
@@ -107,15 +101,8 @@ export default function LoginPage() {
               background:
                 "radial-gradient(circle, rgba(252,210,64,0.08) 0%, transparent 70%)",
             }}
-            animate={{
-              x: [0, -25, 0],
-              y: [0, 25, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ x: [0, -25, 0], y: [0, 25, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[400px] rounded-full"
@@ -123,14 +110,8 @@ export default function LoginPage() {
               background:
                 "radial-gradient(circle, rgba(252,210,64,0.06) 0%, transparent 70%)",
             }}
-            animate={{
-              scale: [1, 1.15, 1],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
 
@@ -140,10 +121,7 @@ export default function LoginPage() {
             key={idx}
             className="absolute text-primary/15"
             style={{ left: x, top: y }}
-            animate={{
-              y: [0, -12, 0],
-              rotate: [0, 5, -5, 0],
-            }}
+            animate={{ y: [0, -12, 0], rotate: [0, 5, -5, 0] }}
             transition={{
               duration: 5 + idx,
               delay,
@@ -171,14 +149,12 @@ export default function LoginPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Logo */}
           <motion.div variants={scaleIn} className="mb-10">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-5xl shadow-[4px_8px_24px_0_rgba(252,210,64,0.25)]">
               🌏
             </div>
           </motion.div>
 
-          {/* Title */}
           <motion.h1
             variants={fadeUp}
             custom={1}
@@ -202,14 +178,12 @@ export default function LoginPage() {
             những người đam mê du lịch khắp Việt Nam.
           </motion.p>
 
-          {/* Divider */}
           <motion.div
             variants={fadeUp}
             custom={4}
             className="mt-10 h-px w-16 bg-primary/30"
           />
 
-          {/* Feature cards */}
           <motion.div
             variants={fadeUp}
             custom={5}
@@ -231,7 +205,6 @@ export default function LoginPage() {
           </motion.div>
         </motion.div>
 
-        {/* Bottom attribution */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -245,7 +218,6 @@ export default function LoginPage() {
 
       {/* ── Right Panel: Login Form ── */}
       <div className="flex w-full items-center justify-center bg-background px-6 lg:w-[45%] relative">
-        {/* Subtle background pattern */}
         <div
           className="absolute inset-0 opacity-[0.015]"
           style={{
@@ -306,7 +278,6 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email field */}
             <motion.div variants={fadeUp} custom={1}>
               <label
                 htmlFor="email"
@@ -339,7 +310,6 @@ export default function LoginPage() {
               </div>
             </motion.div>
 
-            {/* Password field */}
             <motion.div variants={fadeUp} custom={2}>
               <label
                 htmlFor="password"
@@ -381,7 +351,6 @@ export default function LoginPage() {
               </div>
             </motion.div>
 
-            {/* Submit */}
             <motion.div variants={fadeUp} custom={3} className="pt-1">
               <button
                 type="submit"
@@ -431,7 +400,6 @@ export default function LoginPage() {
             </motion.div>
           </form>
 
-          {/* Divider */}
           <motion.div
             variants={fadeUp}
             custom={4}
@@ -444,7 +412,6 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border/60" />
           </motion.div>
 
-          {/* Footer */}
           <motion.p
             variants={fadeUp}
             custom={5}

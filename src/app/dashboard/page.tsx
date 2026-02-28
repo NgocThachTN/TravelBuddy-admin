@@ -1,10 +1,10 @@
 "use client";
 
 import { Users, Lock, MapPin, AlertTriangle, TrendingUp, Activity } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import Avatar from "@/components/ui/Avatar";
+import StatCard from "./components/ui/StatCard";
+import Card from "./components/ui/Card";
+import Badge from "./components/ui/Badge";
+import Avatar from "./components/ui/Avatar";
 import {
   AreaChart,
   Area,
@@ -16,6 +16,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import styles from "./dashboard.module.css";
 
 /* ── Mock Data ── */
 const stats = [
@@ -118,9 +119,9 @@ const typeBadge: Record<string, { variant: "info" | "destructive" | "success" | 
   success: { variant: "success", label: "Hoàn tất" },
 };
 
-export default function AdminDashboardPage() {
+export default function DashboardPage() {
   return (
-    <div className="space-y-6">
+    <div className={styles.page}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">
@@ -140,7 +141,6 @@ export default function AdminDashboardPage() {
 
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
-        {/* User Growth — wider */}
         <Card
           title="Tăng trưởng người dùng"
           description="Lượng đăng ký mới theo thời gian"
@@ -162,43 +162,19 @@ export default function AdminDashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E1E8F0" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12, fill: "#667085" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: "#667085" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
-                />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#667085" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#667085" }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1B2532",
-                    border: "none",
-                    borderRadius: "12px",
-                    color: "#fff",
-                    fontSize: "13px",
-                    padding: "8px 14px",
-                  }}
+                  contentStyle={{ backgroundColor: "#1B2532", border: "none", borderRadius: "12px", color: "#fff", fontSize: "13px", padding: "8px 14px" }}
                   itemStyle={{ color: "#FCD240" }}
                   labelStyle={{ color: "#9BADBD", marginBottom: 4 }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="users"
-                  stroke="#FCD240"
-                  strokeWidth={2.5}
-                  fill="url(#userGrad)"
-                />
+                <Area type="monotone" dataKey="users" stroke="#FCD240" strokeWidth={2.5} fill="url(#userGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
-        {/* Trip Activity — narrower */}
         <Card
           title="Hoạt động chuyến đi"
           description="Số chuyến đi tạo mỗi tháng"
@@ -214,36 +190,14 @@ export default function AdminDashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={tripData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E1E8F0" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12, fill: "#667085" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: "#667085" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={30}
-                />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#667085" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#667085" }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1B2532",
-                    border: "none",
-                    borderRadius: "12px",
-                    color: "#fff",
-                    fontSize: "13px",
-                    padding: "8px 14px",
-                  }}
+                  contentStyle={{ backgroundColor: "#1B2532", border: "none", borderRadius: "12px", color: "#fff", fontSize: "13px", padding: "8px 14px" }}
                   itemStyle={{ color: "#32D394" }}
                   labelStyle={{ color: "#9BADBD", marginBottom: 4 }}
                 />
-                <Bar
-                  dataKey="trips"
-                  fill="#32D394"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={36}
-                />
+                <Bar dataKey="trips" fill="#32D394" radius={[6, 6, 0, 0]} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -251,36 +205,24 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Recent Activity */}
-      <Card
-        title="Hoạt động gần đây"
-        description="Các hành động mới nhất trên nền tảng"
-      >
+      <Card title="Hoạt động gần đây" description="Các hành động mới nhất trên nền tảng">
         <div className="space-y-0 divide-y divide-border/60">
           {recentActivity.map((item, idx) => {
             const badge = typeBadge[item.type];
             return (
-              <div
-                key={idx}
-                className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"
-              >
+              <div key={idx} className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0">
                 <Avatar name={item.user} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {item.user}
-                    </p>
-                    <Badge variant={badge.variant} className="shrink-0">
-                      {badge.label}
-                    </Badge>
+                    <p className="truncate text-sm font-medium text-foreground">{item.user}</p>
+                    <Badge variant={badge.variant} className="shrink-0">{badge.label}</Badge>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {item.action}{" "}
                     <span className="text-foreground/70">· {item.detail}</span>
                   </p>
                 </div>
-                <span className="shrink-0 text-xs text-muted-foreground/70">
-                  {item.time}
-                </span>
+                <span className="shrink-0 text-xs text-muted-foreground/70">{item.time}</span>
               </div>
             );
           })}

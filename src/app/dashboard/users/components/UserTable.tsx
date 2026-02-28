@@ -5,9 +5,9 @@ import Link from "next/link";
 import { fetchUsers, updateUserStatus, type User } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import Avatar from "@/components/ui/Avatar";
+import Button from "../../components/ui/Button";
+import Badge from "../../components/ui/Badge";
+import Avatar from "../../components/ui/Avatar";
 import {
   Search,
   Filter,
@@ -327,7 +327,7 @@ export default function UserTable() {
                           ? "Khóa"
                           : "Mở khóa"}
                       </Button>
-                      <Link href={`${ROUTES.ADMIN_USERS}/${user.id}`}>
+                      <Link href={`${ROUTES.USERS}/${user.id}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="h-3.5 w-3.5" />
                           Xem

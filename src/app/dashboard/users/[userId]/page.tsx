@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import Avatar from "@/components/ui/Avatar";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import Badge from "../../components/ui/Badge";
+import Avatar from "../../components/ui/Avatar";
 import { ROUTES } from "@/lib/constants";
 import {
   ArrowLeft,
@@ -110,7 +110,7 @@ export default async function UserDetailPage({ params }: PageProps) {
         <p className="mt-1 text-sm text-muted-foreground">
           Không tồn tại người dùng với ID &ldquo;{userId}&rdquo;.
         </p>
-        <Link href={ROUTES.ADMIN_USERS} className="mt-5">
+        <Link href={ROUTES.USERS} className="mt-5">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4" />
             Quay lại
@@ -126,7 +126,7 @@ export default async function UserDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href={ROUTES.ADMIN_USERS}>
+        <Link href={ROUTES.USERS}>
           <Button variant="ghost" size="icon" className="h-9 w-9">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -155,9 +155,7 @@ export default async function UserDetailPage({ params }: PageProps) {
             <div className="mt-3 flex items-center gap-2">
               <Badge variant="default">{user.role}</Badge>
               <Badge
-                variant={
-                  user.status === "active" ? "success" : "destructive"
-                }
+                variant={user.status === "active" ? "success" : "destructive"}
               >
                 {user.status}
               </Badge>
@@ -190,12 +188,7 @@ export default async function UserDetailPage({ params }: PageProps) {
         {/* Right — Details */}
         <Card className="lg:col-span-2" title="Thông tin tài khoản">
           <div className="grid gap-5 sm:grid-cols-2">
-            <DetailRow
-              icon={UserCircle}
-              label="Mã người dùng"
-              value={user.id}
-              mono
-            />
+            <DetailRow icon={UserCircle} label="Mã người dùng" value={user.id} mono />
             <DetailRow icon={Mail} label="Email" value={user.email} />
             <DetailRow icon={Shield} label="Vai trò" value={user.role} />
             <DetailRow
@@ -207,18 +200,12 @@ export default async function UserDetailPage({ params }: PageProps) {
                 year: "numeric",
               })}
             />
-            <DetailRow
-              icon={MapPin}
-              label="Số chuyến đi"
-              value={user.tripsCount.toString()}
-            />
+            <DetailRow icon={MapPin} label="Số chuyến đi" value={user.tripsCount.toString()} />
             <DetailRow
               icon={Shield}
               label="Trạng thái"
               value={user.status}
-              badge={
-                user.status === "active" ? "success" : "destructive"
-              }
+              badge={user.status === "active" ? "success" : "destructive"}
             />
             <div className="sm:col-span-2">
               <DetailRow icon={FileText} label="Giới thiệu" value={user.bio} />

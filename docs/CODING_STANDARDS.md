@@ -4,6 +4,75 @@
 
 ---
 
+## ⚠️ Nguyên tắc quan trọng nhất: ĐƠN GIẢN
+
+> **Code phải đơn giản đến mức người mới học lập trình cũng hiểu được.**
+
+Đây là nguyên tắc xuyên suốt toàn bộ dự án. Khi viết code, luôn tự hỏi: _"Một sinh viên năm nhất đọc đoạn này có hiểu không?"_
+
+### Quy tắc cụ thể
+
+- **KHÔNG** dùng các hàm phức tạp, kỹ thuật nâng cao khi có cách viết đơn giản hơn.
+- **Ưu tiên `for` / `if-else` rõ ràng** thay vì chain nhiều method liên tiếp (`.filter().map().reduce()`...).
+- **KHÔNG** lồng ternary operator (`a ? b ? c : d : e`). Dùng `if-else` cho rõ ràng.
+- **Tách logic phức tạp thành các hàm nhỏ** với tên gọi mô tả rõ ý nghĩa.
+- **Viết comment giải thích** cho bất kỳ đoạn code nào không hiển nhiên.
+- **Một hàm chỉ làm một việc.** Nếu hàm dài hơn 30 dòng, cân nhắc tách nhỏ.
+- **Đặt tên biến / hàm rõ nghĩa**, không viết tắt khó hiểu.
+
+```typescript
+// ❌ Sai — quá phức tạp, khó đọc
+const result = users
+  .filter(u => u.status === "active")
+  .reduce((acc, u) => ({ ...acc, [u.role]: [...(acc[u.role] || []), u] }), {} as Record<string, User[]>);
+
+// ✅ Đúng — đơn giản, ai cũng hiểu
+const activeUsers = [];
+for (const user of users) {
+  if (user.status === "active") {
+    activeUsers.push(user);
+  }
+}
+
+const groupedByRole: Record<string, User[]> = {};
+for (const user of activeUsers) {
+  if (!groupedByRole[user.role]) {
+    groupedByRole[user.role] = [];
+  }
+  groupedByRole[user.role].push(user);
+}
+```
+
+```typescript
+// ❌ Sai — ternary lồng nhau
+const label = status === "active" ? "Hoạt động" : status === "locked" ? "Bị khóa" : "Không rõ";
+
+// ✅ Đúng — if-else hoặc hàm riêng
+function getStatusLabel(status: string): string {
+  if (status === "active") return "Hoạt động";
+  if (status === "locked") return "Bị khóa";
+  return "Không rõ";
+}
+```
+
+```typescript
+// ❌ Sai — tên biến tắt, khó hiểu
+const fn = (d: unknown[]) => d.filter((x: any) => !!x);
+
+// ✅ Đúng — tên rõ ràng, dễ đọc
+function removeEmptyItems(items: unknown[]): unknown[] {
+  const result = [];
+  for (const item of items) {
+    if (item) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+```
+
+---
+
 ## Mục lục
 
 1. [Công nghệ sử dụng](#1-công-nghệ-sử-dụng)
@@ -40,46 +109,79 @@
 
 ## 2. Cấu trúc thư mục
 
+Dự án dùng folder `dashboard/` thực làm URL prefix `/dashboard/*` cho tất cả trang quản trị, và route group `(auth)` cho trang login.
+
 ```
 src/
-├── app/                  # App Router (pages, layouts, API routes)
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Trang chủ (redirect)
-│   ├── login/            # Trang đăng nhập
-│   ├── admin/            # Nhóm route admin (cần xác thực)
-│   │   ├── layout.tsx    # Admin layout (sidebar + navbar)
-│   │   ├── loading.tsx   # Loading state chung
-│   │   ├── dashboard/    # Trang tổng quan
-│   │   └── users/        # Quản lý người dùng
-│   └── api/              # API Routes (backend)
-│       ├── auth/         # Xác thực (login/logout)
-│       └── admin/        # API quản trị
-├── components/
-│   ├── admin/            # Component dành riêng cho admin
-│   │   ├── Sidebar.tsx
-│   │   ├── Navbar.tsx
-│   │   └── UserTable.tsx
-│   └── ui/               # Component UI tái sử dụng
-│       ├── Button.tsx
-│       ├── Card.tsx
-│       ├── Badge.tsx
-│       ├── StatCard.tsx
-│       └── Avatar.tsx
-├── lib/                  # Utilities & configs
-│   ├── api.ts            # Hàm gọi API
-│   ├── auth.ts           # Logic xác thực (JWT)
-│   ├── constants.ts      # Hằng số (routes, API URL)
-│   └── utils.ts          # Hàm tiện ích (cn, formatNumber, timeAgo)
-├── globals.css           # CSS toàn cục + design tokens
-└── proxy.ts              # Proxy config cho API
+├── app/
+│   ├── (auth)/                    # Route group — Xác thực
+│   │   └── login/
+│   │       ├── page.tsx           # Trang đăng nhập  →  /login
+│   │       └── login.module.css
+│   │
+│   ├── dashboard/                 # Folder thực — URL prefix /dashboard
+│   │   ├── components/            # Component dùng chung cho dashboard
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── sidebar.module.css
+│   │   │   ├── Navbar.tsx
+│   │   │   └── ui/
+│   │   │       ├── Avatar.tsx
+│   │   │       ├── Badge.tsx
+│   │   │       ├── Button.tsx
+│   │   │       ├── Card.tsx
+│   │   │       └── StatCard.tsx
+│   │   ├── page.tsx               # Bảng điều khiển  →  /dashboard
+│   │   ├── dashboard.module.css
+│   │   ├── loading.tsx
+│   │   ├── error.tsx
+│   │   ├── layout.tsx             # Layout chung: Sidebar + Navbar
+│   │   ├── users/                 # →  /dashboard/users
+│   │   │   ├── page.tsx
+│   │   │   ├── users.module.css
+│   │   │   ├── components/
+│   │   │   │   └── UserTable.tsx
+│   │   │   └── [userId]/
+│   │   │       ├── page.tsx       # →  /dashboard/users/:userId
+│   │   │       └── layout.tsx
+│   │   ├── trips/                 # →  /dashboard/trips
+│   │   ├── reports/               # →  /dashboard/reports
+│   │   ├── transactions/          # →  /dashboard/transactions
+│   │   └── subscriptions/         # →  /dashboard/subscriptions
+│   │
+│   ├── api/
+│   │   ├── admin/users/route.ts
+│   │   └── auth/admin/
+│   │       ├── login/route.ts
+│   │       └── logout/route.ts
+│   │
+│   ├── layout.tsx                 # Root layout
+│   ├── page.tsx                   # Root → redirect /login
+│   └── globals.css
+│
+├── features/
+├── hooks/
+├── shared/
+│
+├── lib/
+│   ├── api.ts
+│   ├── auth.ts
+│   ├── constants.ts
+│   └── utils.ts
+│
+└── proxy.ts
 ```
 
 ### Nguyên tắc tổ chức
 
+- **`dashboard/`** — Folder thực tạo URL prefix `/dashboard/*`. Tất cả trang quản trị nằm dưới đây.
+- **`(auth)`** — Route group cho login (không ảnh hưởng URL).
+- **CSS Modules** — Mỗi trang có 1 file `[tên].module.css` riêng, import dưới dạng `import styles from "./[tên].module.css"`. Dùng cho container/layout cơ bản, Tailwind xử lý chi tiết.
 - **`app/`** — Chỉ chứa page, layout, loading, error. KHÔNG chứa logic business.
-- **`components/ui/`** — Component không có logic business, tái sử dụng ở nhiều nơi.
-- **`components/admin/`** — Component có logic riêng cho phần admin.
+- **`dashboard/components/`** — Component dùng chung cho dashboard (sidebar, Navbar).
+- **`dashboard/components/ui/`** — Component UI tái sử dụng (Button, Card, Badge, Avatar, StatCard).
+- **`dashboard/[trang]/components/`** — Component riêng cho từng trang (ví dụ: `users/components/UserTable.tsx`).
 - **`lib/`** — Hàm tiện ích, hằng số, logic xác thực. KHÔNG import React.
+- **`features/`, `hooks/`, `shared/`** — Thư mục mở rộng cho feature modules, custom hooks, types/utilities dùng chung.
 - Mỗi file chỉ export **một component chính** (có thể kèm sub-components nội bộ).
 
 ---
@@ -387,9 +489,11 @@ export async function fetchUsers(): Promise<User[]> {
 }
 ```
 
-### Proxy
+### Proxy & Middleware
 
-- Tất cả API call đến backend thông qua proxy (`proxy.ts`, `next.config.ts` rewrites).
+- `proxy.ts` đóng vai trò **middleware xác thực** — kiểm tra JWT cookie trước khi cho truy cập dashboard routes.
+- `next.config.ts` chứa **redirects** từ URL cũ `/admin/*` sang URL mới `/*`.
+- Tất cả API call đến backend thông qua API Routes (`app/api/`).
 - KHÔNG gọi trực tiếp đến backend URL từ client.
 
 ---
@@ -398,7 +502,9 @@ export async function fetchUsers(): Promise<User[]> {
 
 - JWT lưu trong **httpOnly cookie** (`tb_admin_session`).
 - Thời hạn token: **8 giờ**.
-- Middleware kiểm tra token cho mọi route `/admin/*`.
+- Middleware (`proxy.ts`) kiểm tra token cho tất cả route dưới `/dashboard/*`.
+- Tất cả trang quản trị nằm dưới prefix `/dashboard/` — middleware chỉ cần match `/dashboard/:path*`.
+- Redirect từ URL cũ `/admin/*` → `/dashboard/*` được xử lý qua `next.config.ts` redirects.
 - Logout xóa cookie và redirect về `/login`.
 
 ```typescript
@@ -560,4 +666,4 @@ new Date().toLocaleDateString("vi-VN", {
 
 ---
 
-> **Cập nhật lần cuối:** Tháng 7, 2025
+> **Cập nhật lần cuối:** Tháng 2, 2026

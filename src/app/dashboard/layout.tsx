@@ -1,7 +1,7 @@
-import Sidebar from "@/components/admin/Sidebar";
-import Navbar from "@/components/admin/Navbar";
+import Sidebar from "./components/sidebar";
+import Navbar from "./components/Navbar";
 
-export default function AdminLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;

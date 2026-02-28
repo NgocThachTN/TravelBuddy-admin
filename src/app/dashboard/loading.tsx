@@ -1,4 +1,4 @@
-export default function AdminLoading() {
+export default function DashboardGroupLoading() {
   return (
     <div className="flex flex-col items-center justify-center py-24">
       <div className="relative">

@@ -2,8 +2,13 @@ export const COOKIE_NAME = "tb_admin_session";
 
 export const ROUTES = {
   LOGIN: "/login",
-  ADMIN_DASHBOARD: "/admin/dashboard",
-  ADMIN_USERS: "/admin/users",
+  DASHBOARD: "/dashboard",
+  USERS: "/dashboard/users",
+  TRIPS: "/dashboard/trips",
+  REPORTS: "/dashboard/reports",
+  TRANSACTIONS: "/dashboard/transactions",
+  SUBSCRIPTIONS: "/dashboard/subscriptions",
+  SETTINGS: "/dashboard/settings",
 } as const;
 
 export const API_ROUTES = {

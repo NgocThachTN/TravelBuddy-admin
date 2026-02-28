@@ -1,9 +1,10 @@
-import UserTable from "@/components/admin/UserTable";
+import UserTable from "./components/UserTable";
 import { Users } from "lucide-react";
+import styles from "./users.module.css";
 
-export default function AdminUsersPage() {
+export default function UsersPage() {
   return (
-    <div className="space-y-6">
+    <div className={styles.page}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
