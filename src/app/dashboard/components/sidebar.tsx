@@ -16,6 +16,9 @@ import {
   BarChart3,
   LogOut,
   UserCircle,
+  Handshake,
+  LifeBuoy,
+  ScrollText,
 } from "lucide-react";
 import styles from "./sidebar.module.css";
 
@@ -31,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Tổng quan", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
   { label: "Quản lý người dùng", href: ROUTES.USERS, icon: Users },
   { label: "Quản lý chuyến đi", href: ROUTES.TRIPS, icon: Map },
+  { label: "Quản lý đối tác", href: ROUTES.PARTNERS, icon: Handshake },
   {
     label: "Báo cáo & Khiếu nại",
     href: ROUTES.REPORTS,
@@ -46,6 +50,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Gói đăng ký Planner",
     href: ROUTES.SUBSCRIPTIONS,
     icon: Package,
+  },
+  {
+    label: "Hỗ trợ khách hàng",
+    href: ROUTES.SUPPORT,
+    icon: LifeBuoy,
+  },
+  {
+    label: "Nhật ký hệ thống",
+    href: ROUTES.AUDIT_LOGS,
+    icon: ScrollText,
   },
   {
     label: "Cài đặt hệ thống",

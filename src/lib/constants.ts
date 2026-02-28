@@ -5,9 +5,12 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   USERS: "/dashboard/users",
   TRIPS: "/dashboard/trips",
+  PARTNERS: "/dashboard/partners",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
+  SUPPORT: "/dashboard/support",
+  AUDIT_LOGS: "/dashboard/audit-logs",
   SETTINGS: "/dashboard/settings",
 } as const;
 
