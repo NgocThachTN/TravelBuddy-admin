@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+const COOKIE_NAME = "tb_admin_session";
+const LOGIN_PATH = "/login";
+
+function getSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET is not set");
+  return new TextEncoder().encode(secret);
+}
+
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Allow the login page — if already authenticated, redirect to dashboard
+  if (pathname === LOGIN_PATH) {
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+    if (token) {
+      try {
+        await jwtVerify(token, getSecret());
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      } catch {
+        // token invalid — let them see login
+      }
+    }
+    return NextResponse.next();
+  }
+
+  // Protect all /admin/* routes — require auth
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  if (!token) {
+    return NextResponse.redirect(new URL(LOGIN_PATH, req.url));
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    if (payload.role !== "admin") {
+      return NextResponse.redirect(new URL(LOGIN_PATH, req.url));
+    }
+    return NextResponse.next();
+  } catch {
+    return NextResponse.redirect(new URL(LOGIN_PATH, req.url));
+  }
+}
+
+export const config = {
+  matcher: ["/login", "/admin/:path*"],
+};
