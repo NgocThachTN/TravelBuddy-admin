@@ -19,4 +19,5 @@ export const API_ROUTES = {
   AUTH_LOGIN: "/api/auth/admin/login",
   AUTH_LOGOUT: "/api/auth/admin/logout",
   ADMIN_USERS: "/api/admin/users",
+  ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
 } as const;
