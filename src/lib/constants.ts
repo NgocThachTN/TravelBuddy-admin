@@ -6,6 +6,7 @@ export const ROUTES = {
   USERS: "/dashboard/users",
   TRIPS: "/dashboard/trips",
   PARTNERS: "/dashboard/partners",
+  MODERATION: "/dashboard/moderation",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",

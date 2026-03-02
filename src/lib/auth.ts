@@ -1,14 +1,18 @@
 import { cookies } from "next/headers";
 import { COOKIE_NAME } from "./constants";
+import { type Role, mapBERole } from "./rbac";
 
-// Backend JWT role claim key (ASP.NET Core Identity convention)
+// Backend JWT claim keys (ASP.NET Core Identity convention)
 const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 const NAME_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
 
-export interface AdminPayload {
+export interface AdminSession {
   phone: string;
-  role: "Admin";
+  role: Role;
 }
+
+/** @deprecated Use AdminSession */
+export type AdminPayload = AdminSession;
 
 /**
  * Decode a JWT payload without verifying the signature.
@@ -27,10 +31,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-/** Decode the backend JWT and return the admin payload, or null if invalid/expired */
+/** Decode the backend JWT and return the session, or null if invalid/expired/unknown role */
 export async function verifyAdminToken(
   token: string
-): Promise<AdminPayload | null> {
+): Promise<AdminSession | null> {
   const payload = decodeJwtPayload(token);
   if (!payload) return null;
 
@@ -38,18 +42,20 @@ export async function verifyAdminToken(
   const exp = typeof payload.exp === "number" ? payload.exp : null;
   if (exp && Date.now() / 1000 > exp) return null;
 
-  // Check role — backend uses "Admin" (capital A)
-  const role = payload[ROLE_CLAIM] as string | undefined;
-  if (role !== "Admin") return null;
+  // Map BE role string → internal Role
+  const beRole = payload[ROLE_CLAIM] as string | undefined;
+  if (!beRole) return null;
+  const role = mapBERole(beRole);
+  if (!role) return null; // Unknown/unauthorized role
 
   return {
     phone: (payload[NAME_CLAIM] as string | undefined) ?? "",
-    role: "Admin",
+    role,
   };
 }
 
 /** Read the admin session from the request cookies */
-export async function getAdminSession(): Promise<AdminPayload | null> {
+export async function getAdminSession(): Promise<AdminSession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;

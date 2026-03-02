@@ -15,6 +15,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import type { Role } from "@/lib/rbac";
 
 /* ── Route ↔ label map ── */
 const LABELS: Record<string, string> = {
@@ -22,19 +23,21 @@ const LABELS: Record<string, string> = {
   users: "Người dùng",
   trips: "Chuyến đi",
   partners: "Đối tác",
+  moderation: "Kiểm duyệt",
   reports: "Báo cáo",
   transactions: "Giao dịch",
   subscriptions: "Gói đăng ký",
   support: "Hỗ trợ",
   "audit-logs": "Nhật ký",
   settings: "Cài đặt",
+  admin: "Quản trị",
 };
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean); // ["dashboard", "users", ...]
+  const segments = pathname.split("/").filter(Boolean);
 
-  if (segments.length <= 1) return null; // just /dashboard → no breadcrumb
+  if (segments.length <= 1) return null;
 
   const crumbs = segments.map((seg, i) => ({
     label: LABELS[seg] ?? seg,
@@ -66,10 +69,16 @@ function DashboardBreadcrumb() {
   );
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+interface DashboardShellProps {
+  children: React.ReactNode;
+  role: Role;
+  phone: string;
+}
+
+export function DashboardShell({ children, role, phone }: DashboardShellProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar role={role} phone={phone} />
       <SidebarInset>
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-border bg-card/80 backdrop-blur-md">
@@ -79,7 +88,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <DashboardBreadcrumb />
           </div>
           <div className="flex-1">
-            <Navbar />
+            <Navbar phone={phone} role={role} />
           </div>
         </header>
 

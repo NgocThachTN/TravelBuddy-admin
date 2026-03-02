@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Only allow Admin role
-    if (data.data?.user?.role !== "Admin") {
+    if (data.data?.user?.role !== "Admin" && data.data?.user?.role !== "Moderator") {
       return NextResponse.json(
         { error: "Bạn không có quyền truy cập trang quản trị" },
         { status: 403 }
