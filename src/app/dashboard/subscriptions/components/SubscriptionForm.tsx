@@ -19,7 +19,7 @@ import {
   type SubscriptionPackage,
   type CreateSubscriptionPackagePayload,
 } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin, Users, Sparkles, DollarSign, Calendar, FileText } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -101,123 +101,176 @@ export default function SubscriptionForm({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-lg p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="text-lg">
             {isEdit ? "Cập nhật gói đăng ký" : "Tạo gói đăng ký mới"}
           </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isEdit
+              ? "Chỉnh sửa thông tin và quyền lợi của gói đăng ký"
+              : "Thiết lập thông tin cơ bản và giới hạn cho gói mới"}
+          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Tên gói <span className="text-destructive">*</span></Label>
-            <Input
-              id="name"
-              value={form.name}
-              onChange={(e) => setField("name", e.target.value)}
-              placeholder="VD: Gói Premium"
-            />
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          {/* ── Basic Info Section ── */}
+          <div className="space-y-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Thông tin cơ bản
+            </p>
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-sm">
+                Tên gói <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={form.name}
+                onChange={(e) => setField("name", e.target.value)}
+                placeholder="VD: Gói Premium"
+                className="h-9"
+              />
+            </div>
+
+            {/* Price + Duration row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="price" className="text-sm flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3 text-muted-foreground" />
+                  Giá (VND) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min={1}
+                  value={form.price}
+                  onChange={(e) => setField("price", Number(e.target.value))}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="durationDays" className="text-sm flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                  Thời hạn (ngày) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="durationDays"
+                  type="number"
+                  min={1}
+                  value={form.durationDays}
+                  onChange={(e) => setField("durationDays", Number(e.target.value))}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="description" className="text-sm flex items-center gap-1.5">
+                <FileText className="h-3 w-3 text-muted-foreground" />
+                Mô tả
+              </Label>
+              <Textarea
+                id="description"
+                rows={2}
+                value={form.description}
+                onChange={(e) => setField("description", e.target.value)}
+                placeholder="Mô tả ngắn về gói đăng ký..."
+                className="resize-none text-sm"
+              />
+            </div>
           </div>
 
-          {/* Price + Duration row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="price">Giá (VNĐ) <span className="text-destructive">*</span></Label>
-              <Input
-                id="price"
-                type="number"
-                min={1}
-                value={form.price}
-                onChange={(e) => setField("price", Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="durationDays">Thời hạn (ngày) <span className="text-destructive">*</span></Label>
-              <Input
-                id="durationDays"
-                type="number"
-                min={1}
-                value={form.durationDays}
-                onChange={(e) => setField("durationDays", Number(e.target.value))}
-              />
+          {/* ── Limits Section ── */}
+          <div className="space-y-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Giới hạn sử dụng
+            </p>
+            <p className="text-[11px] text-muted-foreground/70 -mt-2">
+              Nhập 0 để không giới hạn
+            </p>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="tripCreateLimit" className="text-xs flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  Tạo trip
+                </Label>
+                <Input
+                  id="tripCreateLimit"
+                  type="number"
+                  min={0}
+                  value={form.tripCreateLimit}
+                  onChange={(e) => setField("tripCreateLimit", Number(e.target.value))}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tripParticipantLimit" className="text-xs flex items-center gap-1.5">
+                  <Users className="h-3 w-3 text-muted-foreground" />
+                  Người tham gia
+                </Label>
+                <Input
+                  id="tripParticipantLimit"
+                  type="number"
+                  min={0}
+                  value={form.tripParticipantLimit}
+                  onChange={(e) => setField("tripParticipantLimit", Number(e.target.value))}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="aiUsageLimit" className="text-xs flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 text-muted-foreground" />
+                  Lượt dùng AI
+                </Label>
+                <Input
+                  id="aiUsageLimit"
+                  type="number"
+                  min={0}
+                  value={form.aiUsageLimit}
+                  onChange={(e) => setField("aiUsageLimit", Number(e.target.value))}
+                  className="h-9"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Limits row */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="tripCreateLimit">Giới hạn tạo trip</Label>
-              <Input
-                id="tripCreateLimit"
-                type="number"
-                min={0}
-                value={form.tripCreateLimit}
-                onChange={(e) => setField("tripCreateLimit", Number(e.target.value))}
-              />
+          {/* ── IsEnabled Toggle ── */}
+          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+            <div>
+              <Label htmlFor="isEnabled" className="cursor-pointer text-sm font-medium">
+                Kích hoạt ngay
+              </Label>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Gói sẽ hiển thị cho Planner sau khi tạo
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tripParticipantLimit">Người tham gia</Label>
-              <Input
-                id="tripParticipantLimit"
-                type="number"
-                min={0}
-                value={form.tripParticipantLimit}
-                onChange={(e) => setField("tripParticipantLimit", Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="aiUsageLimit">Lượt dùng AI</Label>
-              <Input
-                id="aiUsageLimit"
-                type="number"
-                min={0}
-                value={form.aiUsageLimit}
-                onChange={(e) => setField("aiUsageLimit", Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-1.5">
-            <Label htmlFor="description">Mô tả</Label>
-            <Textarea
-              id="description"
-              rows={3}
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-              placeholder="Mô tả ngắn về gói đăng ký..."
-            />
-          </div>
-
-          {/* IsEnabled */}
-          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
             <Switch
               id="isEnabled"
               checked={form.isEnabled}
               onCheckedChange={(v) => setField("isEnabled", v)}
             />
-            <Label htmlFor="isEnabled" className="cursor-pointer">
-              Kích hoạt ngay
-            </Label>
           </div>
 
           {error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
           )}
-
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Hủy
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Lưu thay đổi" : "Tạo gói"}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className="px-6 py-4 border-t bg-muted/20">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="h-9">
+            Hủy
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading} className="h-9">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isEdit ? "Lưu thay đổi" : "Tạo gói"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

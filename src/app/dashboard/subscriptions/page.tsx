@@ -7,7 +7,9 @@ export default function SubscriptionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gói đăng ký Planner</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Gói đăng ký Planner
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Quản lý các gói đăng ký, giá và quyền lợi dành cho Planner
           </p>
