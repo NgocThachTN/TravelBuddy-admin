@@ -52,12 +52,12 @@ export async function updateUserStatus(
 }
 
 export async function loginAdmin(
-  email: string,
+  phoneNumber: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
   return request(API_ROUTES.AUTH_LOGIN, {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ phoneNumber, password }),
   });
 }
 

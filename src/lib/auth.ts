@@ -1,38 +1,51 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { COOKIE_NAME } from "./constants";
 
-function getSecret() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET is not set");
-  return new TextEncoder().encode(secret);
-}
+// Backend JWT role claim key (ASP.NET Core Identity convention)
+const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+const NAME_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
 
 export interface AdminPayload {
-  email: string;
-  role: "admin";
+  phone: string;
+  role: "Admin";
 }
 
-/** Sign a JWT with admin payload, 8-hour expiry */
-export async function signAdminToken(email: string): Promise<string> {
-  return new SignJWT({ email, role: "admin" } satisfies AdminPayload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("8h")
-    .sign(getSecret());
-}
-
-/** Verify a JWT and return the admin payload, or null if invalid */
-export async function verifyAdminToken(
-  token: string
-): Promise<AdminPayload | null> {
+/**
+ * Decode a JWT payload without verifying the signature.
+ * The signature is verified by the backend; we only check role and expiry here.
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
-    if (payload.role !== "admin") return null;
-    return payload as unknown as AdminPayload;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    // Base64url → base64 → decode
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = Buffer.from(base64, "base64").toString("utf-8");
+    return JSON.parse(json);
   } catch {
     return null;
   }
+}
+
+/** Decode the backend JWT and return the admin payload, or null if invalid/expired */
+export async function verifyAdminToken(
+  token: string
+): Promise<AdminPayload | null> {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+
+  // Check expiry
+  const exp = typeof payload.exp === "number" ? payload.exp : null;
+  if (exp && Date.now() / 1000 > exp) return null;
+
+  // Check role — backend uses "Admin" (capital A)
+  const role = payload[ROLE_CLAIM] as string | undefined;
+  if (role !== "Admin") return null;
+
+  return {
+    phone: (payload[NAME_CLAIM] as string | undefined) ?? "",
+    role: "Admin",
+  };
 }
 
 /** Read the admin session from the request cookies */
@@ -41,12 +54,4 @@ export async function getAdminSession(): Promise<AdminPayload | null> {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifyAdminToken(token);
-}
-
-/** Validate admin credentials against env vars */
-export function validateCredentials(email: string, password: string): boolean {
-  return (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  );
 }
