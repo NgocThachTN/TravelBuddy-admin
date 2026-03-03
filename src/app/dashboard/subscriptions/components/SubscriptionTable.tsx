@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   fetchSubscriptionPackages,
   deleteSubscriptionPackage,
@@ -286,8 +286,12 @@ export default function SubscriptionTable() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  // KEEP_PREVIOUS_DATA: split into two flags so old rows stay visible during page transitions
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // KEEP_PREVIOUS_DATA: monotone counter – only the latest request may update state
+  const requestIdRef = useRef(0);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<SubscriptionPackage | null>(null);
@@ -298,10 +302,13 @@ export default function SubscriptionTable() {
   const [includeDisabled, setIncludeDisabled] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  const loadPackages = useCallback(async (p = page) => {
+  // KEEP_PREVIOUS_DATA: explicit params eliminate stale-closure risk; empty dep array is intentional
+  const loadPackages = useCallback(async (nextPage: number, nextIncludeDisabled: boolean) => {
+    const reqId = ++requestIdRef.current; // KEEP_PREVIOUS_DATA: stamp this request
+    setIsFetching(true);
     try {
-      setLoading(true);
-      const res = await fetchSubscriptionPackages(p, PAGE_SIZE, includeDisabled);
+      const res = await fetchSubscriptionPackages(nextPage, PAGE_SIZE, nextIncludeDisabled);
+      if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale response
       if (res?.data) {
         setPackages(res.data.items);
         setTotalCount(res.data.totalCount);
@@ -309,13 +316,20 @@ export default function SubscriptionTable() {
       }
       setError(null);
     } catch (err) {
+      if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale error
+      // KEEP_PREVIOUS_DATA: set error flag but do NOT clear packages – old rows stay visible
       setError(err instanceof Error ? err.message : "Không thể tải danh sách gói đăng ký");
     } finally {
-      setLoading(false);
+      if (reqId === requestIdRef.current) { // KEEP_PREVIOUS_DATA
+        setIsFetching(false);
+        setIsInitialLoading(false);
+      }
     }
-  }, [page, includeDisabled]);
+  }, []); // KEEP_PREVIOUS_DATA: no deps needed – all inputs are passed explicitly
 
-  useEffect(() => { loadPackages(page); }, [page, includeDisabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadPackages(page, includeDisabled);
+  }, [page, includeDisabled, loadPackages]);
 
   function openCreate() {
     setEditingPackage(null);
@@ -333,7 +347,7 @@ export default function SubscriptionTable() {
       setDeleteLoading(true);
       await deleteSubscriptionPackage(deleteTarget.subscriptionPackageId);
       setDeleteTarget(null);
-      loadPackages(page);
+      loadPackages(page, includeDisabled);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Xóa thất bại");
     } finally {
@@ -344,8 +358,9 @@ export default function SubscriptionTable() {
   // Sort packages by price for consistent tier assignment
   const sortedPackages = [...packages].sort((a, b) => a.price - b.price);
 
-  // ── Loading skeleton ──────────────────────────────────────────────
-  if (loading && packages.length === 0) {
+  // ── Loading skeleton (initial load only) ───────────────────────
+  // KEEP_PREVIOUS_DATA: show skeleton only on first load; on page changes old rows stay
+  if (isInitialLoading) {
     return (
       <div className="space-y-6">
         {/* Stats skeleton */}
@@ -395,8 +410,9 @@ export default function SubscriptionTable() {
     );
   }
 
-  // ── Error state ───────────────────────────────────────────────────
-  if (error) {
+  // ── Error state (only full-page error on empty initial load failure) ─
+  // KEEP_PREVIOUS_DATA: if we already have rows, show inline error banner instead
+  if (error && packages.length === 0) {
     return (
       <Card className="border-destructive/20 bg-destructive/5">
         <CardContent className="flex flex-col items-center py-14">
@@ -405,7 +421,7 @@ export default function SubscriptionTable() {
           </div>
           <p className="text-sm font-medium text-destructive mb-1">Đã xảy ra lỗi</p>
           <p className="text-xs text-destructive/70 mb-4">{error}</p>
-          <Button variant="outline" size="sm" onClick={() => loadPackages(page)}>
+          <Button variant="outline" size="sm" onClick={() => loadPackages(page, includeDisabled)}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Thử lại
           </Button>
@@ -423,14 +439,16 @@ export default function SubscriptionTable() {
         {/* ── Toolbar ── */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3.5">
           <div className="flex items-center gap-3">
-            {/* Filter toggle */}
+            {/* Filter toggle – KEEP_PREVIOUS_DATA: disabled while fetching */}
             <div className="flex items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5">
               {([true, false] as const).map((val) => (
                 <button
                   key={String(val)}
+                  disabled={isFetching}
                   onClick={() => { setIncludeDisabled(val); setPage(1); }}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                    "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    isFetching ? "cursor-not-allowed opacity-50" : "cursor-pointer",
                     includeDisabled === val
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -440,9 +458,19 @@ export default function SubscriptionTable() {
                 </button>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
-              {totalCount} gói
-            </span>
+            {/* KEEP_PREVIOUS_DATA: inline fetching indicator */}
+            {isFetching ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Đang tải...
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">{totalCount} gói</span>
+            )}
+            {/* KEEP_PREVIOUS_DATA: inline error banner when data is already present */}
+            {error && packages.length > 0 && (
+              <span className="text-xs text-destructive">{error}</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -474,7 +502,7 @@ export default function SubscriptionTable() {
               </button>
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => loadPackages(page)} className="h-8 gap-1.5">
+            <Button variant="outline" size="sm" disabled={isFetching} onClick={() => loadPackages(page, includeDisabled)} className="h-8 gap-1.5">
               <RefreshCw className="h-3.5 w-3.5" />
               Làm mới
             </Button>
@@ -618,7 +646,7 @@ export default function SubscriptionTable() {
           </div>
         )}
 
-        {/* ── Pagination ── */}
+        {/* ── Pagination – KEEP_PREVIOUS_DATA: buttons disabled while isFetching ── */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-5 py-3 text-sm text-muted-foreground">
             <span>
@@ -629,7 +657,7 @@ export default function SubscriptionTable() {
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                disabled={page <= 1}
+                disabled={page <= 1 || isFetching}
                 onClick={() => setPage((p) => p - 1)}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -638,7 +666,7 @@ export default function SubscriptionTable() {
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || isFetching}
                 onClick={() => setPage((p) => p + 1)}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -652,7 +680,7 @@ export default function SubscriptionTable() {
       <SubscriptionForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        onSuccess={() => loadPackages(page)}
+        onSuccess={() => loadPackages(page, includeDisabled)}
         editingPackage={editingPackage}
       />
 
