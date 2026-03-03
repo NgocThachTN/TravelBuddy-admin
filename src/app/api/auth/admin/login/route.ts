@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: "Lỗi máy chủ nội bộ",
-        ...(process.env.NODE_ENV !== "production" && { detail: message }),
+        detail: message, // TODO: remove after debugging
         backendUrl: BACKEND_API_URL,
       },
       { status: 500 }
