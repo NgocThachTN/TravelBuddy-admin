@@ -10,6 +10,7 @@ import {
   ScrollText,
   Settings,
   Shield,
+  Tags,
 } from "lucide-react";
 import type { Role, NavItem, NavGroup } from "@/types";
 import { ROUTES } from "./constants";
@@ -67,6 +68,12 @@ const ALL_NAV_ITEMS: NavItem[] = [
     icon: Package,
     roles: ["ADMIN"],
   },
+  {
+    label: "Danh mục",
+    href: ROUTES.CATEGORIES,
+    icon: Tags,
+    roles: ["ADMIN"],
+  },
 
   // ── System ──
   {
@@ -94,6 +101,7 @@ const ITEM_GROUP: Record<string, string> = {
   [ROUTES.SUPPORT]: "community",
   [ROUTES.TRANSACTIONS]: "operations",
   [ROUTES.SUBSCRIPTIONS]: "operations",
+  [ROUTES.CATEGORIES]: "operations",
   [ROUTES.AUDIT_LOGS]: "system",
   [ROUTES.SETTINGS]: "system",
 };

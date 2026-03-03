@@ -10,6 +10,7 @@ export const ROUTES = {
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
+  CATEGORIES: "/dashboard/categories",
   SUPPORT: "/dashboard/support",
   AUDIT_LOGS: "/dashboard/audit-logs",
   SETTINGS: "/dashboard/settings",
@@ -20,4 +21,7 @@ export const API_ROUTES = {
   AUTH_LOGOUT: "/api/auth/admin/logout",
   ADMIN_USERS: "/api/admin/users",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
+  ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
+  ADMIN_VEHICLE_CATEGORIES: "/api/admin/trip-metadata/vehicle-categories",
+  ADMIN_EXPENSE_CATEGORIES: "/api/admin/trip-metadata/expense-categories",
 } as const;

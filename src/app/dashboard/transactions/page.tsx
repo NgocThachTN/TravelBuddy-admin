@@ -17,10 +17,15 @@ export default function TransactionsPage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
             <CreditCard className="h-8 w-8 text-muted-foreground/50" />
           </div>
-          <Badge variant="outline" className="mt-5 rounded-full px-3 text-[11px] font-medium">
+          <Badge
+            variant="outline"
+            className="mt-5 rounded-full px-3 text-[11px] font-medium"
+          >
             <Construction className="mr-1 h-3 w-3" /> Đang phát triển
           </Badge>
-          <p className="mt-3 text-sm font-semibold text-foreground">Quản lý giao dịch</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">
+            Quản lý giao dịch
+          </p>
           <p className="mt-1 max-w-xs text-center text-xs text-muted-foreground">
             Tính năng theo dõi giao dịch sẽ sớm ra mắt
           </p>

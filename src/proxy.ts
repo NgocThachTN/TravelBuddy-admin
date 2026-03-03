@@ -22,6 +22,7 @@ const ADMIN_ONLY_PREFIXES: string[] = [
   "/dashboard/settings",
   "/dashboard/transactions",
   "/dashboard/subscriptions",
+  "/dashboard/categories",
   "/dashboard/partners",
   "/dashboard/trips",
 ];

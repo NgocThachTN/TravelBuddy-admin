@@ -33,10 +33,9 @@ import {
   Eye,
   Lock,
   Unlock,
-  ChevronLeft,
-  ChevronRight,
   Users,
 } from "lucide-react";
+import PaginationControl from "@/components/pagination-control";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -320,39 +319,12 @@ export default function UserTable() {
       </Table>
 
       {/* ── Pagination ── */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t px-4 py-3">
-          <p className="text-xs text-muted-foreground">
-            Trang {page} / {totalPages}
-          </p>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-              .map((p, idx, arr) => (
-                <span key={p} className="flex items-center">
-                  {idx > 0 && arr[idx - 1] !== p - 1 && (
-                    <span className="px-1 text-xs text-muted-foreground">…</span>
-                  )}
-                  <button
-                    onClick={() => setPage(p)}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-md text-xs font-medium transition-colors cursor-pointer",
-                      p === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {p}
-                  </button>
-                </span>
-              ))}
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <PaginationControl
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="border-t py-3"
+      />
     </Card>
   );
 }

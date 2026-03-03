@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { fetchSubscriptionPackages, deleteSubscriptionPackage } from "@/lib/api";
+import {
+  fetchSubscriptionPackages,
+  deleteSubscriptionPackage,
+} from "@/lib/api";
 import type { SubscriptionPackage } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -35,8 +35,6 @@ import {
   Pencil,
   Trash2,
   Package,
-  ChevronLeft,
-  ChevronRight,
   LayoutGrid,
   List,
   MapPin,
@@ -48,6 +46,7 @@ import {
   Crown,
   Star,
 } from "lucide-react";
+import PaginationControl from "@/components/pagination-control";
 import SubscriptionForm from "./SubscriptionForm";
 
 const PAGE_SIZE = 10;
@@ -82,10 +81,34 @@ function formatCompactPrice(amount: number) {
 
 // Tier icon mapping based on price order
 const TIER_CONFIG = [
-  { icon: Star, gradient: "from-slate-500 to-slate-600", bg: "bg-slate-50", text: "text-slate-700", ring: "ring-slate-200" },
-  { icon: Zap, gradient: "from-blue-500 to-blue-600", bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200" },
-  { icon: Crown, gradient: "from-amber-500 to-orange-500", bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200" },
-  { icon: TrendingUp, gradient: "from-violet-500 to-purple-600", bg: "bg-violet-50", text: "text-violet-700", ring: "ring-violet-200" },
+  {
+    icon: Star,
+    gradient: "from-slate-500 to-slate-600",
+    bg: "bg-slate-50",
+    text: "text-slate-700",
+    ring: "ring-slate-200",
+  },
+  {
+    icon: Zap,
+    gradient: "from-blue-500 to-blue-600",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    ring: "ring-blue-200",
+  },
+  {
+    icon: Crown,
+    gradient: "from-amber-500 to-orange-500",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    ring: "ring-amber-200",
+  },
+  {
+    icon: TrendingUp,
+    gradient: "from-violet-500 to-purple-600",
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    ring: "ring-violet-200",
+  },
 ];
 
 function getTierConfig(index: number) {
@@ -97,7 +120,8 @@ function StatsSummary({ packages }: { packages: SubscriptionPackage[] }) {
   const total = packages.length;
   const active = packages.filter((p) => p.isEnabled).length;
   const prices = packages.map((p) => p.price).filter((p) => p > 0);
-  const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+  const avgPrice =
+    prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
 
   const stats = [
     {
@@ -126,13 +150,23 @@ function StatsSummary({ packages }: { packages: SubscriptionPackage[] }) {
   return (
     <div className="grid grid-cols-3 gap-4">
       {stats.map((s) => (
-        <Card key={s.label} className="border border-border/50 shadow-none py-0">
+        <Card
+          key={s.label}
+          className="border border-border/50 shadow-none py-0"
+        >
           <CardContent className="flex items-center gap-3 p-4">
-            <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", s.iconBg)}>
+            <div
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                s.iconBg,
+              )}
+            >
               <s.icon className={cn("h-[18px] w-[18px]", s.iconColor)} />
             </div>
             <div>
-              <p className="text-xl font-semibold tracking-tight leading-none">{s.value}</p>
+              <p className="text-xl font-semibold tracking-tight leading-none">
+                {s.value}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
             </div>
           </CardContent>
@@ -161,17 +195,24 @@ function PackageCard({
     {
       icon: MapPin,
       label: "Tạo trip",
-      value: pkg.tripCreateLimit === 0 ? "Không giới hạn" : `${pkg.tripCreateLimit} trip`,
+      value:
+        pkg.tripCreateLimit === 0
+          ? "Không giới hạn"
+          : `${pkg.tripCreateLimit} trip`,
     },
     {
       icon: Users,
       label: "Người tham gia",
-      value: pkg.tripParticipantLimit === 0 ? "Không giới hạn" : `${pkg.tripParticipantLimit} người`,
+      value:
+        pkg.tripParticipantLimit === 0
+          ? "Không giới hạn"
+          : `${pkg.tripParticipantLimit} người`,
     },
     {
       icon: Sparkles,
       label: "AI Usage",
-      value: pkg.aiUsageLimit === 0 ? "Không giới hạn" : `${pkg.aiUsageLimit} lượt`,
+      value:
+        pkg.aiUsageLimit === 0 ? "Không giới hạn" : `${pkg.aiUsageLimit} lượt`,
     },
   ];
 
@@ -181,7 +222,7 @@ function PackageCard({
         "group relative overflow-hidden border transition-all duration-200 hover:shadow-lg py-0",
         pkg.isEnabled
           ? "border-border/50 hover:border-border"
-          : "border-dashed border-border/40 opacity-70"
+          : "border-dashed border-border/40 opacity-70",
       )}
     >
       {/* Top gradient accent */}
@@ -191,11 +232,19 @@ function PackageCard({
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl ring-1", tier.bg, tier.ring)}>
+            <div
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl ring-1",
+                tier.bg,
+                tier.ring,
+              )}
+            >
               <TierIcon className={cn("h-5 w-5", tier.text)} />
             </div>
             <div>
-              <h3 className="font-semibold text-sm leading-tight">{pkg.name}</h3>
+              <h3 className="font-semibold text-sm leading-tight">
+                {pkg.name}
+              </h3>
               <div className="flex items-center gap-2 mt-1">
                 <Badge
                   variant={pkg.isEnabled ? "default" : "secondary"}
@@ -203,7 +252,7 @@ function PackageCard({
                     "rounded-full px-2 py-0 text-[10px] font-medium",
                     pkg.isEnabled
                       ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                      : "bg-muted text-muted-foreground"
+                      : "bg-muted text-muted-foreground",
                   )}
                 >
                   {pkg.isEnabled ? "Hoạt động" : "Tắt"}
@@ -263,7 +312,9 @@ function PackageCard({
                 <f.icon className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
               <span className="text-xs text-muted-foreground">{f.label}</span>
-              <span className="ml-auto text-xs font-medium text-foreground">{f.value}</span>
+              <span className="ml-auto text-xs font-medium text-foreground">
+                {f.value}
+              </span>
             </div>
           ))}
         </div>
@@ -291,38 +342,56 @@ export default function SubscriptionTable() {
   const requestIdRef = useRef(0);
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<SubscriptionPackage | null>(null);
+  const [editingPackage, setEditingPackage] =
+    useState<SubscriptionPackage | null>(null);
 
-  const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(
+    null,
+  );
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [includeDisabled, setIncludeDisabled] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // KEEP_PREVIOUS_DATA: explicit params eliminate stale-closure risk; empty dep array is intentional
-  const loadPackages = useCallback(async (nextPage: number, nextIncludeDisabled: boolean) => {
-    const reqId = ++requestIdRef.current; // KEEP_PREVIOUS_DATA: stamp this request
-    setIsFetching(true);
-    try {
-      const res = await fetchSubscriptionPackages(nextPage, PAGE_SIZE, nextIncludeDisabled);
-      if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale response
-      if (res?.data) {
-        setPackages(res.data.items);
-        setTotalCount(res.data.totalCount);
-        setTotalPages(res.data.totalPages ?? Math.max(1, Math.ceil(res.data.totalCount / PAGE_SIZE)));
+  const loadPackages = useCallback(
+    async (nextPage: number, nextIncludeDisabled: boolean) => {
+      const reqId = ++requestIdRef.current; // KEEP_PREVIOUS_DATA: stamp this request
+      setIsFetching(true);
+      try {
+        const res = await fetchSubscriptionPackages(
+          nextPage,
+          PAGE_SIZE,
+          nextIncludeDisabled,
+        );
+        if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale response
+        if (res?.data) {
+          setPackages(res.data.items);
+          setTotalCount(res.data.totalCount);
+          setTotalPages(
+            res.data.totalPages ??
+              Math.max(1, Math.ceil(res.data.totalCount / PAGE_SIZE)),
+          );
+        }
+        setError(null);
+      } catch (err) {
+        if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale error
+        // KEEP_PREVIOUS_DATA: set error flag but do NOT clear packages – old rows stay visible
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không thể tải danh sách gói đăng ký",
+        );
+      } finally {
+        if (reqId === requestIdRef.current) {
+          // KEEP_PREVIOUS_DATA
+          setIsFetching(false);
+          setIsInitialLoading(false);
+        }
       }
-      setError(null);
-    } catch (err) {
-      if (reqId !== requestIdRef.current) return; // KEEP_PREVIOUS_DATA: discard stale error
-      // KEEP_PREVIOUS_DATA: set error flag but do NOT clear packages – old rows stay visible
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách gói đăng ký");
-    } finally {
-      if (reqId === requestIdRef.current) { // KEEP_PREVIOUS_DATA
-        setIsFetching(false);
-        setIsInitialLoading(false);
-      }
-    }
-  }, []); // KEEP_PREVIOUS_DATA: no deps needed – all inputs are passed explicitly
+    },
+    [],
+  ); // KEEP_PREVIOUS_DATA: no deps needed – all inputs are passed explicitly
 
   useEffect(() => {
     loadPackages(page, includeDisabled);
@@ -416,9 +485,15 @@ export default function SubscriptionTable() {
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
             <Package className="h-7 w-7 text-destructive" />
           </div>
-          <p className="text-sm font-medium text-destructive mb-1">Đã xảy ra lỗi</p>
+          <p className="text-sm font-medium text-destructive mb-1">
+            Đã xảy ra lỗi
+          </p>
           <p className="text-xs text-destructive/70 mb-4">{error}</p>
-          <Button variant="outline" size="sm" onClick={() => loadPackages(page, includeDisabled)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadPackages(page, includeDisabled)}
+          >
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Thử lại
           </Button>
@@ -442,13 +517,18 @@ export default function SubscriptionTable() {
                 <button
                   key={String(val)}
                   disabled={isFetching}
-                  onClick={() => { setIncludeDisabled(val); setPage(1); }}
+                  onClick={() => {
+                    setIncludeDisabled(val);
+                    setPage(1);
+                  }}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                    isFetching ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+                    isFetching
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer",
                     includeDisabled === val
                       ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {val ? "Tất cả" : "Đang hoạt động"}
@@ -462,7 +542,9 @@ export default function SubscriptionTable() {
                 Đang tải...
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground">{totalCount} gói</span>
+              <span className="text-xs text-muted-foreground">
+                {totalCount} gói
+              </span>
             )}
             {/* KEEP_PREVIOUS_DATA: inline error banner when data is already present */}
             {error && packages.length > 0 && (
@@ -479,7 +561,7 @@ export default function SubscriptionTable() {
                   "rounded-md p-1.5 transition-colors cursor-pointer",
                   viewMode === "grid"
                     ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
                 title="Xem dạng thẻ"
               >
@@ -491,7 +573,7 @@ export default function SubscriptionTable() {
                   "rounded-md p-1.5 transition-colors cursor-pointer",
                   viewMode === "table"
                     ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
                 title="Xem dạng bảng"
               >
@@ -499,7 +581,13 @@ export default function SubscriptionTable() {
               </button>
             </div>
 
-            <Button variant="outline" size="sm" disabled={isFetching} onClick={() => loadPackages(page, includeDisabled)} className="h-8 gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isFetching}
+              onClick={() => loadPackages(page, includeDisabled)}
+              className="h-8 gap-1.5"
+            >
               <RefreshCw className="h-3.5 w-3.5" />
               Làm mới
             </Button>
@@ -516,8 +604,12 @@ export default function SubscriptionTable() {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
               <Package className="h-8 w-8 text-muted-foreground/40" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Chưa có gói đăng ký nào</p>
-            <p className="text-xs text-muted-foreground/60 mt-1 mb-4">Tạo gói đầu tiên để bắt đầu</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Chưa có gói đăng ký nào
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1 mb-4">
+              Tạo gói đầu tiên để bắt đầu
+            </p>
             <Button size="sm" onClick={openCreate} className="gap-1.5">
               <Plus className="h-4 w-4" />
               Tạo gói mới
@@ -552,7 +644,9 @@ export default function SubscriptionTable() {
                   <TableHead className="text-center">AI</TableHead>
                   <TableHead className="text-center">Trạng thái</TableHead>
                   <TableHead className="text-center">Ngày tạo</TableHead>
-                  <TableHead className="text-right w-[100px] pr-5">Thao tác</TableHead>
+                  <TableHead className="text-right w-[100px] pr-5">
+                    Thao tác
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -563,11 +657,19 @@ export default function SubscriptionTable() {
                     <TableRow key={pkg.subscriptionPackageId} className="group">
                       <TableCell className="pl-5">
                         <div className="flex items-center gap-3">
-                          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1", tier.bg, tier.ring)}>
+                          <div
+                            className={cn(
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1",
+                              tier.bg,
+                              tier.ring,
+                            )}
+                          >
                             <TierIcon className={cn("h-4 w-4", tier.text)} />
                           </div>
                           <div>
-                            <p className="font-medium text-sm leading-none">{pkg.name}</p>
+                            <p className="font-medium text-sm leading-none">
+                              {pkg.name}
+                            </p>
                             {pkg.description && (
                               <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                                 {pkg.description}
@@ -585,17 +687,23 @@ export default function SubscriptionTable() {
                       <TableCell className="text-center text-sm">
                         {pkg.tripCreateLimit === 0 ? (
                           <span className="text-muted-foreground">&#8734;</span>
-                        ) : pkg.tripCreateLimit}
+                        ) : (
+                          pkg.tripCreateLimit
+                        )}
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         {pkg.tripParticipantLimit === 0 ? (
                           <span className="text-muted-foreground">&#8734;</span>
-                        ) : pkg.tripParticipantLimit}
+                        ) : (
+                          pkg.tripParticipantLimit
+                        )}
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         {pkg.aiUsageLimit === 0 ? (
                           <span className="text-muted-foreground">&#8734;</span>
-                        ) : pkg.aiUsageLimit}
+                        ) : (
+                          pkg.aiUsageLimit
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge
@@ -604,7 +712,7 @@ export default function SubscriptionTable() {
                             "rounded-full px-2.5 text-[11px]",
                             pkg.isEnabled
                               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                              : "bg-muted text-muted-foreground"
+                              : "bg-muted text-muted-foreground",
                           )}
                         >
                           {pkg.isEnabled ? "Hoạt động" : "Tắt"}
@@ -643,34 +751,12 @@ export default function SubscriptionTable() {
           </div>
         )}
 
-        {/* ── Pagination – KEEP_PREVIOUS_DATA: buttons disabled while isFetching ── */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t px-5 py-3 text-sm text-muted-foreground">
-            <span>
-              Trang {page}/{totalPages} &mdash; {totalCount} gói
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                disabled={page >= totalPages || isFetching}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <PaginationControl
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          className="border-t py-3"
+        />
       </Card>
 
       {/* ── Create / Edit Form Dialog ── */}
@@ -682,14 +768,19 @@ export default function SubscriptionTable() {
       />
 
       {/* ── Delete Confirm Dialog ── */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xóa gói đăng ký?</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn sắp xóa gói <strong>&quot;{deleteTarget?.name}&quot;</strong>.
-              Hành động này không thể hoàn tác. Gói sẽ bị vô hiệu hóa và không còn
-              hiển thị với người dùng.
+              Hành động này không thể hoàn tác. Gói sẽ bị vô hiệu hóa và không
+              còn hiển thị với người dùng.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

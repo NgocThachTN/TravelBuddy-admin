@@ -27,6 +27,7 @@ const LABELS: Record<string, string> = {
   reports: "Báo cáo",
   transactions: "Giao dịch",
   subscriptions: "Gói đăng ký",
+  categories: "Danh mục",
   support: "Hỗ trợ",
   "audit-logs": "Nhật ký",
   settings: "Cài đặt",
