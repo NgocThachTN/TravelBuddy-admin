@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     // Store the backend JWT as a httpOnly cookie
     response.cookies.set(COOKIE_NAME, accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: expiresIn ?? 3600,
