@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, RefreshCw, Pencil, Loader2, Car } from "lucide-react";
 import PaginationControl from "@/components/pagination-control";
+import ImageUpload from "@/components/image-upload";
 
 const TYPE_LABELS: Record<string, string> = {
   Motorbike: "Xe máy",
@@ -284,13 +285,8 @@ export default function VehicleCategoryTab() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Icon URL</Label>
-              <Input
-                value={formIcon}
-                onChange={(e) => setFormIcon(e.target.value)}
-                placeholder="https://..."
-                className="h-9"
-              />
+              <Label className="text-sm">Icon</Label>
+              <ImageUpload value={formIcon} onChange={setFormIcon} disabled={saving} />
             </div>
             {formError && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5">

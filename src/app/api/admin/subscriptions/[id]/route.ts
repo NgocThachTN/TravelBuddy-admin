@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/constants";
 import { backendApi } from "@/lib/axios";
-import { AxiosError } from "axios";
+import { logAndExtract } from "@/lib/api-error";
 
 async function getToken(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -27,11 +27,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     );
     return NextResponse.json(data);
   } catch (err) {
-    if (err instanceof AxiosError) {
-      const msg = err.response?.data?.message ?? "Không tìm thấy gói đăng ký";
-      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
-    }
-    return NextResponse.json({ error: "Lỗi server" }, { status: 500 });
+    const e = logAndExtract(err, `GET subscriptions/${id}`);
+    return NextResponse.json({ error: e.message }, { status: e.status });
   }
 }
 
@@ -47,19 +44,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { data } = await backendApi.put(
       `/api/v1/admin/subscription-packages/${id}`,
       body,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return NextResponse.json(data);
   } catch (err) {
-    if (err instanceof AxiosError) {
-      const msg = err.response?.data?.message ?? "Cập nhật thất bại";
-      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
-    }
-    return NextResponse.json({ error: "Cập nhật thất bại" }, { status: 500 });
+    const e = logAndExtract(err, `PUT subscriptions/${id}`);
+    return NextResponse.json({ error: e.message }, { status: e.status });
   }
 }
 
@@ -79,10 +69,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (res.status === 204) return new NextResponse(null, { status: 204 });
     return NextResponse.json(res.data);
   } catch (err) {
-    if (err instanceof AxiosError) {
-      const msg = err.response?.data?.message ?? "Xóa thất bại";
-      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
-    }
-    return NextResponse.json({ error: "Xóa thất bại" }, { status: 500 });
+    const e = logAndExtract(err, `DELETE subscriptions/${id}`);
+    return NextResponse.json({ error: e.message }, { status: e.status });
   }
 }
