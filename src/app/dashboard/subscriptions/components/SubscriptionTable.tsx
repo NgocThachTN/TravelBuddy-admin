@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import {
-  fetchSubscriptionPackages,
-  deleteSubscriptionPackage,
-  type SubscriptionPackage,
-} from "@/lib/api";
+import { fetchSubscriptionPackages, deleteSubscriptionPackage } from "@/lib/api";
+import type { SubscriptionPackage } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

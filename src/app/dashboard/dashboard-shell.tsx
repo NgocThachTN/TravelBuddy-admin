@@ -15,7 +15,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import type { Role } from "@/lib/rbac";
+import type { Role } from "@/types";
 
 /* ── Route ↔ label map ── */
 const LABELS: Record<string, string> = {

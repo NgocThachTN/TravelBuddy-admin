@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { logoutAction } from "@/server/auth/actions";
-import type { Role } from "@/lib/rbac";
+import type { Role } from "@/types";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
+import type { TimeRange } from "@/types";
 
-/* ── Time range ── */
-export type TimeRange = "7d" | "30d" | "90d";
+export type { TimeRange } from "@/types";
 
 const timeRangeLabels: Record<TimeRange, string> = {
   "7d": "7 ngày",

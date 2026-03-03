@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { fetchUsers, updateUserStatus, type User } from "@/lib/api";
+import { fetchUsers, updateUserStatus } from "@/lib/api";
+import type { User } from "@/types";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Role } from "./lib/rbac";
+import type { Role } from "./types/auth";
 
 const COOKIE_NAME = "tb_admin_session";
 const LOGIN_PATH = "/login";

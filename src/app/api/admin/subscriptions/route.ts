@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/constants";
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:5000";
+import { backendApi } from "@/lib/axios";
+import { AxiosError } from "axios";
 
 async function getToken(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -23,26 +23,26 @@ export async function GET(req: NextRequest) {
   const pageSize = searchParams.get("pageSize") ?? "10";
   const includeDisabled = searchParams.get("includeDisabled") ?? "true";
 
-  const beRes = await fetch(
-    `${BACKEND_API_URL}/api/v1/admin/subscription-packages?PageNumber=${pageNumber}&PageSize=${pageSize}&includeDisabled=${includeDisabled}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  const data = await beRes.json().catch(() => ({}));
-
-  if (!beRes.ok) {
-    return NextResponse.json(
-      { error: data.message ?? "Lỗi server" },
-      { status: beRes.status }
+  try {
+    const { data } = await backendApi.get(
+      "/api/v1/admin/subscription-packages",
+      {
+        params: {
+          PageNumber: pageNumber,
+          PageSize: pageSize,
+          includeDisabled,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      }
     );
+    return NextResponse.json(data);
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const msg = err.response?.data?.message ?? "Lỗi server";
+      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
+    }
+    return NextResponse.json({ error: "Lỗi server" }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }
 
 // ── POST /api/admin/subscriptions ────────────────────────────────────
@@ -54,26 +54,18 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const beRes = await fetch(
-    `${BACKEND_API_URL}/api/v1/admin/subscription-packages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  const data = await beRes.json().catch(() => ({}));
-
-  if (!beRes.ok) {
-    return NextResponse.json(
-      { error: data.message ?? "Tạo gói đăng ký thất bại" },
-      { status: beRes.status }
+  try {
+    const { data } = await backendApi.post(
+      "/api/v1/admin/subscription-packages",
+      body,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const msg = err.response?.data?.message ?? "Tạo gói đăng ký thất bại";
+      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
+    }
+    return NextResponse.json({ error: "Tạo gói đăng ký thất bại" }, { status: 500 });
   }
-
-  return NextResponse.json(data, { status: 201 });
 }

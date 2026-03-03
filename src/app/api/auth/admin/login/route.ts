@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME } from "@/lib/constants";
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:5000";
+import { backendApi } from "@/lib/axios";
+import { AxiosError } from "axios";
 
 /** Normalize VN phone number to E.164 (+84...) */
 function normalizePhone(raw: string): string {
@@ -24,25 +24,19 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedPhone = normalizePhone(phoneNumber);
-    const backendRes = await fetch(
-      `${BACKEND_API_URL}/api/v1/auth/login/phone-password`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: normalizedPhone, password }),
-      }
+
+    const { data } = await backendApi.post(
+      "/api/v1/auth/login/phone-password",
+      { phoneNumber: normalizedPhone, password }
     );
 
-    const data = await backendRes.json();
-
-    if (!backendRes.ok || !data.success) {
+    if (!data.success) {
       return NextResponse.json(
         { error: data.message ?? "Đăng nhập thất bại" },
-        { status: backendRes.status === 401 ? 401 : 400 }
+        { status: 400 }
       );
     }
 
-    // Only allow Admin role
     if (data.data?.user?.role !== "Admin" && data.data?.user?.role !== "Moderator") {
       return NextResponse.json(
         { error: "Bạn không có quyền truy cập trang quản trị" },
@@ -54,10 +48,8 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true });
 
-    // Store the backend JWT as a httpOnly cookie
     response.cookies.set(COOKIE_NAME, accessToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: expiresIn ?? 3600,
@@ -65,14 +57,19 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err) {
+    if (err instanceof AxiosError) {
+      const status = err.response?.status;
+      const msg = err.response?.data?.message ?? "Đăng nhập thất bại";
+      return NextResponse.json(
+        { error: msg },
+        { status: status === 401 ? 401 : 400 }
+      );
+    }
+
     const message = err instanceof Error ? err.message : String(err);
     console.error("[login/route] Error:", err);
     return NextResponse.json(
-      {
-        error: "Lỗi máy chủ nội bộ",
-        detail: message, // TODO: remove after debugging
-        backendUrl: BACKEND_API_URL,
-      },
+      { error: "Lỗi máy chủ nội bộ", detail: message },
       { status: 500 }
     );
   }

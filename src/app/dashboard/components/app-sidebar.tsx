@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { ROUTES } from "@/lib/constants";
-import type { Role } from "@/lib/rbac";
+import type { Role } from "@/types";
 import { getNavGroupsForRole } from "@/lib/nav";
 import { logoutAction } from "@/server/auth/actions";
 import {

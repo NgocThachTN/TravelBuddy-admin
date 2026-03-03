@@ -4,7 +4,7 @@
  */
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth";
-import type { Role } from "@/lib/rbac";
+import type { Role } from "@/types";
 
 export type { Role };
 

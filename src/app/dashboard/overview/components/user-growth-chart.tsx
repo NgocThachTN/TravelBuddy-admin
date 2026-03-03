@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
-import { type TimeRange, TimeRangeSelector, ChartTooltipContent } from "./shared";
+import type { TimeRange } from "@/types";
+import { TimeRangeSelector, ChartTooltipContent } from "./shared";
 
 const userGrowthData = [
   { month: "Th8", users: 820, prev: 720 },

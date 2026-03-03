@@ -11,23 +11,10 @@ import {
   Settings,
   Shield,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { Role } from "./rbac";
+import type { Role, NavItem, NavGroup } from "@/types";
 import { ROUTES } from "./constants";
 
-export interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  badge?: number;
-  roles: Role[];
-}
-
-export interface NavGroup {
-  key: string;
-  label?: string;
-  items: NavItem[];
-}
+export type { NavItem, NavGroup } from "@/types";
 
 const ALL_NAV_ITEMS: NavItem[] = [
   // ── Main ──

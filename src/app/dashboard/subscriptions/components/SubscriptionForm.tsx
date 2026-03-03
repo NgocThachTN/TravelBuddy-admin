@@ -13,12 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  createSubscriptionPackage,
-  updateSubscriptionPackage,
-  type SubscriptionPackage,
-  type CreateSubscriptionPackagePayload,
-} from "@/lib/api";
+import { createSubscriptionPackage, updateSubscriptionPackage } from "@/lib/api";
+import type { SubscriptionPackage, CreateSubscriptionPackagePayload } from "@/types";
 import { Loader2, MapPin, Users, Sparkles, DollarSign, Calendar, FileText } from "lucide-react";
 
 interface Props {

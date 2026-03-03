@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/constants";
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://localhost:5000";
+import { backendApi } from "@/lib/axios";
+import { AxiosError } from "axios";
 
 async function getToken(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -20,16 +20,19 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
 
-  const beRes = await fetch(
-    `${BACKEND_API_URL}/api/v1/admin/subscription-packages/${id}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  const data = await beRes.json().catch(() => ({}));
-  if (!beRes.ok) {
-    return NextResponse.json({ error: data.message ?? "Không tìm thấy gói đăng ký" }, { status: beRes.status });
+  try {
+    const { data } = await backendApi.get(
+      `/api/v1/admin/subscription-packages/${id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return NextResponse.json(data);
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const msg = err.response?.data?.message ?? "Không tìm thấy gói đăng ký";
+      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
+    }
+    return NextResponse.json({ error: "Lỗi server" }, { status: 500 });
   }
-  return NextResponse.json(data);
 }
 
 // ── PUT /api/admin/subscriptions/[id] ────────────────────────────────
@@ -40,23 +43,24 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
 
-  const beRes = await fetch(
-    `${BACKEND_API_URL}/api/v1/admin/subscription-packages/${id}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+  try {
+    const { data } = await backendApi.put(
+      `/api/v1/admin/subscription-packages/${id}`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return NextResponse.json(data);
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const msg = err.response?.data?.message ?? "Cập nhật thất bại";
+      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
     }
-  );
-
-  const data = await beRes.json().catch(() => ({}));
-  if (!beRes.ok) {
-    return NextResponse.json({ error: data.message ?? "Cập nhật thất bại" }, { status: beRes.status });
+    return NextResponse.json({ error: "Cập nhật thất bại" }, { status: 500 });
   }
-  return NextResponse.json(data);
 }
 
 // ── DELETE /api/admin/subscriptions/[id] ─────────────────────────────
@@ -66,16 +70,19 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
 
-  const beRes = await fetch(
-    `${BACKEND_API_URL}/api/v1/admin/subscription-packages/${id}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+  try {
+    const res = await backendApi.delete(
+      `/api/v1/admin/subscription-packages/${id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.status === 204) return new NextResponse(null, { status: 204 });
+    return NextResponse.json(res.data);
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const msg = err.response?.data?.message ?? "Xóa thất bại";
+      return NextResponse.json({ error: msg }, { status: err.response?.status ?? 500 });
     }
-  );
-
-  if (beRes.status === 204) return new NextResponse(null, { status: 204 });
-
-  const data = await beRes.json().catch(() => ({}));
-  return NextResponse.json({ error: data.message ?? "Xóa thất bại" }, { status: beRes.status });
+    return NextResponse.json({ error: "Xóa thất bại" }, { status: 500 });
+  }
 }

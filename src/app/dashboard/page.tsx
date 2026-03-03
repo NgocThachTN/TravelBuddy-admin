@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type TimeRange } from "./overview/components/shared";
+import type { TimeRange } from "@/types";
 import { DashboardHeader } from "./overview/components/dashboard-header";
 import { StatCards } from "./overview/components/stat-cards";
 import { UserGrowthChart } from "./overview/components/user-growth-chart";

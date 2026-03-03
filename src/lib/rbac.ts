@@ -1,4 +1,6 @@
-export type Role = "ADMIN" | "MODERATOR";
+import type { Role } from "@/types";
+
+export type { Role } from "@/types";
 
 // Paths that MODERATOR is NOT allowed to access
 const ADMIN_ONLY_PREFIXES: string[] = [
