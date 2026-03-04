@@ -20,24 +20,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
 
 interface NavbarProps {
-  phone: string;
+  email: string;
   role: Role;
 }
 
-/** Format +84862648911 → 0862 648 911 for display */
-function formatPhone(phone: string): string {
-  const local = phone.startsWith("+84")
-    ? "0" + phone.slice(3)
-    : phone;
-  return local.replace(/(\d{4})(\d{3})(\d{3})/, "$1 $2 $3");
+/** Get initials from email: admin@example.com → "AD" */
+function initials(email: string): string {
+  const name = email.split("@")[0];
+  return name.slice(0, 2).toUpperCase();
 }
 
-function initials(phone: string): string {
-  const local = phone.startsWith("+84") ? "0" + phone.slice(3) : phone;
-  return local.slice(-2).toUpperCase();
-}
-
-export default function Navbar({ phone, role }: NavbarProps) {
+export default function Navbar({ email, role }: NavbarProps) {
   const [isPending, startTransition] = useTransition();
 
   function handleLogout() {
@@ -46,7 +39,6 @@ export default function Navbar({ phone, role }: NavbarProps) {
     });
   }
 
-  const displayPhone = formatPhone(phone);
   const roleLabel = ROLE_LABELS[role];
   const isAdmin = role === "ADMIN";
 
@@ -93,7 +85,7 @@ export default function Navbar({ phone, role }: NavbarProps) {
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary-dark">
-                  {initials(phone)}
+                  {initials(email)}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
@@ -101,7 +93,7 @@ export default function Navbar({ phone, role }: NavbarProps) {
                   {roleLabel}
                 </p>
                 <p className="text-[11px] text-muted-foreground leading-tight">
-                  {displayPhone}
+                  {email}
                 </p>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -111,7 +103,7 @@ export default function Navbar({ phone, role }: NavbarProps) {
             <DropdownMenuLabel>
               <p className="font-semibold">{roleLabel}</p>
               <p className="text-xs font-normal text-muted-foreground">
-                {displayPhone}
+                {email}
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

@@ -73,13 +73,13 @@ function DashboardBreadcrumb() {
 interface DashboardShellProps {
   children: React.ReactNode;
   role: Role;
-  phone: string;
+  email: string;
 }
 
-export function DashboardShell({ children, role, phone }: DashboardShellProps) {
+export function DashboardShell({ children, role, email }: DashboardShellProps) {
   return (
     <SidebarProvider>
-      <AppSidebar role={role} phone={phone} />
+      <AppSidebar role={role} email={email} />
       <SidebarInset>
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-border bg-card/80 backdrop-blur-md">
@@ -89,7 +89,7 @@ export function DashboardShell({ children, role, phone }: DashboardShellProps) {
             <DashboardBreadcrumb />
           </div>
           <div className="flex-1">
-            <Navbar phone={phone} role={role} />
+            <Navbar email={email} role={role} />
           </div>
         </header>
 

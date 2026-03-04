@@ -47,12 +47,12 @@ export async function updateUserStatus(
 // ── Auth API ──────────────────────────────────────────────────────────
 
 export async function loginAdmin(
-  phoneNumber: string,
+  email: string,
   password: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { data } = await api.post<{ success: boolean; error?: string }>(
     API_ROUTES.AUTH_LOGIN,
-    { phoneNumber, password },
+    { email, password },
   );
   return data;
 }

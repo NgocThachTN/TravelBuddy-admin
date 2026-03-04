@@ -7,7 +7,7 @@ export type { AdminSession, AdminPayload } from "@/types";
 
 // Backend JWT claim keys (ASP.NET Core Identity convention)
 const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
-const NAME_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
+const EMAIL_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress";
 
 /**
  * Decode a JWT payload without verifying the signature.
@@ -44,7 +44,7 @@ export async function verifyAdminToken(
   if (!role) return null; // Unknown/unauthorized role
 
   return {
-    phone: (payload[NAME_CLAIM] as string | undefined) ?? "",
+    email: (payload[EMAIL_CLAIM] as string | undefined) ?? "",
     role,
   };
 }

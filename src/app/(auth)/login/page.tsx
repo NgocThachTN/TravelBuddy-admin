@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye,
   EyeOff,
-  Phone,
+  Mail,
   Lock,
   AlertCircle,
   Users,
@@ -73,21 +73,12 @@ const features = [
 ];
 
 export default function LoginPage() {
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-
-  /** Normalize VN phone: 0xxx → +84xxx, 84xxx → +84xxx, keep +84xxx as-is */
-  function normalizePhone(raw: string): string {
-    const trimmed = raw.trim().replace(/\s+/g, "");
-    if (trimmed.startsWith("+84")) return trimmed;
-    if (trimmed.startsWith("84")) return `+${trimmed}`;
-    if (trimmed.startsWith("0")) return `+84${trimmed.slice(1)}`;
-    return trimmed;
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -95,7 +86,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await loginAdmin(normalizePhone(phoneNumber), password);
+      await loginAdmin(email, password);
       window.location.replace(ROUTES.DASHBOARD);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
@@ -350,32 +341,32 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <motion.div variants={fadeUp} custom={1}>
               <label
-                htmlFor="phoneNumber"
+                htmlFor="email"
                 className="mb-2 block text-sm font-semibold text-foreground"
               >
-                Số điện thoại
+                Email
               </label>
               <div className="relative group">
                 <div
                   className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                    focusedField === "phoneNumber"
+                    focusedField === "email"
                       ? "text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
-                  <Phone size={18} />
+                  <Mail size={18} />
                 </div>
                 <input
-                  id="phoneNumber"
-                  type="tel"
+                  id="email"
+                  type="email"
                   required
-                  autoComplete="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  onFocus={() => setFocusedField("phoneNumber")}
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
                   className="h-[52px] w-full rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground shadow-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_0_4px_rgba(252,210,64,0.08)] hover:border-primary/40"
-                  placeholder="+84xxxxxxxxx"
+                  placeholder="admin@travelbuddy.vn"
                 />
               </div>
             </motion.div>

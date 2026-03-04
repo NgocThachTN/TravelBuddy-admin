@@ -31,10 +31,10 @@ function isActive(pathname: string, href: string): boolean {
 
 interface AppSidebarProps {
   role: Role;
-  phone: string;
+  email: string;
 }
 
-export function AppSidebar({ role, phone: _phone }: AppSidebarProps) {
+export function AppSidebar({ role, email: _email }: AppSidebarProps) {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const navGroups = getNavGroupsForRole(role);

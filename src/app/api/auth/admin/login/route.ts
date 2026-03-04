@@ -3,31 +3,20 @@ import { COOKIE_NAME } from "@/lib/constants";
 import { backendApi } from "@/lib/axios";
 import { AxiosError } from "axios";
 
-/** Normalize VN phone number to E.164 (+84...) */
-function normalizePhone(raw: string): string {
-  const s = raw.trim().replace(/\s+/g, "");
-  if (s.startsWith("+84")) return s;
-  if (s.startsWith("84")) return `+${s}`;
-  if (s.startsWith("0")) return `+84${s.slice(1)}`;
-  return s;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const { phoneNumber, password } = await req.json();
+    const { email, password } = await req.json();
 
-    if (!phoneNumber || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "Số điện thoại và mật khẩu là bắt buộc" },
+        { error: "Email và mật khẩu là bắt buộc" },
         { status: 400 }
       );
     }
 
-    const normalizedPhone = normalizePhone(phoneNumber);
-
     const { data } = await backendApi.post(
-      "/api/v1/auth/login/phone-password",
-      { phoneNumber: normalizedPhone, password }
+      "/api/v1/auth/login/email-password",
+      { email, password }
     );
 
     if (!data.success) {

@@ -1,7 +1,7 @@
 export type Role = "ADMIN" | "MODERATOR";
 
 export interface AdminSession {
-  phone: string;
+  email: string;
   role: Role;
 }
 
