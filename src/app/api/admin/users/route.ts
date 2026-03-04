@@ -1,111 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { COOKIE_NAME } from "@/lib/constants";
+import { backendApi } from "@/lib/axios";
+import { logAndExtract } from "@/lib/api-error";
 
-// ── Mock Data Store ──────────────────────────────────────────────────
-// Replace this with real database queries when backend is ready.
-
-interface MockUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: "active" | "locked";
-  createdAt: string;
-}
-
-const MOCK_USERS: MockUser[] = [
-  {
-    id: "usr_001",
-    name: "Nguyen Van A",
-    email: "vana@example.com",
-    role: "traveler",
-    status: "active",
-    createdAt: "2025-06-15T08:30:00Z",
-  },
-  {
-    id: "usr_002",
-    name: "Tran Thi B",
-    email: "thib@example.com",
-    role: "traveler",
-    status: "active",
-    createdAt: "2025-07-01T10:00:00Z",
-  },
-  {
-    id: "usr_003",
-    name: "Le Van C",
-    email: "vanc@example.com",
-    role: "host",
-    status: "locked",
-    createdAt: "2025-07-20T14:15:00Z",
-  },
-  {
-    id: "usr_004",
-    name: "Pham Thi D",
-    email: "thid@example.com",
-    role: "traveler",
-    status: "active",
-    createdAt: "2025-08-05T09:45:00Z",
-  },
-  {
-    id: "usr_005",
-    name: "Hoang Van E",
-    email: "vane@example.com",
-    role: "host",
-    status: "active",
-    createdAt: "2025-09-12T16:20:00Z",
-  },
-  {
-    id: "usr_006",
-    name: "Vo Thi F",
-    email: "thif@example.com",
-    role: "traveler",
-    status: "locked",
-    createdAt: "2025-10-03T11:30:00Z",
-  },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-async function authenticateAdmin(req: NextRequest): Promise<boolean> {
+async function getToken(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(COOKIE_NAME)?.value;
-  if (!token) return false;
-  const payload = await verifyAdminToken(token);
-  return payload !== null;
+  if (!token) return null;
+  const session = await verifyAdminToken(token);
+  return session ? token : null;
 }
 
 // ── GET /api/admin/users ─────────────────────────────────────────────
+// Query params: pageNumber, pageSize, role, isLocked, search
 
 export async function GET(req: NextRequest) {
-  if (!(await authenticateAdmin(req))) {
+  const token = await getToken(req);
+  if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json(MOCK_USERS);
+  const { searchParams } = new URL(req.url);
+
+  const params: Record<string, string> = {};
+  if (searchParams.has("pageNumber")) params.PageNumber = searchParams.get("pageNumber")!;
+  if (searchParams.has("pageSize")) params.PageSize = searchParams.get("pageSize")!;
+  if (searchParams.has("role")) params.Role = searchParams.get("role")!;
+  if (searchParams.has("isLocked")) params.IsLocked = searchParams.get("isLocked")!;
+  if (searchParams.has("search")) params.Search = searchParams.get("search")!;
+
+  try {
+    const { data } = await backendApi.get("/api/v1/admin/users", {
+      params,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return NextResponse.json(data);
+  } catch (err) {
+    const e = logAndExtract(err, "GET users");
+    return NextResponse.json({ error: e.message }, { status: e.status });
+  }
 }
 
-// ── PATCH /api/admin/users ───────────────────────────────────────────
+// ── POST /api/admin/users/moderators ─────────────────────────────────
+// Body: { email, firstName, lastName, phone? }
 
-export async function PATCH(req: NextRequest) {
-  if (!(await authenticateAdmin(req))) {
+export async function POST(req: NextRequest) {
+  const token = await getToken(req);
+  if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { userId, action } = await req.json();
+  const body = await req.json();
 
-  if (!userId || !["lock", "unlock"].includes(action)) {
-    return NextResponse.json(
-      { error: "Invalid payload. Provide userId and action (lock|unlock)." },
-      { status: 400 }
+  try {
+    const { data } = await backendApi.post(
+      "/api/v1/admin/users/moderators",
+      body,
+      { headers: { Authorization: `Bearer ${token}` } },
     );
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    const e = logAndExtract(err, "POST create moderator");
+    return NextResponse.json({ error: e.message }, { status: e.status });
   }
-
-  const user = MOCK_USERS.find((u) => u.id === userId);
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  user.status = action === "lock" ? "locked" : "active";
-
-  return NextResponse.json(user);
 }

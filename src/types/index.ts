@@ -1,5 +1,13 @@
 export type { Role, AdminSession, AdminPayload } from "./auth";
-export type { User } from "./user";
+export type {
+  User,
+  UserListItem,
+  UserDetail,
+  GetUsersParams,
+  CreateModeratorPayload,
+  CreateModeratorResponse,
+  LockAccountPayload,
+} from "./user";
 export type {
   SubscriptionPackage,
   SubscriptionPackagesResponse,

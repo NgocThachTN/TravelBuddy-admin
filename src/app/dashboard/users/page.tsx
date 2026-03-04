@@ -1,4 +1,5 @@
 import UserTable from "./components/UserTable";
+import CreateModeratorButton from "./components/CreateModeratorButton";
 import { Users } from "lucide-react";
 
 export default function UsersPage() {
@@ -14,8 +15,11 @@ export default function UsersPage() {
             Quản lý tài khoản, vai trò và quyền truy cập
           </p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <Users className="h-5 w-5 text-primary-dark" />
+        <div className="flex items-center gap-3">
+          <CreateModeratorButton />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Users className="h-5 w-5 text-primary-dark" />
+          </div>
         </div>
       </div>
 

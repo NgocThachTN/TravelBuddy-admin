@@ -1,7 +1,11 @@
 import { api } from "./axios";
 import { API_ROUTES } from "./constants";
 import type {
-  User,
+  UserListItem,
+  UserDetail,
+  GetUsersParams,
+  CreateModeratorPayload,
+  CreateModeratorResponse,
   SubscriptionPackage,
   CreateSubscriptionPackagePayload,
   UpdateSubscriptionPackagePayload,
@@ -19,28 +23,56 @@ import type {
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
 export type {
-  User,
+  UserListItem,
+  UserDetail,
+  GetUsersParams,
+  CreateModeratorPayload,
+  CreateModeratorResponse,
   SubscriptionPackage,
   SubscriptionPackagesResponse,
   CreateSubscriptionPackagePayload,
   UpdateSubscriptionPackagePayload,
 } from "@/types";
+// Backward-compat alias
+export type { UserListItem as User } from "@/types";
 
 // ── User API ──────────────────────────────────────────────────────────
 
-export async function fetchUsers(): Promise<User[]> {
-  const { data } = await api.get<User[]>(API_ROUTES.ADMIN_USERS);
+export async function fetchUsers(
+  params: GetUsersParams = {},
+): Promise<BePagedWrapper<UserListItem>> {
+  const { data } = await api.get<BePagedWrapper<UserListItem>>(
+    API_ROUTES.ADMIN_USERS,
+    { params },
+  );
   return data;
 }
 
-export async function updateUserStatus(
+export async function fetchUserById(userId: string): Promise<BeWrapper<UserDetail>> {
+  const { data } = await api.get<BeWrapper<UserDetail>>(
+    API_ROUTES.ADMIN_USERS_DETAIL(userId),
+  );
+  return data;
+}
+
+export async function lockUser(
   userId: string,
-  action: "lock" | "unlock",
-): Promise<User> {
-  const { data } = await api.patch<User>(API_ROUTES.ADMIN_USERS, {
-    userId,
-    action,
-  });
+  reason: string,
+): Promise<void> {
+  await api.patch(API_ROUTES.ADMIN_USERS_LOCK(userId), { reason });
+}
+
+export async function unlockUser(userId: string): Promise<void> {
+  await api.patch(API_ROUTES.ADMIN_USERS_UNLOCK(userId), {});
+}
+
+export async function createModerator(
+  payload: CreateModeratorPayload,
+): Promise<BeWrapper<CreateModeratorResponse>> {
+  const { data } = await api.post<BeWrapper<CreateModeratorResponse>>(
+    API_ROUTES.ADMIN_USERS_MODERATORS,
+    payload,
+  );
   return data;
 }
 

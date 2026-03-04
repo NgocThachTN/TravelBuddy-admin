@@ -20,6 +20,11 @@ export const API_ROUTES = {
   AUTH_LOGIN: "/api/auth/admin/login",
   AUTH_LOGOUT: "/api/auth/admin/logout",
   ADMIN_USERS: "/api/admin/users",
+  /** Truyền userId vào: `${API_ROUTES.ADMIN_USERS}/${userId}` */
+  ADMIN_USERS_DETAIL: (userId: string) => `/api/admin/users/${userId}`,
+  ADMIN_USERS_LOCK: (userId: string) => `/api/admin/users/${userId}/lock`,
+  ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
+  ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
   ADMIN_VEHICLE_CATEGORIES: "/api/admin/trip-metadata/vehicle-categories",
