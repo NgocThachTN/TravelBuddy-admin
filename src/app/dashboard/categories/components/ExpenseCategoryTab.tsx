@@ -48,7 +48,8 @@ export default function ExpenseCategoryTab() {
     try {
       setLoading(true);
       const res = await fetchExpenseCategories();
-      setCategories(res.data ?? []);
+      const raw = res.data;
+      setCategories(Array.isArray(raw) ? raw : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải danh sách");
