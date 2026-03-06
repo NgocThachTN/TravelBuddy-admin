@@ -48,8 +48,9 @@ export default function ExpenseCategoryTab() {
     try {
       setLoading(true);
       const res = await fetchExpenseCategories();
-      const raw = res.data;
-      setCategories(Array.isArray(raw) ? raw : []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw: any = res.data;
+      setCategories(Array.isArray(raw) ? raw : raw?.categories ?? []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải danh sách");

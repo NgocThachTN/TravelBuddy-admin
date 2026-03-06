@@ -81,7 +81,9 @@ export default function VehicleCategoryTab() {
     try {
       setLoading(true);
       const res = await fetchVehicleCategories();
-      setCategories(res.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw: any = res.data;
+      setCategories(Array.isArray(raw) ? raw : raw?.categories ?? []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải danh sách");
