@@ -86,8 +86,7 @@ export default function TripTypeCategoryTab() {
     try {
       setLoading(true);
       const res = await fetchTripTypeCategories();
-      const raw = res.data;
-      setCategories(Array.isArray(raw) ? raw : raw?.categories ?? []);
+      setCategories(res.data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải danh sách");
