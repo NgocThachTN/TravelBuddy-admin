@@ -19,6 +19,11 @@ import type {
   CreateVehicleCategoryBatchPayload,
   UpdateVehicleCategoryPayload,
   CreateExpenseCategoryBatchPayload,
+  TripListItem,
+  TripDetail,
+  GetTripsParams,
+  ReviewTripModerationPayload,
+  TripModerationDecisionResponse,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -211,4 +216,40 @@ export async function createExpenseCategories(
     payload,
   );
   return data;
+}
+
+// ── Trip API ──────────────────────────────────────────────────────────
+
+export async function fetchTrips(
+  params: GetTripsParams = {},
+): Promise<BePagedWrapper<TripListItem>> {
+  const { data } = await api.get<BePagedWrapper<TripListItem>>(
+    API_ROUTES.ADMIN_TRIPS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchTripById(
+  tripId: string,
+): Promise<BeWrapper<TripDetail>> {
+  const { data } = await api.get<BeWrapper<TripDetail>>(
+    API_ROUTES.ADMIN_TRIPS_DETAIL(tripId),
+  );
+  return data;
+}
+
+export async function reviewTrip(
+  taskId: string,
+  payload: ReviewTripModerationPayload,
+): Promise<BeWrapper<TripModerationDecisionResponse>> {
+  const { data } = await api.post<BeWrapper<TripModerationDecisionResponse>>(
+    API_ROUTES.ADMIN_TRIP_MODERATION_DECISION(taskId),
+    payload,
+  );
+  return data;
+}
+
+export async function deleteTrip(tripId: string): Promise<void> {
+  await api.delete(API_ROUTES.ADMIN_TRIPS_DETAIL(tripId));
 }

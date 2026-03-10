@@ -29,4 +29,8 @@ export const API_ROUTES = {
   ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
   ADMIN_VEHICLE_CATEGORIES: "/api/admin/trip-metadata/vehicle-categories",
   ADMIN_EXPENSE_CATEGORIES: "/api/admin/trip-metadata/expense-categories",
+  ADMIN_TRIPS: "/api/admin/trips",
+  ADMIN_TRIPS_DETAIL: (tripId: string) => `/api/admin/trips/${tripId}`,
+  ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
+    `/api/admin/moderation/trips/${taskId}/decision`,
 } as const;
