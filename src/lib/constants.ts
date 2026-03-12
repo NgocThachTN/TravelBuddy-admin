@@ -33,4 +33,16 @@ export const API_ROUTES = {
   ADMIN_TRIPS_DETAIL: (tripId: string) => `/api/admin/trips/${tripId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  ADMIN_REPORTS: "/api/admin/reports",
+  ADMIN_REPORTS_DETAIL: (reportId: string) => `/api/admin/reports/${reportId}`,
+  ADMIN_REPORTS_PROCESS: (reportId: string) =>
+    `/api/admin/reports/${reportId}/process`,
+  ADMIN_REPORT_REASONS: "/api/admin/report-reasons",
+  MODERATION_REPORTS: "/api/admin/moderation-reports",
+  MODERATION_REPORTS_DETAIL: (reportId: string) =>
+    `/api/admin/moderation-reports/${reportId}`,
+  MODERATION_REPORTS_PROCESS: (reportId: string) =>
+    `/api/admin/moderation-reports/${reportId}/process`,
+  MODERATION_REPORTS_CLAIM: (reportId: string) =>
+    `/api/admin/moderation-reports/${reportId}/claim`,
 } as const;

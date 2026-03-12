@@ -49,9 +49,10 @@ export async function POST(req: NextRequest) {
     if (err instanceof AxiosError) {
       const status = err.response?.status;
       const msg = err.response?.data?.message ?? "Đăng nhập thất bại";
+      const resStatus = status === 401 || status === 403 ? status : 400;
       return NextResponse.json(
         { error: msg },
-        { status: status === 401 ? 401 : 400 }
+        { status: resStatus }
       );
     }
 

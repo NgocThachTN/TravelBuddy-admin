@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import Image from "next/image";
 import { loginAdmin } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
+import { AxiosError } from "axios";
 import {
   Eye,
   EyeOff,
@@ -18,6 +19,7 @@ import {
   TrendingUp,
   Shield,
   Sparkles,
+  Timer,
 } from "lucide-react";
 
 /* ── Animation Variants ── */
@@ -76,20 +78,86 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (lockoutSeconds > 0) {
+      lockoutTimer.current = setInterval(() => {
+        setLockoutSeconds((prev) => {
+          if (prev <= 1) {
+            if (lockoutTimer.current) clearInterval(lockoutTimer.current);
+            setError(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (lockoutTimer.current) clearInterval(lockoutTimer.current);
+    };
+  }, [lockoutSeconds]);
+
+  const validateFields = useCallback((): boolean => {
+    const errors: { email?: string; password?: string } = {};
+
+    if (!email.trim()) {
+      errors.email = "Email là bắt buộc";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      errors.email = "Email không hợp lệ";
+    }
+
+    if (!password) {
+      errors.password = "Mật khẩu là bắt buộc";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [email, password]);
+
+  function extractLockoutSeconds(message: string): number {
+    const match = message.match(/(\d+)\s*giây/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    if (!validateFields()) return;
+    if (lockoutSeconds > 0) return;
+
     setLoading(true);
 
     try {
       await loginAdmin(email, password);
       window.location.replace(ROUTES.DASHBOARD);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      let message = "Đăng nhập thất bại";
+
+      if (err instanceof AxiosError) {
+        const data = err.response?.data;
+        message = data?.error ?? data?.message ?? message;
+
+        // Parse lockout seconds from 403 lockout messages
+        if (err.response?.status === 403) {
+          const seconds = extractLockoutSeconds(message);
+          if (seconds > 0) {
+            setLockoutSeconds(seconds);
+          }
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setError(message);
       setLoading(false);
     }
   }
@@ -329,9 +397,20 @@ export default function LoginPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="mb-6"
               >
-                <div className="flex items-center gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 text-sm text-destructive">
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>{error}</span>
+                <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 text-sm text-destructive">
+                  {lockoutSeconds > 0 ? (
+                    <Timer size={16} className="shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <span>{error}</span>
+                    {lockoutSeconds > 0 && (
+                      <span className="text-xs font-medium text-destructive/80">
+                        Thử lại sau {lockoutSeconds} giây
+                      </span>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -359,16 +438,25 @@ export default function LoginPage() {
                 <input
                   id="email"
                   type="email"
-                  required
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
-                  className="h-[52px] w-full rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground shadow-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_0_4px_rgba(252,210,64,0.08)] hover:border-primary/40"
+                  className={`h-[52px] w-full rounded-xl border bg-card pl-11 pr-4 text-sm text-foreground shadow-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/50 hover:border-primary/40 ${
+                    fieldErrors.email
+                      ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20"
+                      : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_0_4px_rgba(252,210,64,0.08)]"
+                  }`}
                   placeholder="admin@travelbuddy.vn"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-1.5 text-xs text-destructive">{fieldErrors.email}</p>
+              )}
             </motion.div>
 
             <motion.div variants={fadeUp} custom={2}>
@@ -400,13 +488,19 @@ export default function LoginPage() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  required
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
                   onFocus={() => setFocusedField("password")}
                   onBlur={() => setFocusedField(null)}
-                  className="h-[52px] w-full rounded-xl border border-border bg-card pl-11 pr-12 text-sm text-foreground shadow-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_0_4px_rgba(252,210,64,0.08)] hover:border-primary/40"
+                  className={`h-[52px] w-full rounded-xl border bg-card pl-11 pr-12 text-sm text-foreground shadow-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/50 hover:border-primary/40 ${
+                    fieldErrors.password
+                      ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20"
+                      : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_0_4px_rgba(252,210,64,0.08)]"
+                  }`}
                   placeholder="••••••••"
                 />
                 <button
@@ -419,12 +513,15 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-1.5 text-xs text-destructive">{fieldErrors.password}</p>
+              )}
             </motion.div>
 
             <motion.div variants={fadeUp} custom={3} className="pt-2">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || lockoutSeconds > 0}
                 className="group relative flex h-[52px] w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-[0_8px_24px_rgba(252,210,64,0.25)] transition-all duration-300 hover:bg-primary-hover hover:shadow-[0_12px_36px_rgba(252,210,64,0.35)] hover:-translate-y-0.5 active:bg-primary-dark active:translate-y-0 active:shadow-[0_4px_12px_rgba(252,210,64,0.20)] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:pointer-events-none disabled:translate-y-0 cursor-pointer"
               >
                 {loading ? (

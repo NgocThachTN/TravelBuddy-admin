@@ -24,6 +24,11 @@ import type {
   GetTripsParams,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
+  ReportListItem,
+  ReportDetail,
+  GetReportsParams,
+  ProcessReportPayload,
+  ReportReasonDto,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -252,4 +257,84 @@ export async function reviewTrip(
 
 export async function deleteTrip(tripId: string): Promise<void> {
   await api.delete(API_ROUTES.ADMIN_TRIPS_DETAIL(tripId));
+}
+
+// ── Report API (Admin scope: User, ServicePartner) ────────────────────
+
+export async function fetchReports(
+  params: GetReportsParams = {},
+): Promise<BePagedWrapper<ReportListItem>> {
+  const { data } = await api.get<BePagedWrapper<ReportListItem>>(
+    API_ROUTES.ADMIN_REPORTS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchReportById(
+  reportId: string,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.get<BeWrapper<ReportDetail>>(
+    API_ROUTES.ADMIN_REPORTS_DETAIL(reportId),
+  );
+  return data;
+}
+
+export async function processAdminReport(
+  reportId: string,
+  payload: ProcessReportPayload,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.patch<BeWrapper<ReportDetail>>(
+    API_ROUTES.ADMIN_REPORTS_PROCESS(reportId),
+    payload,
+  );
+  return data;
+}
+
+export async function fetchReportReasons(): Promise<BeWrapper<ReportReasonDto[]>> {
+  const { data } = await api.get<BeWrapper<ReportReasonDto[]>>(
+    API_ROUTES.ADMIN_REPORT_REASONS,
+  );
+  return data;
+}
+
+// ── Moderation Report API (Moderator scope: Trip, Post, etc.) ─────────
+
+export async function fetchModerationReports(
+  params: GetReportsParams = {},
+): Promise<BePagedWrapper<ReportListItem>> {
+  const { data } = await api.get<BePagedWrapper<ReportListItem>>(
+    API_ROUTES.MODERATION_REPORTS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchModerationReportById(
+  reportId: string,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.get<BeWrapper<ReportDetail>>(
+    API_ROUTES.MODERATION_REPORTS_DETAIL(reportId),
+  );
+  return data;
+}
+
+export async function processModerationReport(
+  reportId: string,
+  payload: ProcessReportPayload,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.patch<BeWrapper<ReportDetail>>(
+    API_ROUTES.MODERATION_REPORTS_PROCESS(reportId),
+    payload,
+  );
+  return data;
+}
+
+export async function claimReport(
+  reportId: string,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.post<BeWrapper<ReportDetail>>(
+    API_ROUTES.MODERATION_REPORTS_CLAIM(reportId),
+  );
+  return data;
 }
