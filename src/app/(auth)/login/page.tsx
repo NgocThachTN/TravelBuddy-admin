@@ -266,8 +266,15 @@ export default function LoginPage() {
           animate="visible"
         >
           <motion.div variants={scaleIn} className="mb-8">
-            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl bg-primary text-[42px] shadow-[0_8px_32px_rgba(252,210,64,0.35)]">
-              🌏
+            <div className="flex h-[72px] w-[160px] items-center justify-center rounded-3xl bg-primary/10 px-3 shadow-[0_8px_32px_rgba(252,210,64,0.35)]">
+              <Image
+                src="/images/travelbuddy-logo-dark.png"
+                alt="TravelBuddy logo"
+                width={136}
+                height={44}
+                className="h-auto w-full object-contain"
+                priority
+              />
             </div>
           </motion.div>
 
@@ -360,8 +367,15 @@ export default function LoginPage() {
             variants={scaleIn}
             className="mb-10 lg:hidden text-center"
           >
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-4xl shadow-[0_8px_24px_rgba(252,210,64,0.20)]">
-              🌏
+            <div className="inline-flex h-16 w-[150px] items-center justify-center rounded-2xl bg-primary/10 px-3 shadow-[0_8px_24px_rgba(252,210,64,0.20)]">
+              <Image
+                src="/images/travelbuddy-logo-light.png"
+                alt="TravelBuddy logo"
+                width={128}
+                height={40}
+                className="h-auto w-full object-contain"
+                priority
+              />
             </div>
             <h1 className="mt-4 text-2xl font-bold text-foreground">
               TravelBuddy

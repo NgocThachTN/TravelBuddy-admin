@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
@@ -22,7 +23,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { BarChart3, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 function isActive(pathname: string, href: string): boolean {
   if (href === ROUTES.DASHBOARD) return pathname === href;
@@ -54,7 +55,14 @@ export function AppSidebar({ role, email: _email }: AppSidebarProps) {
             <SidebarMenuButton size="lg" asChild>
               <Link href={ROUTES.DASHBOARD}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <BarChart3 className="size-4" />
+                  <Image
+                    src="/images/travelbuddy-logo-dark.png"
+                    alt="TravelBuddy logo"
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 object-contain"
+                    priority
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-bold">TravelBuddy</span>
