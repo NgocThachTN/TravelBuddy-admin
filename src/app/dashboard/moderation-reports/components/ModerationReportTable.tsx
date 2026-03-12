@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  fetchReports,
-  processAdminReport,
+  fetchModerationReports,
+  processModerationReport,
+  claimReport,
 } from "@/lib/api";
 import type {
   ReportListItem,
@@ -66,17 +67,16 @@ import {
   RefreshCw,
   Eye,
   CheckCircle,
-  Megaphone,
+  Shield,
   AlertTriangle,
   Map,
   MessageSquare,
-  User,
-  Handshake,
   LifeBuoy,
   MapPin,
+  HandMetal,
 } from "lucide-react";
 import PaginationControl from "@/components/pagination-control";
-import ReportDetailDialog from "./ReportDetailDialog";
+import ReportDetailDialog from "../../reports/components/ReportDetailDialog";
 
 const PAGE_SIZE = 15;
 
@@ -133,17 +133,15 @@ function targetTypeIcon(targetType: number | string) {
     case "Trip": return <Map className="h-3.5 w-3.5" />;
     case "Post": return <MessageSquare className="h-3.5 w-3.5" />;
     case "PostComment": return <MessageSquare className="h-3.5 w-3.5" />;
-    case "ServicePartner": return <Handshake className="h-3.5 w-3.5" />;
     case "RescueRequest": return <LifeBuoy className="h-3.5 w-3.5" />;
     case "RescueRequestMessage": return <LifeBuoy className="h-3.5 w-3.5" />;
     case "TripMessage": return <MessageSquare className="h-3.5 w-3.5" />;
     case "SocialCheckpoint": return <MapPin className="h-3.5 w-3.5" />;
-    case "User": return <User className="h-3.5 w-3.5" />;
     default: return <AlertTriangle className="h-3.5 w-3.5" />;
   }
 }
 
-/* ── Process Dialog (unified resolve/reject/duplicate) ── */
+/* ── Process Dialog ── */
 interface ProcessDialogProps {
   report: ReportListItem | null;
   onClose: () => void;
@@ -185,8 +183,8 @@ function ProcessForm({
   const [createStrike, setCreateStrike] = useState(false);
   const [strikeExpiresAt, setStrikeExpiresAt] = useState("");
 
-  // Admin actions
-  const availableActions: ResolvedActionCode[] = ["None", "Warn", "LockUser", "BanUser", "SuspendPartner", "Refund"];
+  // Moderation actions: content-related
+  const availableActions: ResolvedActionCode[] = ["None", "Warn", "RemoveContent", "CancelRescueRequest"];
 
   const decisionIndex = REPORT_DECISION_CODES.indexOf(decision);
 
@@ -274,20 +272,20 @@ function ProcessForm({
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="create-strike"
+                id="mod-create-strike"
                 checked={createStrike}
                 onChange={(e) => setCreateStrike(e.target.checked)}
                 className="h-4 w-4 rounded border-border"
               />
-              <Label htmlFor="create-strike" className="cursor-pointer">
+              <Label htmlFor="mod-create-strike" className="cursor-pointer">
                 Tạo strike cho người vi phạm
               </Label>
             </div>
             {createStrike && (
               <div className="space-y-2">
-                <Label htmlFor="strike-expires">Hết hạn strike (không bắt buộc)</Label>
+                <Label htmlFor="mod-strike-expires">Hết hạn strike (không bắt buộc)</Label>
                 <Input
-                  id="strike-expires"
+                  id="mod-strike-expires"
                   type="datetime-local"
                   value={strikeExpiresAt}
                   onChange={(e) => setStrikeExpiresAt(e.target.value)}
@@ -314,8 +312,8 @@ function ProcessForm({
   );
 }
 
-/* ── Main Report Table ── */
-export default function ReportTable() {
+/* ── Main Moderation Report Table ── */
+export default function ModerationReportTable() {
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -355,7 +353,7 @@ export default function ReportTable() {
       if (statusFilter !== "all") params.status = statusFilter;
       if (targetTypeFilter !== "all") params.targetType = targetTypeFilter;
 
-      const result = await fetchReports(params);
+      const result = await fetchModerationReports(params);
       setReports(result.data.items);
       setTotalCount(result.data.totalCount);
       setTotalPages(result.data.totalPages);
@@ -373,11 +371,23 @@ export default function ReportTable() {
     if (!processTarget) return;
     try {
       setDialogLoading(true);
-      await processAdminReport(processTarget.reportId, payload);
+      await processModerationReport(processTarget.reportId, payload);
       setProcessTarget(null);
       await loadReports(page);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Xử lý báo cáo thất bại");
+    } finally {
+      setDialogLoading(false);
+    }
+  }
+
+  async function handleClaim(report: ReportListItem) {
+    try {
+      setDialogLoading(true);
+      await claimReport(report.reportId);
+      await loadReports(page);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Nhận xử lý báo cáo thất bại");
     } finally {
       setDialogLoading(false);
     }
@@ -414,7 +424,7 @@ export default function ReportTable() {
       <Card className="border-destructive/20 bg-destructive/5">
         <CardContent className="flex flex-col items-center py-8">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-            <Megaphone className="h-6 w-6 text-destructive" />
+            <Shield className="h-6 w-6 text-destructive" />
           </div>
           <p className="text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => loadReports(page)}>
@@ -436,7 +446,7 @@ export default function ReportTable() {
       />
       <ReportDetailDialog
         reportId={detailReport?.reportId ?? null}
-        scope="admin"
+        scope="moderation"
         onClose={() => setDetailReport(null)}
       />
 
@@ -470,13 +480,18 @@ export default function ReportTable() {
 
           {/* Target Type Filter */}
           <Select value={targetTypeFilter} onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}>
-            <SelectTrigger className="h-9 w-[170px]">
+            <SelectTrigger className="h-9 w-[190px]">
               <SelectValue placeholder="Loại đối tượng" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả loại</SelectItem>
-              <SelectItem value="User">Người dùng</SelectItem>
-              <SelectItem value="ServicePartner">Đối tác</SelectItem>
+              <SelectItem value="Trip">Chuyến đi</SelectItem>
+              <SelectItem value="Post">Bài viết</SelectItem>
+              <SelectItem value="PostComment">Bình luận</SelectItem>
+              <SelectItem value="TripMessage">Tin nhắn chuyến đi</SelectItem>
+              <SelectItem value="RescueRequest">Yêu cầu cứu hộ</SelectItem>
+              <SelectItem value="RescueRequestMessage">Tin nhắn cứu hộ</SelectItem>
+              <SelectItem value="SocialCheckpoint">Checkpoint</SelectItem>
             </SelectContent>
           </Select>
 
@@ -518,7 +533,7 @@ export default function ReportTable() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12 text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                    <Megaphone className="h-5 w-5 text-muted-foreground" />
+                    <Shield className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <p className="text-sm font-medium">Không tìm thấy báo cáo</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -607,6 +622,17 @@ export default function ReportTable() {
                     {/* Actions */}
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
+                        {isPending && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleClaim(report)}
+                            disabled={dialogLoading}
+                          >
+                            <HandMetal className="mr-1.5 h-3.5 w-3.5" />
+                            Nhận xử lý
+                          </Button>
+                        )}
                         {canAct && (
                           <Button
                             size="sm"

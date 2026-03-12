@@ -7,6 +7,7 @@ export const ROUTES = {
   TRIPS: "/dashboard/trips",
   PARTNERS: "/dashboard/partners",
   MODERATION: "/dashboard/moderation",
+  MODERATION_REPORTS: "/dashboard/moderation-reports",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",

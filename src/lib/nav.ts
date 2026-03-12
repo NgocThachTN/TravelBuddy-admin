@@ -42,11 +42,16 @@ const ALL_NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MODERATOR"],
   },
   {
+    label: "Báo cáo nội dung",
+    href: ROUTES.MODERATION_REPORTS,
+    icon: Megaphone,
+    roles: ["MODERATOR"],
+  },
+  {
     label: "Báo cáo & Khiếu nại",
     href: ROUTES.REPORTS,
     icon: Megaphone,
-    badge: 3,
-    roles: ["ADMIN", "MODERATOR"],
+    roles: ["ADMIN"],
   },
   {
     label: "Hỗ trợ",
@@ -97,6 +102,7 @@ const ITEM_GROUP: Record<string, string> = {
   [ROUTES.TRIPS]: "main",
   [ROUTES.PARTNERS]: "main",
   [ROUTES.MODERATION]: "community",
+  [ROUTES.MODERATION_REPORTS]: "community",
   [ROUTES.REPORTS]: "community",
   [ROUTES.SUPPORT]: "community",
   [ROUTES.TRANSACTIONS]: "operations",

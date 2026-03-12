@@ -13,6 +13,7 @@ const ADMIN_ONLY_PREFIXES: string[] = [
   "/dashboard/categories",
   "/dashboard/partners",
   "/dashboard/trips",
+  "/dashboard/reports",
 ];
 
 export function canAccess(role: Role, pathname: string): boolean {
