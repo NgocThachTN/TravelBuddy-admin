@@ -6,6 +6,11 @@ export const ROUTES = {
   USERS: "/dashboard/users",
   TRIPS: "/dashboard/trips",
   PARTNERS: "/dashboard/partners",
+  PARTNER_REQUESTS: "/dashboard/partners/requests",
+  PARTNER_REQUESTS_DETAIL: (id: string) => `/dashboard/partners/requests/${id}`,
+  ACTIVE_PARTNERS: "/dashboard/partners/active",
+  ACTIVE_PARTNERS_DETAIL: (id: string) => `/dashboard/partners/active/${id}`,
+  PARTNER_FEES: "/dashboard/partners/fees",
   MODERATION: "/dashboard/moderation",
   MODERATION_REPORTS: "/dashboard/moderation-reports",
   REPORTS: "/dashboard/reports",
@@ -46,4 +51,19 @@ export const API_ROUTES = {
     `/api/admin/moderation-reports/${reportId}/process`,
   MODERATION_REPORTS_CLAIM: (reportId: string) =>
     `/api/admin/moderation-reports/${reportId}/claim`,
+  ADMIN_PARTNER_REVIEWS: "/api/admin/partners/requests",
+  ADMIN_PARTNER_REVIEWS_DETAIL: (id: string) =>
+    `/api/admin/partners/requests/${id}`,
+  ADMIN_PARTNER_REVIEWS_APPROVE: (id: string) =>
+    `/api/admin/partners/requests/${id}/approve`,
+  ADMIN_PARTNER_REVIEWS_REJECT: (id: string) =>
+    `/api/admin/partners/requests/${id}/reject`,
+  ADMIN_PARTNER_REVIEWS_RESUBMIT: (id: string) =>
+    `/api/admin/partners/requests/${id}/request-resubmission`,
+  ADMIN_SERVICE_PARTNERS: "/api/admin/partners/service-partners",
+  ADMIN_SERVICE_PARTNERS_DETAIL: (id: string) =>
+    `/api/admin/partners/service-partners/${id}`,
+  ADMIN_SERVICE_PARTNER_FEES: "/api/v1/admin/service-partner-fees",
+  ADMIN_SERVICE_PARTNER_FEES_DETAIL: (id: string) =>
+    `/api/v1/admin/service-partner-fees/${id}`,
 } as const;

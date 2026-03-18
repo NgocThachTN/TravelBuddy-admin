@@ -29,6 +29,17 @@ import type {
   GetReportsParams,
   ProcessReportPayload,
   ReportReasonDto,
+  PartnerRequestListItem,
+  PartnerRequestDetail,
+  GetPartnerRequestsParams,
+  ReviewPartnerRequestPayload,
+  ServicePartnerListItem,
+  ServicePartnerDetail,
+  GetServicePartnersParams,
+  ServicePartnerFee,
+  CreateServicePartnerFeePayload,
+  UpdateServicePartnerFeePayload,
+  GetServicePartnerFeesParams,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -337,4 +348,125 @@ export async function claimReport(
     API_ROUTES.MODERATION_REPORTS_CLAIM(reportId),
   );
   return data;
+}
+
+// ── Partner Review API ────────────────────────────────────────────────
+
+export async function fetchPartnerRequests(
+  params: GetPartnerRequestsParams = {},
+): Promise<BePagedWrapper<PartnerRequestListItem>> {
+  const { data } = await api.get<BePagedWrapper<PartnerRequestListItem>>(
+    API_ROUTES.ADMIN_PARTNER_REVIEWS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchPartnerRequestById(
+  id: string,
+): Promise<BeWrapper<PartnerRequestDetail>> {
+  const { data } = await api.get<BeWrapper<PartnerRequestDetail>>(
+    API_ROUTES.ADMIN_PARTNER_REVIEWS_DETAIL(id),
+  );
+  return data;
+}
+
+export async function approvePartnerRequest(
+  id: string,
+  payload: ReviewPartnerRequestPayload,
+): Promise<BeWrapper<PartnerRequestDetail>> {
+  const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
+    API_ROUTES.ADMIN_PARTNER_REVIEWS_APPROVE(id),
+    payload,
+  );
+  return data;
+}
+
+export async function rejectPartnerRequest(
+  id: string,
+  payload: ReviewPartnerRequestPayload,
+): Promise<BeWrapper<PartnerRequestDetail>> {
+  const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
+    API_ROUTES.ADMIN_PARTNER_REVIEWS_REJECT(id),
+    payload,
+  );
+  return data;
+}
+
+export async function requestPartnerResubmission(
+  id: string,
+  payload: ReviewPartnerRequestPayload,
+): Promise<BeWrapper<PartnerRequestDetail>> {
+  const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
+    API_ROUTES.ADMIN_PARTNER_REVIEWS_RESUBMIT(id),
+    payload,
+  );
+  return data;
+}
+
+// ── Service Partner API ───────────────────────────────────────────────
+
+export async function fetchServicePartners(
+  params: GetServicePartnersParams = {},
+): Promise<BePagedWrapper<ServicePartnerListItem>> {
+  const { data } = await api.get<BePagedWrapper<ServicePartnerListItem>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNERS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchServicePartnerById(
+  id: string,
+): Promise<BeWrapper<ServicePartnerDetail>> {
+  const { data } = await api.get<BeWrapper<ServicePartnerDetail>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNERS_DETAIL(id),
+  );
+  return data;
+}
+
+// ── Service Partner Fee API ───────────────────────────────────────────
+
+export async function fetchServicePartnerFees(
+  params: GetServicePartnerFeesParams = {},
+): Promise<BePagedWrapper<ServicePartnerFee>> {
+  const { data } = await api.get<BePagedWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchServicePartnerFeeById(
+  id: string,
+): Promise<BeWrapper<ServicePartnerFee>> {
+  const { data } = await api.get<BeWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_DETAIL(id),
+  );
+  return data;
+}
+
+export async function createServicePartnerFee(
+  payload: CreateServicePartnerFeePayload,
+): Promise<BeWrapper<ServicePartnerFee>> {
+  const { data } = await api.post<BeWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES,
+    payload,
+  );
+  return data;
+}
+
+export async function updateServicePartnerFee(
+  id: string,
+  payload: UpdateServicePartnerFeePayload,
+): Promise<BeWrapper<ServicePartnerFee>> {
+  const { data } = await api.put<BeWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_DETAIL(id),
+    payload,
+  );
+  return data;
+}
+
+export async function deleteServicePartnerFee(id: string): Promise<void> {
+  await api.delete(API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_DETAIL(id));
 }

@@ -104,3 +104,16 @@ export {
   reportedPartyTypeLabel,
   resolvedActionLabel,
 } from "./report";
+export type {
+  PartnerRequestListItem,
+  PartnerRequestDetail,
+  GetPartnerRequestsParams,
+  ReviewPartnerRequestPayload,
+  ServicePartnerListItem,
+  ServicePartnerDetail,
+  GetServicePartnersParams,
+  ServicePartnerFee,
+  CreateServicePartnerFeePayload,
+  UpdateServicePartnerFeePayload,
+  GetServicePartnerFeesParams,
+} from "./partner";
