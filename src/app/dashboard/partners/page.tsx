@@ -21,20 +21,19 @@ export default function PartnersPage() {
             Quản lý đối tác dịch vụ
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Review hồ sơ đăng ký đối tác và theo dõi danh sách service partner
-            đã được phê duyệt từ TravelBuddy-BE.
+            Theo dõi hồ sơ đăng ký đối tác và danh sách đối tác dịch vụ đã được phê duyệt.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={ROUTES.PARTNER_REQUESTS}>
-              Hồ sơ cần review
+              Hồ sơ cần duyệt
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
           <Button asChild>
             <Link href={ROUTES.ACTIVE_PARTNERS}>
-              Service partner đang hợp tác
+              Đối tác đang hợp tác
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -46,14 +45,14 @@ export default function PartnersPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <FileSearch className="h-4 w-4 text-primary" />
-              Partner requests
+              Hồ sơ đăng ký đối tác
             </CardTitle>
             <CardDescription>
-              Danh sách hồ sơ đăng ký đối tác để admin xem và phê duyệt.
+              Danh sách hồ sơ đăng ký đối tác để quản trị viên xem và phê duyệt.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 text-sm text-muted-foreground">
-            Bao gồm danh sách, chi tiết, phê duyệt, từ chối và yêu cầu bổ sung hồ sơ.
+            Bao gồm danh sách, trang chi tiết, phê duyệt, từ chối và yêu cầu bổ sung hồ sơ.
           </CardContent>
         </Card>
 
@@ -61,15 +60,14 @@ export default function PartnersPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              Active service partners
+              Đối tác dịch vụ đang hoạt động
             </CardTitle>
             <CardDescription>
-              Danh sách đối tác đã hợp tác, kèm chi tiết hồ sơ, liên hệ và địa
-              chỉ.
+              Danh sách đối tác đang hợp tác, kèm chi tiết hồ sơ, thông tin liên hệ và địa chỉ.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 text-sm text-muted-foreground">
-            Lấy dữ liệu trực tiếp từ endpoint `admin/service-partners` của backend.
+            Dữ liệu được lấy trực tiếp từ endpoint `admin/service-partners` của backend.
           </CardContent>
         </Card>
       </div>
@@ -81,7 +79,7 @@ export default function PartnersPage() {
             Hồ sơ đăng ký đối tác mới nhất
           </CardTitle>
           <CardDescription>
-            Xem nhanh các request mới nhất, vào chi tiết để review từng hồ sơ.
+            Xem nhanh các request mới nhất và mở chi tiết để duyệt từng hồ sơ.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,7 +91,7 @@ export default function PartnersPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Service partner đang hoạt động
+            Đối tác dịch vụ đang hoạt động
           </CardTitle>
           <CardDescription>
             Danh sách đối tác đã được duyệt và đang hợp tác trong hệ thống.

@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { Eye, Loader2 } from "lucide-react";
 import { fetchServicePartners } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import {
+  getServicePartnerStatusMeta,
+  renderStatusBadge,
+} from "@/lib/partner-display";
 import type { ServicePartnerListItem } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -23,22 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function getPartnerBadge(status?: string) {
-  const normalized = status?.toLowerCase();
-
-  if (normalized === "active") {
-    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Đang hoạt động</Badge>;
-  }
-  if (normalized === "inactive") {
-    return <Badge variant="secondary">Ngừng hoạt động</Badge>;
-  }
-  if (normalized === "suspended") {
-    return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Tạm khóa</Badge>;
-  }
-
-  return <Badge variant="outline">{status || "Unknown"}</Badge>;
-}
 
 interface ServicePartnersTableProps {
   compact?: boolean;
@@ -76,7 +63,7 @@ export default function ServicePartnersTable({
       } catch (err) {
         if (ignore) return;
         setError(
-          err instanceof Error ? err.message : "Không thể tải service partner",
+          err instanceof Error ? err.message : "Không thể tải danh sách đối tác dịch vụ",
         );
       } finally {
         if (!ignore) {
@@ -134,7 +121,7 @@ export default function ServicePartnersTable({
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
             <SelectItem value="Active">Đang hoạt động</SelectItem>
-            <SelectItem value="Inactive">Ngừng hoạt động</SelectItem>
+            <SelectItem value="Inactive">Chưa kích hoạt</SelectItem>
             <SelectItem value="Suspended">Tạm khóa</SelectItem>
           </SelectContent>
         </Select>
@@ -153,31 +140,25 @@ export default function ServicePartnersTable({
           <TableHeader>
             <TableRow>
               <TableHead>Đối tác dịch vụ</TableHead>
-              <TableHead>Owner</TableHead>
+              <TableHead>Chủ đối tác</TableHead>
               <TableHead>Công ty</TableHead>
-              <TableHead>Phạm vi xe</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead>Verified</TableHead>
+              <TableHead>Ngày xác minh</TableHead>
               <TableHead className="text-right">Chi tiết</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                  Không có service partner nào.
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  Không có đối tác dịch vụ nào.
                 </TableCell>
               </TableRow>
             ) : (
               items.map((partner) => (
                 <TableRow key={partner.servicePartnerId}>
                   <TableCell className="font-medium">
-                    <div className="space-y-1">
-                      <div>{partner.servicePartnerName || "-"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {partner.servicePartnerDescription || "Chưa có mô tả"}
-                      </div>
-                    </div>
+                    {partner.servicePartnerName || "-"}
                   </TableCell>
                   <TableCell>
                     {[partner.partnerFirstName, partner.partnerLastName]
@@ -185,8 +166,9 @@ export default function ServicePartnersTable({
                       .join(" ") || "-"}
                   </TableCell>
                   <TableCell>{partner.companyName || "-"}</TableCell>
-                  <TableCell>{partner.vehicleServiceScope || "-"}</TableCell>
-                  <TableCell>{getPartnerBadge(partner.servicePartnerStatus)}</TableCell>
+                  <TableCell>
+                    {renderStatusBadge(partner.servicePartnerStatus, getServicePartnerStatusMeta)}
+                  </TableCell>
                   <TableCell>
                     {partner.verifiedAt
                       ? new Date(partner.verifiedAt).toLocaleDateString("vi-VN")

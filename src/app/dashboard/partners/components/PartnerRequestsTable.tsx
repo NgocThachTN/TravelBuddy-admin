@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { Eye, Loader2 } from "lucide-react";
 import { fetchPartnerRequests } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import {
+  getRegistrationStatusMeta,
+  renderStatusBadge,
+} from "@/lib/partner-display";
 import type { PartnerRequestListItem } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -23,25 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function getStatusBadge(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (normalized === "pending") {
-    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Chờ duyệt</Badge>;
-  }
-  if (normalized === "approved") {
-    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Đã duyệt</Badge>;
-  }
-  if (normalized === "rejected") {
-    return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Từ chối</Badge>;
-  }
-  if (normalized === "resubmissionrequested") {
-    return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Bổ sung hồ sơ</Badge>;
-  }
-
-  return <Badge variant="outline">{status}</Badge>;
-}
 
 function formatRelativeTime(value: string) {
   const target = new Date(value).getTime();
@@ -95,7 +79,7 @@ export default function PartnerRequestsTable({
       } catch (err) {
         if (ignore) return;
         setError(
-          err instanceof Error ? err.message : "Không thể tải partner requests",
+          err instanceof Error ? err.message : "Không thể tải hồ sơ đăng ký đối tác",
         );
       } finally {
         if (!ignore) {
@@ -152,10 +136,11 @@ export default function PartnerRequestsTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="Pending">Chờ duyệt</SelectItem>
+            <SelectItem value="InReview">Chờ duyệt</SelectItem>
+            <SelectItem value="Pending">Chờ duyệt (legacy)</SelectItem>
             <SelectItem value="Approved">Đã duyệt</SelectItem>
             <SelectItem value="Rejected">Từ chối</SelectItem>
-            <SelectItem value="ResubmissionRequested">Bổ sung hồ sơ</SelectItem>
+            <SelectItem value="RequestResubmission">Yêu cầu bổ sung hồ sơ</SelectItem>
           </SelectContent>
         </Select>
         {compact && (
@@ -199,7 +184,9 @@ export default function PartnerRequestsTable({
                   </TableCell>
                   <TableCell>{request.companyName || "-"}</TableCell>
                   <TableCell>{request.partnerPhone || "-"}</TableCell>
-                  <TableCell>{getStatusBadge(request.registrationStatus)}</TableCell>
+                  <TableCell>
+                    {renderStatusBadge(request.registrationStatus, getRegistrationStatusMeta)}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatRelativeTime(request.createdAt)}
                   </TableCell>

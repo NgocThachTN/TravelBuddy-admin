@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { fetchServicePartnerById } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import {
+  formatFullAddress,
+  formatWardLabel,
+  getMapEmbedUrl,
+  getServicePartnerStatusMeta,
+  getVehicleServiceScopeLabel,
+  getVerificationStatusLabel,
+  renderStatusBadge,
+} from "@/lib/partner-display";
 import type { ServicePartnerDetail } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,27 +26,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, FileText, Loader2, MapPin, ShieldCheck, User } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, FileText, Loader2, MapPin, Store, User } from "lucide-react";
 
 function formatDateTime(value?: string) {
   if (!value) return "-";
   return new Date(value).toLocaleString("vi-VN");
-}
-
-function getStatusBadge(status?: string) {
-  const normalized = status?.toLowerCase();
-
-  if (normalized === "active") {
-    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Active</Badge>;
-  }
-  if (normalized === "inactive") {
-    return <Badge variant="secondary">Inactive</Badge>;
-  }
-  if (normalized === "suspended") {
-    return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Suspended</Badge>;
-  }
-
-  return <Badge variant="outline">{status || "Unknown"}</Badge>;
 }
 
 function readOnlyField(label: string, value?: string | number | null) {
@@ -44,6 +40,86 @@ function readOnlyField(label: string, value?: string | number | null) {
     <div className="space-y-2">
       <Label>{label}</Label>
       <Input value={value == null || value === "" ? "-" : String(value)} readOnly />
+    </div>
+  );
+}
+
+function readOnlyTextarea(label: string, value?: string | number | null) {
+  return (
+    <div className="space-y-2 md:col-span-2">
+      <Label>{label}</Label>
+      <Textarea
+        value={value == null || value === "" ? "-" : String(value)}
+        readOnly
+        className="min-h-28 resize-none"
+      />
+    </div>
+  );
+}
+
+function getFileType(url?: string | null) {
+  if (!url) return "unknown";
+  const normalized = url.split("?")[0].toLowerCase();
+
+  if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(normalized)) {
+    return "image";
+  }
+  if (/\.pdf$/.test(normalized)) {
+    return "pdf";
+  }
+  return "unknown";
+}
+
+function FilePreview({
+  title,
+  url,
+  emptyText,
+}: {
+  title: string;
+  url?: string | null;
+  emptyText: string;
+}) {
+  const fileType = getFileType(url);
+
+  return (
+    <div className="space-y-3">
+      <Label>{title}</Label>
+      {url ? (
+        <div className="space-y-3">
+          {fileType === "image" && (
+            <div className="relative h-80 w-full overflow-hidden rounded-md border bg-muted/20">
+              <Image
+                src={url}
+                alt={title}
+                fill
+                unoptimized
+                className="object-contain"
+              />
+            </div>
+          )}
+          {fileType === "pdf" && (
+            <iframe
+              title={title}
+              src={url}
+              className="h-96 w-full rounded-md border"
+            />
+          )}
+          {fileType === "unknown" && (
+            <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+              Tệp này không hỗ trợ xem nhanh trực tiếp.
+            </div>
+          )}
+          <Button asChild variant="outline" className="w-full">
+            <a href={url} target="_blank" rel="noreferrer">
+              Mở tệp trong tab mới
+            </a>
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+          {emptyText}
+        </div>
+      )}
     </div>
   );
 }
@@ -69,7 +145,7 @@ export default function ServicePartnerDetailPage() {
       } catch (err) {
         if (ignore) return;
         setError(
-        err instanceof Error ? err.message : "Không thể tải chi tiết service partner",
+          err instanceof Error ? err.message : "Không thể tải chi tiết đối tác dịch vụ",
         );
       } finally {
         if (!ignore) {
@@ -112,29 +188,33 @@ export default function ServicePartnerDetailPage() {
     return null;
   }
 
+  const mapEmbedUrl = getMapEmbedUrl(detail.addressLat, detail.addressLng);
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Button asChild variant="ghost" className="px-0">
-          <Link href={ROUTES.ACTIVE_PARTNERS}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-2">
+          <Button asChild variant="ghost" className="px-0">
+            <Link href={ROUTES.ACTIVE_PARTNERS}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại danh sách
-          </Link>
-        </Button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {detail.servicePartnerName || detail.companyName || "Service partner"}
-          </h1>
-          {getStatusBadge(detail.servicePartnerStatus)}
-          {detail.isLocked ? (
-            <Badge variant="destructive">Đã khóa</Badge>
-          ) : (
-            <Badge variant="outline">Đang mở</Badge>
-          )}
+            </Link>
+          </Button>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {detail.servicePartnerName || detail.companyName || "Đối tác dịch vụ"}
+            </h1>
+            {renderStatusBadge(detail.servicePartnerStatus, getServicePartnerStatusMeta)}
+            {detail.isLocked ? (
+              <Badge variant="destructive">Đã khóa</Badge>
+            ) : (
+              <Badge variant="outline">Đang mở</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Xác minh lúc: {formatDateTime(detail.verifiedAt)}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Xác minh lúc: {formatDateTime(detail.verifiedAt)}
-        </p>
       </div>
 
       {error && (
@@ -149,40 +229,54 @@ export default function ServicePartnerDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                Thông tin service partner
+                Thông tin người đại diện
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              {readOnlyField("Service partner ID", detail.servicePartnerId)}
-              {readOnlyField("Partner ID", detail.partnerId)}
-              {readOnlyField("User ID", detail.userId)}
-              {readOnlyField("Công ty", detail.companyName)}
-              {readOnlyField("Tax ID", detail.taxId)}
-              {readOnlyField("Phạm vi dịch vụ xe", detail.vehicleServiceScope)}
-              {readOnlyField("Trạng thái hồ sơ", detail.profileStatus)}
-              {readOnlyField("Trạng thái xác minh", detail.verificationStatus)}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                Chủ đối tác và liên hệ
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="grid gap-4">
               {readOnlyField(
-                "Tên chủ đối tác",
+                "Họ và tên",
                 [detail.partnerFirstName, detail.partnerLastName]
                   .filter(Boolean)
                   .join(" "),
               )}
               {readOnlyField("Số điện thoại", detail.partnerPhone)}
               {readOnlyField("Email", detail.partnerEmail)}
-              {readOnlyField("Tên liên hệ", detail.contactName)}
-              {readOnlyField("Số điện thoại liên hệ", detail.contactPhone)}
-              {readOnlyField("Tóm tắt xác minh", detail.verificationSummary)}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" />
+                Thông tin cửa hàng
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {readOnlyField("Tên cửa hàng", detail.servicePartnerName)}
+                {readOnlyField("Công ty", detail.companyName)}
+                {readOnlyField("Mã số thuế", detail.taxId)}
+                {readOnlyField("Phạm vi dịch vụ", getVehicleServiceScopeLabel(detail.vehicleServiceScope))}
+                {readOnlyField("Trạng thái", getServicePartnerStatusMeta(detail.servicePartnerStatus).label)}
+                {readOnlyField("Trạng thái hồ sơ", getServicePartnerStatusMeta(detail.profileStatus).label)}
+                {readOnlyField("Trạng thái xác minh", getVerificationStatusLabel(detail.verificationStatus))}
+              </div>
+              <div className="space-y-2">
+                <Label>Mô tả dịch vụ</Label>
+                <Textarea
+                  value={detail.servicePartnerDescription || "-"}
+                  readOnly
+                  className="min-h-24"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tóm tắt xác minh</Label>
+                <Textarea
+                  value={detail.verificationSummary || "-"}
+                  readOnly
+                  className="min-h-24"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -190,16 +284,45 @@ export default function ServicePartnerDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" />
-                Địa chỉ
+                Địa chỉ cửa hàng
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              {readOnlyField("Address line 1", detail.addressLine1)}
-              {readOnlyField("Address line 2", detail.addressLine2)}
-              {readOnlyField("Postal code", detail.postalCode)}
-              {readOnlyField("Ward code", detail.wardCode)}
-              {readOnlyField("Latitude", detail.addressLat)}
-              {readOnlyField("Longitude", detail.addressLng)}
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {readOnlyField("Địa chỉ dòng 1", detail.addressLine1)}
+                {readOnlyField("Địa chỉ dòng 2", detail.addressLine2)}
+                {readOnlyField("Phường/Xã", formatWardLabel(detail.wardName, detail.wardCode))}
+                {readOnlyField("Quận/Huyện", detail.districtName)}
+                {readOnlyField("Tỉnh/Thành phố", detail.provinceName)}
+                {readOnlyField("Mã bưu chính", detail.postalCode)}
+                {readOnlyTextarea(
+                  "Địa chỉ đầy đủ",
+                  formatFullAddress([
+                    detail.addressLine1,
+                    detail.addressLine2,
+                    detail.wardName,
+                    detail.districtName,
+                    detail.provinceName,
+                  ]),
+                )}
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label>Bản đồ</Label>
+                {mapEmbedUrl ? (
+                  <iframe
+                    title="Bản đồ vị trí đối tác"
+                    src={mapEmbedUrl}
+                    className="h-72 w-full rounded-md border"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                ) : (
+                  <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                    Chưa có vị trí để hiển thị bản đồ.
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -209,32 +332,20 @@ export default function ServicePartnerDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Tài liệu
+                Hồ sơ và giấy tờ
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {detail.identifyCardUrl ? (
-                <Button asChild variant="outline" className="w-full">
-                  <a href={detail.identifyCardUrl} target="_blank" rel="noreferrer">
-                    Mở CCCD/CMND
-                  </a>
-                </Button>
-              ) : (
-                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                  Chưa có URL CCCD/CMND.
-                </div>
-              )}
-              {detail.businessLicenseUrl ? (
-                <Button asChild variant="outline" className="w-full">
-                  <a href={detail.businessLicenseUrl} target="_blank" rel="noreferrer">
-                    Mở giấy phép kinh doanh
-                  </a>
-                </Button>
-              ) : (
-                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                  Chưa có URL giấy phép kinh doanh.
-                </div>
-              )}
+            <CardContent className="space-y-5">
+              <FilePreview
+                title="Ảnh CCCD/CMND"
+                url={detail.identifyCardUrl}
+                emptyText="Chưa có ảnh CCCD/CMND."
+              />
+              <FilePreview
+                title="Giấy phép kinh doanh"
+                url={detail.businessLicenseUrl}
+                emptyText="Chưa có giấy phép kinh doanh."
+              />
             </CardContent>
           </Card>
 

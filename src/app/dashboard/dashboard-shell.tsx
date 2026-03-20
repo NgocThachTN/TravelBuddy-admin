@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { fetchPartnerRequestById, fetchServicePartnerById } from "@/lib/api";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import Navbar from "./components/Navbar";
@@ -17,12 +18,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import type { Role } from "@/types";
 
-/* ── Route ↔ label map ── */
 const LABELS: Record<string, string> = {
   dashboard: "Tổng quan",
   users: "Người dùng",
   trips: "Chuyến đi",
   partners: "Đối tác",
+  requests: "Hồ sơ đăng ký",
+  active: "Đối tác đang hợp tác",
   moderation: "Kiểm duyệt",
   reports: "Báo cáo",
   transactions: "Giao dịch",
@@ -37,13 +39,84 @@ const LABELS: Record<string, string> = {
 function DashboardBreadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
+  const [detailLabel, setDetailLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadDetailLabel() {
+      const isPartnerRequestDetail =
+        segments.length === 4 &&
+        segments[0] === "dashboard" &&
+        segments[1] === "partners" &&
+        segments[2] === "requests";
+
+      const isActivePartnerDetail =
+        segments.length === 4 &&
+        segments[0] === "dashboard" &&
+        segments[1] === "partners" &&
+        segments[2] === "active";
+
+      if (!isPartnerRequestDetail && !isActivePartnerDetail) {
+        setDetailLabel(null);
+        return;
+      }
+
+      try {
+        if (isPartnerRequestDetail) {
+          const result = await fetchPartnerRequestById(segments[3]);
+          if (!ignore) {
+            setDetailLabel(result.data.requestCode || "Chi tiết hồ sơ");
+          }
+          return;
+        }
+
+        const result = await fetchServicePartnerById(segments[3]);
+        if (!ignore) {
+          setDetailLabel(
+            result.data.servicePartnerName ||
+            result.data.companyName ||
+            "Chi tiết đối tác",
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setDetailLabel(null);
+        }
+      }
+    }
+
+    loadDetailLabel();
+    return () => {
+      ignore = true;
+    };
+  }, [segments]);
 
   if (segments.length <= 1) return null;
 
-  const crumbs = segments.map((seg, i) => ({
-    label: LABELS[seg] ?? seg,
-    href: "/" + segments.slice(0, i + 1).join("/"),
-  }));
+  const crumbs = segments.map((seg, i) => {
+    const isPartnerRequestDetail =
+      i === segments.length - 1 &&
+      segments.length === 4 &&
+      segments[0] === "dashboard" &&
+      segments[1] === "partners" &&
+      segments[2] === "requests";
+
+    const isActivePartnerDetail =
+      i === segments.length - 1 &&
+      segments.length === 4 &&
+      segments[0] === "dashboard" &&
+      segments[1] === "partners" &&
+      segments[2] === "active";
+
+    return {
+      label:
+        isPartnerRequestDetail || isActivePartnerDetail
+          ? detailLabel || (isPartnerRequestDetail ? "Chi tiết hồ sơ" : "Chi tiết đối tác")
+          : (LABELS[seg] ?? seg),
+      href: "/" + segments.slice(0, i + 1).join("/"),
+    };
+  });
 
   return (
     <Breadcrumb>
@@ -81,7 +154,6 @@ export function DashboardShell({ children, role, email }: DashboardShellProps) {
     <SidebarProvider>
       <AppSidebar role={role} email={email} />
       <SidebarInset>
-        {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-border bg-card/80 backdrop-blur-md">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
@@ -93,7 +165,6 @@ export function DashboardShell({ children, role, email }: DashboardShellProps) {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
             {children}

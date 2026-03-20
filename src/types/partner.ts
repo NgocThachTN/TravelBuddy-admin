@@ -26,11 +26,18 @@ export interface PartnerRequestDetail {
   partnerPhone?: string;
   partnerEmail?: string;
   companyName?: string;
+  taxId?: string;
   servicePartnerName?: string;
   servicePartnerDescription?: string;
+  vehicleServiceScope?: string;
   servicePartnerStatus?: string;
   addressId?: string;
+  provinceCode?: number;
+  districtCode?: number;
   wardCode?: number;
+  wardName?: string;
+  districtName?: string;
+  provinceName?: string;
   addressLine1?: string;
   addressLine2?: string;
   postalCode?: string;
@@ -38,6 +45,7 @@ export interface PartnerRequestDetail {
   addressLng?: number;
   contactName?: string;
   contactPhone?: string;
+  identifyCardUrl?: string;
   licenseFileUrl?: string;
 }
 
@@ -94,7 +102,12 @@ export interface ServicePartnerDetail {
   verifiedAt?: string;
   verificationSummary?: string;
   addressId?: string;
+  provinceCode?: number;
+  districtCode?: number;
   wardCode?: number;
+  wardName?: string;
+  districtName?: string;
+  provinceName?: string;
   addressLine1?: string;
   addressLine2?: string;
   postalCode?: string;
