@@ -12,6 +12,14 @@ import {
 import type { ServicePartnerListItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,6 +34,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+function getVisiblePages(currentPage: number, totalPages: number) {
+  const pages = new Set<number>([
+    1,
+    totalPages,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+  ]);
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+}
 
 interface ServicePartnersTableProps {
   compact?: boolean;
@@ -63,7 +85,9 @@ export default function ServicePartnersTable({
       } catch (err) {
         if (ignore) return;
         setError(
-          err instanceof Error ? err.message : "Không thể tải danh sách đối tác dịch vụ",
+          err instanceof Error
+            ? err.message
+            : "Không thể tải danh sách đối tác dịch vụ.",
         );
       } finally {
         if (!ignore) {
@@ -81,6 +105,11 @@ export default function ServicePartnersTable({
   useEffect(() => {
     setPage(1);
   }, [statusFilter]);
+
+  const visiblePages = useMemo(
+    () => getVisiblePages(page, totalPages),
+    [page, totalPages],
+  );
 
   const stateView = useMemo(() => {
     if (loading) {
@@ -115,7 +144,7 @@ export default function ServicePartnersTable({
             setStatusFilter(value === "all" ? undefined : value)
           }
         >
-          <SelectTrigger className="w-full sm:w-[220px]">
+          <SelectTrigger className="w-full sm:w-[240px]">
             <SelectValue placeholder="Lọc theo trạng thái" />
           </SelectTrigger>
           <SelectContent>
@@ -125,32 +154,39 @@ export default function ServicePartnersTable({
             <SelectItem value="Suspended">Tạm khóa</SelectItem>
           </SelectContent>
         </Select>
-        {compact && (
-          <Button
-            variant="outline"
-            onClick={() => router.push(ROUTES.ACTIVE_PARTNERS)}
-          >
-            Xem tất cả
-          </Button>
-        )}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="overflow-hidden rounded-lg border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Đối tác dịch vụ</TableHead>
-              <TableHead>Chủ đối tác</TableHead>
-              <TableHead>Công ty</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Ngày xác minh</TableHead>
-              <TableHead className="text-right">Chi tiết</TableHead>
+          <TableHeader className="bg-[#ffcd38]">
+            <TableRow className="hover:bg-[#ffcd38]">
+              <TableHead className="font-semibold text-slate-800">
+                Đối tác dịch vụ
+              </TableHead>
+              <TableHead className="font-semibold text-slate-800">
+                Chủ đối tác
+              </TableHead>
+              <TableHead className="font-semibold text-slate-800">
+                Công ty
+              </TableHead>
+              <TableHead className="font-semibold text-slate-800">
+                Trạng thái
+              </TableHead>
+              <TableHead className="font-semibold text-slate-800">
+                Ngày xác minh
+              </TableHead>
+              <TableHead className="text-right font-semibold text-slate-800">
+                Chi tiết
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   Không có đối tác dịch vụ nào.
                 </TableCell>
               </TableRow>
@@ -167,7 +203,10 @@ export default function ServicePartnersTable({
                   </TableCell>
                   <TableCell>{partner.companyName || "-"}</TableCell>
                   <TableCell>
-                    {renderStatusBadge(partner.servicePartnerStatus, getServicePartnerStatusMeta)}
+                    {renderStatusBadge(
+                      partner.servicePartnerStatus,
+                      getServicePartnerStatusMeta,
+                    )}
                   </TableCell>
                   <TableCell>
                     {partner.verifiedAt
@@ -180,7 +219,9 @@ export default function ServicePartnersTable({
                       size="sm"
                       onClick={() =>
                         router.push(
-                          ROUTES.ACTIVE_PARTNERS_DETAIL(partner.servicePartnerId),
+                          ROUTES.ACTIVE_PARTNERS_DETAIL(
+                            partner.servicePartnerId,
+                          ),
                         )
                       }
                     >
@@ -195,33 +236,51 @@ export default function ServicePartnersTable({
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Trang {page} / {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
-            >
-              Sau
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Trang {page} / {totalPages}
+        </p>
+        <Pagination className="mx-0 w-auto justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage((current) => Math.max(1, current - 1));
+                }}
+                className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            {visiblePages.map((pageNumber) => (
+              <PaginationItem key={pageNumber}>
+                <PaginationLink
+                  href="#"
+                  isActive={pageNumber === page}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setPage(pageNumber);
+                  }}
+                >
+                  {pageNumber}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage((current) => Math.min(totalPages, current + 1));
+                }}
+                className={
+                  page >= totalPages ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
