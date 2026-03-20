@@ -157,8 +157,8 @@ export default function PartnerRequestsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Mã request</TableHead>
-              <TableHead>Đối tác</TableHead>
+              <TableHead>Mã hồ sơ</TableHead>
+              <TableHead>Chủ đối tác</TableHead>
               <TableHead>Công ty</TableHead>
               <TableHead>Số điện thoại</TableHead>
               <TableHead>Trạng thái</TableHead>
