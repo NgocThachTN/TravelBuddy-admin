@@ -60,6 +60,12 @@ const PAGE_SIZE = 20;
 type RoleFilter = "all" | "Traveler" | "ServicePartner" | "Moderator" | "Admin";
 type StatusFilter = "all" | "active" | "locked";
 
+interface UserTableProps {
+  fixedRole?: Exclude<RoleFilter, "all">;
+  hideRoleFilter?: boolean;
+  totalLabel?: string;
+}
+
 /* ── Avatar / name helpers ── */
 const avatarColors = [
   "bg-blue-100 text-blue-700",
@@ -102,10 +108,6 @@ interface LockDialogProps {
 function LockDialog({ user, onClose, onConfirm, loading }: LockDialogProps) {
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    if (user) setReason("");
-  }, [user]);
-
   async function handleConfirm() {
     if (!reason.trim()) return;
     await onConfirm(reason.trim());
@@ -113,7 +115,7 @@ function LockDialog({ user, onClose, onConfirm, loading }: LockDialogProps) {
 
   return (
     <Dialog open={!!user} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent>
+      <DialogContent key={user?.userId ?? "lock-dialog"}>
         <DialogHeader>
           <DialogTitle>Khoá tài khoản</DialogTitle>
           <DialogDescription>
@@ -152,7 +154,11 @@ function LockDialog({ user, onClose, onConfirm, loading }: LockDialogProps) {
 }
 
 /* ── Main Component ── */
-export default function UserTable() {
+export default function UserTable({
+  fixedRole,
+  hideRoleFilter = false,
+  totalLabel = "người dùng",
+}: UserTableProps) {
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -160,7 +166,7 @@ export default function UserTable() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>(fixedRole ?? "all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
 
@@ -173,6 +179,12 @@ export default function UserTable() {
     searchDebounceRef.current = setTimeout(() => setDebouncedSearch(search), 400);
     return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
   }, [search]);
+
+  useEffect(() => {
+    if (fixedRole) {
+      setRoleFilter(fixedRole);
+    }
+  }, [fixedRole]);
 
   // Reset page when filters change
   useEffect(() => { setPage(1); }, [debouncedSearch, roleFilter, statusFilter]);
@@ -189,7 +201,11 @@ export default function UserTable() {
         pageSize: PAGE_SIZE,
       };
       if (debouncedSearch) params.search = debouncedSearch;
-      if (roleFilter !== "all") params.role = roleFilter;
+      if (fixedRole) {
+        params.role = fixedRole;
+      } else if (roleFilter !== "all") {
+        params.role = roleFilter;
+      }
       if (statusFilter !== "all") params.isLocked = statusFilter === "locked";
 
       const result = await fetchUsers(params);
@@ -202,7 +218,7 @@ export default function UserTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, roleFilter, statusFilter]);
+  }, [debouncedSearch, fixedRole, page, roleFilter, statusFilter]);
 
   useEffect(() => { loadUsers(page); }, [loadUsers, page]);
 
@@ -315,22 +331,23 @@ export default function UserTable() {
             ))}
           </div>
 
-          {/* Role Filter */}
-          <Select
-            value={roleFilter}
-            onValueChange={(v) => setRoleFilter(v as RoleFilter)}
-          >
-            <SelectTrigger className="h-9 w-[150px]">
-              <SelectValue placeholder="Vai trò" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Mọi vai trò</SelectItem>
-              <SelectItem value="Traveler">Du khách</SelectItem>
-              <SelectItem value="ServicePartner">Đối tác</SelectItem>
-              <SelectItem value="Moderator">Điều phối viên</SelectItem>
-              <SelectItem value="Admin">Quản trị viên</SelectItem>
-            </SelectContent>
-          </Select>
+          {!hideRoleFilter && (
+            <Select
+              value={roleFilter}
+              onValueChange={(v) => setRoleFilter(v as RoleFilter)}
+            >
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue placeholder="Vai trò" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Mọi vai trò</SelectItem>
+                <SelectItem value="Traveler">Du khách</SelectItem>
+                <SelectItem value="ServicePartner">Đối tác</SelectItem>
+                <SelectItem value="Moderator">Điều phối viên</SelectItem>
+                <SelectItem value="Admin">Quản trị viên</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           <Button
             variant="outline"
@@ -347,7 +364,7 @@ export default function UserTable() {
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            Tổng cộng <span className="font-semibold text-foreground">{totalCount}</span> người dùng
+            Tổng cộng <span className="font-semibold text-foreground">{totalCount}</span> {totalLabel}
           </span>
         </div>
 

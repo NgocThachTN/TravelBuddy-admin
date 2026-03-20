@@ -101,7 +101,11 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   const displayName = getDisplayName(user);
   const createdDate = new Date(user.createdAt);
-  const daysSince = Math.floor((Date.now() - createdDate.getTime()) / 86_400_000);
+  const memberSince = createdDate.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6">
@@ -169,8 +173,8 @@ export default async function UserDetailPage({ params }: PageProps) {
                 <p className="text-[11px] font-medium text-muted-foreground">Liên kết</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-xl font-bold">{daysSince}</p>
-                <p className="text-[11px] font-medium text-muted-foreground">Ngày hoạt động</p>
+                <p className="text-sm font-bold">{memberSince}</p>
+                <p className="text-[11px] font-medium text-muted-foreground">Ngày tham gia</p>
               </div>
             </div>
 

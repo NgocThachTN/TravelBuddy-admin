@@ -3,7 +3,6 @@
 import { useTransition } from "react";
 import { logoutAction } from "@/server/auth/actions";
 import type { Role } from "@/types";
-import { ROLE_LABELS } from "@/lib/rbac";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -39,7 +38,7 @@ export default function Navbar({ email, role }: NavbarProps) {
     });
   }
 
-  const roleLabel = ROLE_LABELS[role];
+  const roleLabel = role === "MODERATOR" ? "Kiểm duyệt viên" : "Quản trị viên";
   const isAdmin = role === "ADMIN";
 
   return (

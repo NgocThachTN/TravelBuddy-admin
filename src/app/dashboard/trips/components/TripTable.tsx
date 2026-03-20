@@ -1,43 +1,28 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { fetchTrips, deleteTrip } from "@/lib/api";
+import {
+  Eye,
+  Filter,
+  Map,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { deleteTrip, fetchTrips } from "@/lib/api";
 import { extractApiError } from "@/lib/api-error";
-import type { TripListItem, GetTripsParams } from "@/types";
-import { TRIP_STATUS_CODES, tripStatusLabel } from "@/types";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import type { GetTripsParams, Role, TripListItem } from "@/types";
+import { TRIP_STATUS_CODES, tripStatusLabel } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Search,
-  Filter,
-  RefreshCw,
-  Eye,
-  Map,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,15 +42,21 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import PaginationControl from "@/components/pagination-control";
 
 const PAGE_SIZE = 15;
-
-// ── Status badge styles ──
 
 const STATUS_STYLES: Record<string, string> = {
   Draft: "bg-gray-100 text-gray-700 border-gray-200",
@@ -81,14 +72,6 @@ const STATUS_STYLES: Record<string, string> = {
   InReview: "bg-yellow-100 text-yellow-700 border-yellow-200",
 };
 
-function getStatusStyle(status: number | string | null | undefined) {
-  if (status === null || status === undefined) return "bg-gray-100 text-gray-500";
-  const code = typeof status === "number" ? TRIP_STATUS_CODES[status] : status;
-  return (code && STATUS_STYLES[code]) || "bg-gray-100 text-gray-500";
-}
-
-// ── Helper functions ──
-
 const avatarColors = [
   "bg-blue-100 text-blue-700",
   "bg-purple-100 text-purple-700",
@@ -96,6 +79,12 @@ const avatarColors = [
   "bg-amber-100 text-amber-700",
   "bg-rose-100 text-rose-700",
 ];
+
+function getStatusStyle(status: number | string | null | undefined) {
+  if (status === null || status === undefined) return "bg-gray-100 text-gray-500";
+  const code = typeof status === "number" ? TRIP_STATUS_CODES[status] : status;
+  return (code && STATUS_STYLES[code]) || "bg-gray-100 text-gray-500";
+}
 
 function getAvatarColor(seed: string) {
   let hash = 0;
@@ -106,9 +95,7 @@ function getAvatarColor(seed: string) {
 }
 
 function getOwnerName(trip: TripListItem) {
-  const first = trip.ownerFirstName?.trim();
-  const last = trip.ownerLastName?.trim();
-  const full = [first, last].filter(Boolean).join(" ");
+  const full = [trip.ownerFirstName, trip.ownerLastName].filter(Boolean).join(" ").trim();
   return full || "(Chưa đặt tên)";
 }
 
@@ -129,24 +116,22 @@ function formatDate(dateStr: string | null) {
   });
 }
 
-// ── Main component ──
+interface TripTableProps {
+  role: Role;
+}
 
-export default function TripTable() {
+export default function TripTable({ role }: TripTableProps) {
+  const canDeleteTrip = role === "ADMIN";
   const [trips, setTrips] = useState<TripListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-
-  // Delete trip state
   const [confirmTrip, setConfirmTrip] = useState<TripListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  // Debounce search
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -158,16 +143,15 @@ export default function TripTable() {
     };
   }, [search]);
 
-  // Reset page when search changes
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
 
-  const loadTrips = useCallback(async (p = page) => {
+  const loadTrips = useCallback(async (currentPage = page) => {
     try {
       setLoading(true);
       const params: GetTripsParams = {
-        pageNumber: p,
+        pageNumber: currentPage,
         pageSize: PAGE_SIZE,
         sortBy: "createdAt",
         sortDirection: "desc",
@@ -191,22 +175,21 @@ export default function TripTable() {
   }, [loadTrips, page]);
 
   async function handleDeleteConfirm() {
-    if (!confirmTrip) return;
+    if (!confirmTrip || !canDeleteTrip) return;
     setDeleting(true);
     try {
       await deleteTrip(confirmTrip.tripId);
       setConfirmTrip(null);
-      loadTrips(page);
+      await loadTrips(page);
     } catch (err) {
-      const e = extractApiError(err, "Không thể xoá chuyến đi");
-      setDeleteError(e.message);
+      const apiError = extractApiError(err, "Không thể xoá chuyến đi");
+      setDeleteError(apiError.message);
       setConfirmTrip(null);
     } finally {
       setDeleting(false);
     }
   }
 
-  // ── Loading skeleton ──
   if (loading && trips.length === 0) {
     return (
       <Card>
@@ -215,8 +198,8 @@ export default function TripTable() {
           <Skeleton className="h-9 w-32" />
         </div>
         <CardContent className="p-0">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0">
               <Skeleton className="h-10 w-16 rounded-md" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
@@ -231,7 +214,6 @@ export default function TripTable() {
     );
   }
 
-  // ── Error state ──
   if (error) {
     return (
       <Card className="border-destructive/20 bg-destructive/5">
@@ -251,22 +233,21 @@ export default function TripTable() {
 
   return (
     <Card className="overflow-hidden">
-      {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-3 border-b p-4">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Tìm chuyến đi theo tên…"
+            placeholder="Tìm chuyến đi theo tên..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 pl-9 bg-background"
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-9 bg-background pl-9"
           />
         </div>
 
         <Button
           variant="outline"
           size="icon"
-          className="shrink-0 h-9 w-9"
+          className="h-9 w-9 shrink-0"
           onClick={() => loadTrips(page)}
           disabled={loading}
         >
@@ -274,7 +255,6 @@ export default function TripTable() {
         </Button>
       </div>
 
-      {/* ── Count bar ── */}
       <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
         <Filter className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs text-muted-foreground">
@@ -282,7 +262,6 @@ export default function TripTable() {
         </span>
       </div>
 
-      {/* ── Table ── */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -303,18 +282,16 @@ export default function TripTable() {
                 </div>
                 <p className="text-sm font-medium">Không tìm thấy chuyến đi</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Hãy thử thay đổi từ khóa tìm kiếm
+                  Hãy thử thay đổi từ khoá tìm kiếm
                 </p>
               </TableCell>
             </TableRow>
           ) : (
             trips.map((trip) => (
               <TableRow key={trip.tripId} className="group">
-                {/* Trip name + cover */}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {trip.coverImageUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={trip.coverImageUrl}
                         alt={trip.title || ""}
@@ -326,19 +303,18 @@ export default function TripTable() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium max-w-[200px]">
+                      <p className="max-w-[200px] truncate text-sm font-medium">
                         {trip.title || "(Chưa đặt tên)"}
                       </p>
                       {trip.tripTypeCategories.length > 0 && (
-                        <p className="truncate text-xs text-muted-foreground max-w-[200px]">
-                          {trip.tripTypeCategories.map((c) => c.name).filter(Boolean).join(", ")}
+                        <p className="max-w-[200px] truncate text-xs text-muted-foreground">
+                          {trip.tripTypeCategories.map((item) => item.name).filter(Boolean).join(", ")}
                         </p>
                       )}
                     </div>
                   </div>
                 </TableCell>
 
-                {/* Owner */}
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-7 w-7">
@@ -351,30 +327,26 @@ export default function TripTable() {
                         {getOwnerInitials(trip)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+                    <span className="max-w-[120px] truncate text-sm text-muted-foreground">
                       {getOwnerName(trip)}
                     </span>
                   </div>
                 </TableCell>
 
-                {/* Start date */}
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(trip.startTime)}
                 </TableCell>
 
-                {/* Participant count */}
                 <TableCell className="text-sm text-muted-foreground">
                   {trip.maxParticipants ? `— / ${trip.maxParticipants}` : "—"}
                 </TableCell>
 
-                {/* Status */}
                 <TableCell>
                   <Badge variant="outline" className={cn("text-[11px]", getStatusStyle(trip.currentStatus))}>
                     {tripStatusLabel(trip.currentStatus)}
                   </Badge>
                 </TableCell>
 
-                {/* Actions */}
                 <TableCell>
                   <div className="flex items-center justify-center">
                     <DropdownMenu>
@@ -385,18 +357,20 @@ export default function TripTable() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`${ROUTES.TRIPS}/${trip.tripId}`} className="flex items-center gap-2 cursor-pointer">
+                          <Link href={`${ROUTES.TRIPS}/${trip.tripId}`} className="flex cursor-pointer items-center gap-2">
                             <Eye className="h-4 w-4" />
                             Xem chi tiết
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
-                          onClick={() => setConfirmTrip(trip)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Xoá trip
-                        </DropdownMenuItem>
+                        {canDeleteTrip && (
+                          <DropdownMenuItem
+                            className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
+                            onClick={() => setConfirmTrip(trip)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Xoá trip
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -407,19 +381,13 @@ export default function TripTable() {
         </TableBody>
       </Table>
 
-      {/* ── Pagination ── */}
       {totalPages > 1 && (
         <div className="border-t p-4">
-          <PaginationControl
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
+          <PaginationControl currentPage={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 
-      {/* ── Confirm delete dialog ── */}
-      <AlertDialog open={!!confirmTrip} onOpenChange={(open) => { if (!open) setConfirmTrip(null); }}>
+      <AlertDialog open={canDeleteTrip && !!confirmTrip} onOpenChange={(open) => { if (!open) setConfirmTrip(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xoá chuyến đi</AlertDialogTitle>
@@ -436,13 +404,12 @@ export default function TripTable() {
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? "Đang xoá…" : "Xoá"}
+              {deleting ? "Đang xoá..." : "Xoá"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Delete error popup ── */}
       <Dialog open={!!deleteError} onOpenChange={(open) => { if (!open) setDeleteError(null); }}>
         <DialogContent>
           <DialogHeader>

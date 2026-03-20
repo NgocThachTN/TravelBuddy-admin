@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
   fetchModerationReports,
@@ -79,6 +80,15 @@ import PaginationControl from "@/components/pagination-control";
 import ReportDetailDialog from "../../reports/components/ReportDetailDialog";
 
 const PAGE_SIZE = 15;
+const MODERATION_TARGET_TYPES = [
+  "Trip",
+  "Post",
+  "PostComment",
+  "RescueRequest",
+  "RescueRequestMessage",
+  "TripMessage",
+  "SocialCheckpoint",
+] as const;
 
 type StatusFilter = "all" | "Pending" | "Reviewing" | "Resolved" | "Rejected" | "Duplicate";
 type TargetTypeFilter = "all" | string;
@@ -314,6 +324,7 @@ function ProcessForm({
 
 /* ── Main Moderation Report Table ── */
 export default function ModerationReportTable() {
+  const searchParams = useSearchParams();
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -328,6 +339,21 @@ export default function ModerationReportTable() {
   // Debounce
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const targetTypeFromQuery = searchParams.get("targetType");
+
+  useEffect(() => {
+    if (
+      targetTypeFromQuery &&
+      MODERATION_TARGET_TYPES.includes(
+        targetTypeFromQuery as (typeof MODERATION_TARGET_TYPES)[number],
+      )
+    ) {
+      setTargetTypeFilter(targetTypeFromQuery);
+      return;
+    }
+
+    setTargetTypeFilter("all");
+  }, [targetTypeFromQuery]);
 
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
@@ -491,7 +517,7 @@ export default function ModerationReportTable() {
               <SelectItem value="TripMessage">Tin nhắn chuyến đi</SelectItem>
               <SelectItem value="RescueRequest">Yêu cầu cứu hộ</SelectItem>
               <SelectItem value="RescueRequestMessage">Tin nhắn cứu hộ</SelectItem>
-              <SelectItem value="SocialCheckpoint">Checkpoint</SelectItem>
+              <SelectItem value="SocialCheckpoint">Checkpoint xÃ£ há»™i</SelectItem>
             </SelectContent>
           </Select>
 

@@ -4,6 +4,7 @@ export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
   USERS: "/dashboard/users",
+  USERS_MODERATORS: "/dashboard/users/moderators",
   TRIPS: "/dashboard/trips",
   PARTNERS: "/dashboard/partners",
   PARTNER_REQUESTS: "/dashboard/partners/requests",
@@ -13,9 +14,15 @@ export const ROUTES = {
   PARTNER_FEES: "/dashboard/partners/fees",
   MODERATION: "/dashboard/moderation",
   MODERATION_REPORTS: "/dashboard/moderation-reports",
+  MODERATION_REPORTS_BY_TYPE: (targetType?: string) =>
+    targetType
+      ? `/dashboard/moderation-reports?targetType=${encodeURIComponent(targetType)}`
+      : "/dashboard/moderation-reports",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
+  SUBSCRIPTIONS_PARTNERS: "/dashboard/subscriptions/partners",
+  SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
   CATEGORIES: "/dashboard/categories",
   SUPPORT: "/dashboard/support",
   AUDIT_LOGS: "/dashboard/audit-logs",

@@ -3,10 +3,12 @@ import type { Role } from "./auth";
 
 export interface NavItem {
   label: string;
-  href: string;
+  href?: string;
   icon: LucideIcon;
   badge?: number;
   roles: Role[];
+  children?: NavItem[];
+  exact?: boolean;
 }
 
 export interface NavGroup {
