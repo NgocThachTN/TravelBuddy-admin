@@ -53,6 +53,7 @@ export interface GetPartnerRequestsParams {
   pageNumber?: number;
   pageSize?: number;
   registrationStatus?: string;
+  search?: string;
 }
 
 export interface ReviewPartnerRequestPayload {
@@ -121,6 +122,7 @@ export interface GetServicePartnersParams {
   pageNumber?: number;
   pageSize?: number;
   servicePartnerStatus?: string;
+  search?: string;
 }
 
 // Service Partner Fee DTOs

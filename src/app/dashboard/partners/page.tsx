@@ -1,10 +1,21 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerRequestsTable from "./components/PartnerRequestsTable";
 import ServicePartnersTable from "./components/ServicePartnersTable";
 
 export default function PartnersPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") === "active" ? "active" : "requests";
+
+  function handleTabChange(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    router.replace(`/dashboard/partners?${params.toString()}`);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,7 +28,7 @@ export default function PartnersPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="requests" className="space-y-5">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
         <TabsList className="h-auto w-full max-w-[460px] gap-3 bg-transparent p-0">
           <TabsTrigger
             value="requests"

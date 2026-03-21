@@ -40,23 +40,21 @@ function DashboardBreadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
   const [detailLabel, setDetailLabel] = useState<string | null>(null);
+  const isPartnerRequestDetail =
+    segments.length === 4 &&
+    segments[0] === "dashboard" &&
+    segments[1] === "partners" &&
+    segments[2] === "requests";
+  const isActivePartnerDetail =
+    segments.length === 4 &&
+    segments[0] === "dashboard" &&
+    segments[1] === "partners" &&
+    segments[2] === "active";
 
   useEffect(() => {
     let ignore = false;
 
     async function loadDetailLabel() {
-      const isPartnerRequestDetail =
-        segments.length === 4 &&
-        segments[0] === "dashboard" &&
-        segments[1] === "partners" &&
-        segments[2] === "requests";
-
-      const isActivePartnerDetail =
-        segments.length === 4 &&
-        segments[0] === "dashboard" &&
-        segments[1] === "partners" &&
-        segments[2] === "active";
-
       if (!isPartnerRequestDetail && !isActivePartnerDetail) {
         setDetailLabel(null);
         return;
@@ -75,8 +73,8 @@ function DashboardBreadcrumb() {
         if (!ignore) {
           setDetailLabel(
             result.data.servicePartnerName ||
-            result.data.companyName ||
-            "Chi tiết đối tác",
+              result.data.companyName ||
+              "Chi tiết đối tác",
           );
         }
       } catch {
@@ -90,31 +88,30 @@ function DashboardBreadcrumb() {
     return () => {
       ignore = true;
     };
-  }, [segments]);
+  }, [isActivePartnerDetail, isPartnerRequestDetail, segments]);
 
   if (segments.length <= 1) return null;
 
-  const crumbs = segments.map((seg, i) => {
-    const isPartnerRequestDetail =
-      i === segments.length - 1 &&
-      segments.length === 4 &&
-      segments[0] === "dashboard" &&
-      segments[1] === "partners" &&
-      segments[2] === "requests";
+  const visibleSegments =
+    isPartnerRequestDetail || isActivePartnerDetail
+      ? [segments[0], segments[1], segments[3]]
+      : segments;
 
-    const isActivePartnerDetail =
-      i === segments.length - 1 &&
-      segments.length === 4 &&
-      segments[0] === "dashboard" &&
-      segments[1] === "partners" &&
-      segments[2] === "active";
+  const crumbs = visibleSegments.map((seg, i) => {
+    const isPartnerDetailLastCrumb =
+      i === visibleSegments.length - 1 &&
+      (isPartnerRequestDetail || isActivePartnerDetail);
 
     return {
-      label:
-        isPartnerRequestDetail || isActivePartnerDetail
-          ? detailLabel || (isPartnerRequestDetail ? "Chi tiết hồ sơ" : "Chi tiết đối tác")
-          : (LABELS[seg] ?? seg),
-      href: "/" + segments.slice(0, i + 1).join("/"),
+      label: isPartnerDetailLastCrumb
+        ? detailLabel ||
+          (isPartnerRequestDetail
+            ? "Chi tiết hồ sơ"
+            : "Chi tiết đối tác")
+        : (LABELS[seg] ?? seg),
+      href: isPartnerDetailLastCrumb
+        ? pathname
+        : "/" + visibleSegments.slice(0, i + 1).join("/"),
     };
   });
 
