@@ -167,6 +167,12 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  {
+    label: "C\u00e0i \u0111\u1eb7t",
+    href: ROUTES.SETTINGS,
+    icon: Settings,
+    roles: ["MODERATOR"],
+  },
 ];
 
 const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {

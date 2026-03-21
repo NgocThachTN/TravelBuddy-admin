@@ -3,6 +3,7 @@ import { Package } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SubscriptionTable from "./SubscriptionTable";
+import ServicePartnerFeeTable from "./ServicePartnerFeeTable";
 
 interface SubscriptionManagementPageProps {
   currentTab: "partners" | "users";
@@ -51,7 +52,7 @@ export default function SubscriptionManagementPage({
         </TabsList>
       </Tabs>
 
-      <SubscriptionTable />
+      {currentTab === "partners" ? <ServicePartnerFeeTable /> : <SubscriptionTable />}
     </div>
   );
 }

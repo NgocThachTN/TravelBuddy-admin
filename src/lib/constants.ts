@@ -32,6 +32,8 @@ export const ROUTES = {
 export const API_ROUTES = {
   AUTH_LOGIN: "/api/auth/admin/login",
   AUTH_LOGOUT: "/api/auth/admin/logout",
+  AUTH_PROFILE: "/api/auth/profile",
+  AUTH_CHANGE_PASSWORD: "/api/auth/change-password",
   ADMIN_USERS: "/api/admin/users",
   /** Truyền userId vào: `${API_ROUTES.ADMIN_USERS}/${userId}` */
   ADMIN_USERS_DETAIL: (userId: string) => `/api/admin/users/${userId}`,
@@ -73,4 +75,8 @@ export const API_ROUTES = {
   ADMIN_SERVICE_PARTNER_FEES: "/api/v1/admin/service-partner-fees",
   ADMIN_SERVICE_PARTNER_FEES_DETAIL: (id: string) =>
     `/api/v1/admin/service-partner-fees/${id}`,
+  ADMIN_SERVICE_PARTNER_FEES_ACTIVATE: (id: string) =>
+    `/api/v1/admin/service-partner-fees/${id}/activate`,
+  ADMIN_SERVICE_PARTNER_FEES_DEACTIVATE: (id: string) =>
+    `/api/v1/admin/service-partner-fees/${id}/deactivate`,
 } as const;

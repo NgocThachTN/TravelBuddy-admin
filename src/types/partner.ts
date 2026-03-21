@@ -125,36 +125,38 @@ export interface GetServicePartnersParams {
 
 // Service Partner Fee DTOs
 export interface ServicePartnerFee {
-  id: string;
-  name: string;
-  description?: string;
-  feeType: string;
-  feeAmount: number;
-  feePercentage?: number;
+  servicePartnerFeeId: string;
+  definedByUserId?: string;
+  feeType?: "SubscriptionFee";
+  feeValue: number;
+  durationUnit?: "Month" | "Year";
+  durationValue: number;
+  note?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
 }
 
 export interface CreateServicePartnerFeePayload {
-  name: string;
-  description?: string;
-  feeType: string;
-  feeAmount?: number;
-  feePercentage?: number;
-  isActive: boolean;
+  feeType: "SubscriptionFee";
+  feeValue: number;
+  durationUnit: "Month" | "Year";
+  durationValue: number;
+  note?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateServicePartnerFeePayload {
-  name?: string;
-  description?: string;
-  feeType?: string;
-  feeAmount?: number;
-  feePercentage?: number;
+  feeType?: "SubscriptionFee";
+  feeValue?: number;
+  durationUnit?: "Month" | "Year";
+  durationValue?: number;
+  note?: string;
   isActive?: boolean;
 }
 
 export interface GetServicePartnerFeesParams {
   pageNumber?: number;
   pageSize?: number;
+  includeInactive?: boolean;
 }

@@ -114,6 +114,32 @@ export async function logoutAdmin(): Promise<void> {
   await api.post(API_ROUTES.AUTH_LOGOUT);
 }
 
+export async function getMyProfile(): Promise<BeWrapper<any>> {
+  const { data } = await api.get<BeWrapper<any>>(API_ROUTES.AUTH_PROFILE);
+  return data;
+}
+
+export async function updateMyProfile(payload: {
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  relativePhone?: string;
+}): Promise<BeWrapper<any>> {
+  const { data } = await api.put<BeWrapper<any>>(
+    API_ROUTES.AUTH_PROFILE,
+    payload,
+  );
+  return data;
+}
+
+export async function changePassword(payload: {
+  oldPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  await api.post(API_ROUTES.AUTH_CHANGE_PASSWORD, payload);
+}
+
 // ── Subscription API ─────────────────────────────────────────────────
 
 export async function fetchSubscriptionPackages(
@@ -469,4 +495,22 @@ export async function updateServicePartnerFee(
 
 export async function deleteServicePartnerFee(id: string): Promise<void> {
   await api.delete(API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_DETAIL(id));
+}
+
+export async function activateServicePartnerFee(
+  id: string,
+): Promise<BeWrapper<ServicePartnerFee>> {
+  const { data } = await api.patch<BeWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_ACTIVATE(id),
+  );
+  return data;
+}
+
+export async function deactivateServicePartnerFee(
+  id: string,
+): Promise<BeWrapper<ServicePartnerFee>> {
+  const { data } = await api.patch<BeWrapper<ServicePartnerFee>>(
+    API_ROUTES.ADMIN_SERVICE_PARTNER_FEES_DEACTIVATE(id),
+  );
+  return data;
 }
