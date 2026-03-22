@@ -102,6 +102,43 @@ const SCAN_STATUS_STYLES: Record<string, string> = {
   NotScanned: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
+const AI_DECISION_CODE_BY_INDEX = ["VIOLATION", "INCORRECT", "SUSPICIOUS", "IRRELEVANT", "SPAM"] as const;
+
+const AI_DECISION_LABELS_VI: Record<string, string> = {
+  VIOLATION: "Vi phạm",
+  INCORRECT: "Sai/không chính xác",
+  SUSPICIOUS: "Đáng ngờ",
+  IRRELEVANT: "Không liên quan",
+  SPAM: "Rác/SPAM",
+  APPROVE: "An toàn",
+  REJECT: "Vi phạm nặng",
+  NEEDS_MANUAL_REVIEW: "Cần duyệt thủ công",
+};
+
+const FINDING_FIELD_LABELS_VI: Record<string, string> = {
+  title: "Tiêu đề",
+  description: "Mô tả",
+  rule: "Quy định",
+  checkpoints: "Lộ trình checkpoint",
+  backTime: "Thời gian quay về",
+  endTime: "Thời gian kết thúc",
+  itemRequired: "Vật dụng cần mang",
+};
+
+const FINDING_SEVERITY_LABELS_VI: Record<string, string> = {
+  HIGH: "Cao",
+  MEDIUM: "Trung bình",
+  LOW: "Thấp",
+};
+
+const FINDING_SEVERITY_ORDER: Record<string, number> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
+type AiRiskLevel = "critical" | "warning" | "safe" | "unknown";
+
 const AVATAR_COLORS = [
   "bg-blue-100 text-blue-700",
   "bg-purple-100 text-purple-700",
@@ -218,6 +255,157 @@ function findingSeverityStyle(severity: string | null | undefined) {
   if (normalized === "medium") return "bg-amber-100 text-amber-700 border-amber-200";
   if (normalized === "low") return "bg-sky-100 text-sky-700 border-sky-200";
   return "bg-gray-100 text-gray-600 border-gray-200";
+}
+
+function normalizeAiDecisionCode(value: string | null | undefined) {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^\d+$/.test(trimmed)) {
+    const index = Number(trimmed);
+    return AI_DECISION_CODE_BY_INDEX[index] ?? trimmed;
+  }
+
+  return trimmed.toUpperCase();
+}
+
+function aiDecisionLabelVi(value: string | null | undefined) {
+  const code = normalizeAiDecisionCode(value);
+  if (!code) return "Không rõ";
+  return AI_DECISION_LABELS_VI[code] ?? code;
+}
+
+function aiDecisionStyle(value: string | null | undefined) {
+  const code = normalizeAiDecisionCode(value);
+  if (!code) return "bg-gray-100 text-gray-600 border-gray-200";
+  if (code === "SPAM" || code === "VIOLATION" || code === "REJECT") return "bg-red-100 text-red-700 border-red-200";
+  if (code === "INCORRECT" || code === "SUSPICIOUS" || code === "NEEDS_MANUAL_REVIEW") return "bg-amber-100 text-amber-700 border-amber-200";
+  if (code === "IRRELEVANT") return "bg-slate-100 text-slate-700 border-slate-200";
+  if (code === "APPROVE") return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  return "bg-gray-100 text-gray-600 border-gray-200";
+}
+
+function findingLabelVi(label: string | null | undefined) {
+  const code = normalizeAiDecisionCode(label);
+  if (!code) return "Không rõ nhãn";
+  return AI_DECISION_LABELS_VI[code] ?? code;
+}
+
+function findingFieldVi(field: string | null | undefined) {
+  if (!field) return "Không rõ trường";
+  return FINDING_FIELD_LABELS_VI[field] ?? field;
+}
+
+function findingSeverityVi(severity: string | null | undefined) {
+  if (!severity) return "Không rõ";
+  return FINDING_SEVERITY_LABELS_VI[severity.toUpperCase()] ?? severity;
+}
+
+function normalizeSeverity(severity: string | null | undefined) {
+  if (!severity) return null;
+  return severity.trim().toUpperCase();
+}
+
+function severityOrderValue(severity: string | null | undefined) {
+  const key = normalizeSeverity(severity);
+  return key ? FINDING_SEVERITY_ORDER[key] ?? 0 : 0;
+}
+
+function findFieldLabelFromCode(code: string | null | undefined) {
+  if (!code) return null;
+  const normalized = code.trim().toLowerCase();
+  return FINDING_FIELD_LABELS_VI[normalized] ?? null;
+}
+
+function parseAiLabelEntries(raw: string | null | undefined) {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [fieldPart, labelPart] = item.split(":");
+      const label = labelPart ? labelPart.trim() : fieldPart.trim();
+      const field = labelPart ? fieldPart.trim() : null;
+      return {
+        raw: item,
+        field,
+        label,
+      };
+    });
+}
+
+function normalizeAiConfidence(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  if (value <= 1) return Math.round(value * 100);
+  return Math.round(value);
+}
+
+function buildAiRiskLevel(
+  decision: string | null | undefined,
+  scanStatus: number | string | null | undefined,
+  findings: { severity: string | null }[],
+): AiRiskLevel {
+  const decisionCode = normalizeAiDecisionCode(decision);
+  const hasHigh = findings.some((x) => normalizeSeverity(x.severity) === "HIGH");
+  const hasMedium = findings.some((x) => normalizeSeverity(x.severity) === "MEDIUM");
+
+  if (decisionCode === "SPAM" || decisionCode === "VIOLATION" || decisionCode === "REJECT" || hasHigh) {
+    return "critical";
+  }
+  if (
+    decisionCode === "INCORRECT"
+    || decisionCode === "SUSPICIOUS"
+    || decisionCode === "NEEDS_MANUAL_REVIEW"
+    || hasMedium
+    || scanStatusLabel(scanStatus) === "Cảnh báo"
+  ) {
+    return "warning";
+  }
+  if (decisionCode === "APPROVE" || scanStatusLabel(scanStatus) === "Sạch") {
+    return "safe";
+  }
+  return "unknown";
+}
+
+function aiRiskLevelLabel(level: AiRiskLevel) {
+  if (level === "critical") return "Nguy cơ cao - cần kiểm tra kỹ trước khi duyệt";
+  if (level === "warning") return "Có dấu hiệu rủi ro - cần đối chiếu các mục bị gắn cờ";
+  if (level === "safe") return "Tương đối an toàn - vẫn cần kiểm tra nhanh trước khi duyệt";
+  return "Thiếu dữ liệu đánh giá - cần kiểm tra thủ công";
+}
+
+function aiRiskLevelStyle(level: AiRiskLevel) {
+  if (level === "critical") return "border-red-300 bg-red-50 text-red-900";
+  if (level === "warning") return "border-amber-300 bg-amber-50 text-amber-900";
+  if (level === "safe") return "border-emerald-300 bg-emerald-50 text-emerald-900";
+  return "border-slate-300 bg-slate-50 text-slate-900";
+}
+
+function summaryAccentStyle(level: AiRiskLevel) {
+  if (level === "critical") return "border-red-300 bg-red-50/70";
+  if (level === "warning") return "border-amber-300 bg-amber-50/70";
+  if (level === "safe") return "border-emerald-300 bg-emerald-50/70";
+  return "border-muted bg-muted/30";
+}
+
+function findingCardStyle(severity: string | null | undefined) {
+  const key = normalizeSeverity(severity);
+  if (key === "HIGH") return "border-red-300 bg-red-50/50";
+  if (key === "MEDIUM") return "border-amber-300 bg-amber-50/50";
+  if (key === "LOW") return "border-sky-300 bg-sky-50/40";
+  return "border-border bg-background";
+}
+
+function normalizeText(value: string | null | undefined) {
+  if (!value) return "";
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function isMeaningfullyDifferent(source: string | null | undefined, normalized: string | null | undefined) {
+  return normalizeText(source) !== normalizeText(normalized);
 }
 
 export default function TripModerationTaskTable() {
@@ -395,6 +583,66 @@ export default function TripModerationTaskTable() {
     () => Boolean(selectedTask && detailTrip && isTaskActionable(selectedTask.status)),
     [selectedTask, detailTrip],
   );
+
+  const aiConfidencePercent = useMemo(
+    () => normalizeAiConfidence(selectedTask?.aiConfidence),
+    [selectedTask?.aiConfidence],
+  );
+
+  const sortedFindings = useMemo(() => {
+    if (!selectedTask?.aiFindings?.length) return [];
+    return [...selectedTask.aiFindings].sort((a, b) => {
+      const severityCompare = severityOrderValue(b.severity) - severityOrderValue(a.severity);
+      if (severityCompare !== 0) return severityCompare;
+      return (a.field ?? "").localeCompare(b.field ?? "");
+    });
+  }, [selectedTask?.aiFindings]);
+
+  const findingsStats = useMemo(() => {
+    return sortedFindings.reduce(
+      (acc, finding) => {
+        const key = normalizeSeverity(finding.severity);
+        if (key === "HIGH") acc.high += 1;
+        else if (key === "MEDIUM") acc.medium += 1;
+        else if (key === "LOW") acc.low += 1;
+        else acc.unknown += 1;
+        return acc;
+      },
+      { high: 0, medium: 0, low: 0, unknown: 0 },
+    );
+  }, [sortedFindings]);
+
+  const topFindings = useMemo(
+    () => sortedFindings.slice(0, 4),
+    [sortedFindings],
+  );
+
+  const aiLabelEntries = useMemo(
+    () => parseAiLabelEntries(selectedTask?.aiLabels),
+    [selectedTask?.aiLabels],
+  );
+
+  const aiRiskLevel = useMemo(
+    () => buildAiRiskLevel(selectedTask?.aiDecision, selectedTask?.aiStatus, sortedFindings),
+    [selectedTask?.aiDecision, selectedTask?.aiStatus, sortedFindings],
+  );
+
+  const flaggedFieldNames = useMemo(() => {
+    const findingFields = sortedFindings
+      .map((x) => findingFieldVi(x.field))
+      .filter(Boolean);
+    const labelFields = aiLabelEntries
+      .map((x) => findFieldLabelFromCode(x.field))
+      .filter((x): x is string => Boolean(x));
+    return Array.from(new Set([...findingFields, ...labelFields])).slice(0, 6);
+  }, [sortedFindings, aiLabelEntries]);
+
+  const originalTripSnapshot = useMemo(() => ({
+    title: detailTrip?.title ?? selectedTask?.tripTitle ?? null,
+    description: detailTrip?.description ?? selectedTask?.tripDescription ?? null,
+    rule: detailTrip?.rule ?? selectedTask?.tripRule ?? null,
+    itemRequired: detailTrip?.itemRequired ?? selectedTask?.tripItemRequired ?? null,
+  }), [detailTrip, selectedTask]);
 
   if (loading && items.length === 0) {
     return (
@@ -876,33 +1124,181 @@ export default function TripModerationTaskTable() {
                 <Card>
                   <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Đánh giá AI</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    {selectedTask.aiSummary ? <p className="rounded-md bg-muted/30 p-3 text-sm">{selectedTask.aiSummary}</p> : <p className="text-sm text-muted-foreground">Không có tóm tắt từ AI.</p>}
+                    <div className={cn("rounded-md border p-3", aiRiskLevelStyle(aiRiskLevel))}>
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">{aiRiskLevelLabel(aiRiskLevel)}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="bg-background/70 text-[11px]">
+                              Kết luận: {aiDecisionLabelVi(selectedTask.aiDecision)}
+                            </Badge>
+                            <Badge variant="outline" className="bg-background/70 text-[11px]">
+                              Scan: {scanStatusLabel(selectedTask.aiStatus)}
+                            </Badge>
+                            {findingsStats.high > 0 && (
+                              <Badge variant="outline" className="border-red-300 bg-red-100 text-[11px] text-red-700">
+                                High {findingsStats.high}
+                              </Badge>
+                            )}
+                            {findingsStats.medium > 0 && (
+                              <Badge variant="outline" className="border-amber-300 bg-amber-100 text-[11px] text-amber-700">
+                                Medium {findingsStats.medium}
+                              </Badge>
+                            )}
+                            {findingsStats.low > 0 && (
+                              <Badge variant="outline" className="border-sky-300 bg-sky-100 text-[11px] text-sky-700">
+                                Low {findingsStats.low}
+                              </Badge>
+                            )}
+                          </div>
+                          {flaggedFieldNames.length > 0 && (
+                            <p className="text-xs">
+                              Trường cần tập trung: {flaggedFieldNames.join(", ")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                    {selectedTask.aiLabels && (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTask.aiLabels.split(",").map((x) => x.trim()).filter(Boolean).map((label) => (
-                          <Badge key={label} variant="outline" className="text-[11px]">{label}</Badge>
-                        ))}
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-md border bg-muted/20 p-2.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Kết luận AI</p>
+                        <Badge variant="outline" className={cn("mt-1 text-[11px]", aiDecisionStyle(selectedTask.aiDecision))}>
+                          {aiDecisionLabelVi(selectedTask.aiDecision)}
+                        </Badge>
+                      </div>
+                      <div className="rounded-md border bg-muted/20 p-2.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Độ tin cậy</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {aiConfidencePercent !== null ? `${aiConfidencePercent}%` : "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-md border bg-muted/20 p-2.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Tổng điểm cảnh báo</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {selectedTask.aiTotalScore !== null && selectedTask.aiTotalScore !== undefined
+                            ? selectedTask.aiTotalScore
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-md border bg-muted/20 p-2.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Scan status</p>
+                        <Badge variant="outline" className={cn("mt-1 text-[11px]", getScanStatusStyle(selectedTask.aiStatus))}>
+                          {scanStatusLabel(selectedTask.aiStatus)}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {selectedTask.aiSummary ? (
+                      <div className={cn("rounded-md border p-3 text-sm", summaryAccentStyle(aiRiskLevel))}>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tóm tắt từ n8n</p>
+                        <p>{selectedTask.aiSummary}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Không có tóm tắt từ AI.</p>
+                    )}
+
+                    {aiLabelEntries.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Nhãn cảnh báo từ hệ thống ({aiLabelEntries.length})
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {aiLabelEntries.map((entry) => (
+                            <Badge key={entry.raw} variant="outline" className="text-[11px]">
+                              {entry.field ? `${findingFieldVi(entry.field)}: ` : ""}
+                              {findingLabelVi(entry.label)}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
 
                     {selectedTask.scanErrorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">Lỗi scan: {selectedTask.scanErrorMessage}</p>}
 
+                    {selectedTask.safeNormalizedPreview && (
+                      <div className="space-y-2 rounded-md border border-sky-200 bg-sky-50/60 p-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-900">
+                          Nội dung chuẩn hóa từ n8n (để đối chiếu)
+                        </h4>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {[
+                            {
+                              key: "title",
+                              label: "Tiêu đề",
+                              source: originalTripSnapshot.title,
+                              normalized: selectedTask.safeNormalizedPreview.title,
+                            },
+                            {
+                              key: "description",
+                              label: "Mô tả",
+                              source: originalTripSnapshot.description,
+                              normalized: selectedTask.safeNormalizedPreview.description,
+                            },
+                            {
+                              key: "rule",
+                              label: "Quy định",
+                              source: originalTripSnapshot.rule,
+                              normalized: selectedTask.safeNormalizedPreview.rule,
+                            },
+                            {
+                              key: "itemRequired",
+                              label: "Vật dụng cần mang",
+                              source: originalTripSnapshot.itemRequired,
+                              normalized: selectedTask.safeNormalizedPreview.itemRequired,
+                            },
+                          ].map((item) => {
+                            const changed = isMeaningfullyDifferent(item.source, item.normalized);
+                            return (
+                              <div key={item.key} className="rounded-md border border-sky-200 bg-white/80 p-2.5">
+                                <div className="mb-1 flex items-center justify-between gap-2">
+                                  <p className="text-xs font-semibold text-sky-900">{item.label}</p>
+                                  {changed && (
+                                    <Badge variant="outline" className="border-amber-300 bg-amber-100 text-[10px] text-amber-800">
+                                      Khác bản gốc
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="line-clamp-3 whitespace-pre-wrap text-xs text-slate-700">
+                                  {item.normalized || "—"}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nhận định ({selectedTask.aiFindings.length})</h4>
-                      {selectedTask.aiFindings.length === 0 ? <p className="text-sm text-muted-foreground">Không có nhận định chi tiết.</p> : (
-                        <div className="space-y-2">
-                          {selectedTask.aiFindings.map((f, index) => (
-                            <div key={`${f.field}-${f.label}-${index}`} className="rounded-md border p-3">
+                      {sortedFindings.length === 0 ? (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                          Payload chưa có danh sách nhận định chi tiết. Hãy ưu tiên đối chiếu phần tóm tắt, nhãn cảnh báo và nội dung trip gốc.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {topFindings.map((f, index) => (
+                            <div key={`${f.field}-${f.label}-${index}`} className={cn("rounded-md border p-3", findingCardStyle(f.severity))}>
                               <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline" className="text-[11px]">{f.field || "không rõ trường"}</Badge>
-                                <Badge variant="outline" className="text-[11px]">{f.label || "không rõ nhãn"}</Badge>
-                                <Badge variant="outline" className={cn("text-[11px]", findingSeverityStyle(f.severity))}>{f.severity || "không rõ"}</Badge>
+                                <Badge variant="outline" className="text-[11px]">{findingFieldVi(f.field)}</Badge>
+                                <Badge variant="outline" className={cn("text-[11px]", aiDecisionStyle(f.label))}>{findingLabelVi(f.label)}</Badge>
+                                <Badge variant="outline" className={cn("text-[11px]", findingSeverityStyle(f.severity))}>{findingSeverityVi(f.severity)}</Badge>
                               </div>
                               <p className="mt-2 text-sm">{f.reason || "Không có lý do chi tiết."}</p>
-                              {f.evidence && <p className="mt-1 text-xs text-muted-foreground">Bằng chứng: {f.evidence}</p>}
+                              {f.evidence && (
+                                <div className="mt-2 rounded-md bg-muted/30 p-2">
+                                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Bằng chứng</p>
+                                  <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{f.evidence}</p>
+                                </div>
+                              )}
                             </div>
                           ))}
+                          {sortedFindings.length > topFindings.length && (
+                            <p className="text-xs text-muted-foreground">
+                              Còn {sortedFindings.length - topFindings.length} nhận định khác. Có thể mở rộng ở bản chi tiết sau nếu cần.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
