@@ -5,13 +5,18 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Calendar,
+  CarFront,
+  Clock3,
   Filter,
   Image as ImageIcon,
   MapPin,
+  Route,
   RefreshCw,
   Search,
   Shield,
+  Tag,
   Users,
+  Wallet,
 } from "lucide-react";
 import {
   fetchTripById,
@@ -66,6 +71,7 @@ import {
 } from "@/components/ui/table";
 import PaginationControl from "@/components/pagination-control";
 import TripCheckpointMap from "./TripCheckpointMap";
+import { checkpointLabelVi, checkpointMetaByType } from "./checkpoint-meta";
 
 const PAGE_SIZE = 15;
 
@@ -170,6 +176,20 @@ function formatScore(score: number | null) {
 function formatVnd(amount: number | null | undefined) {
   if (amount === null || amount === undefined) return "—";
   return `${amount.toLocaleString("vi-VN")} ₫`;
+}
+
+function formatDistance(distanceM: number | null | undefined) {
+  if (distanceM === null || distanceM === undefined || Number.isNaN(distanceM)) return "—";
+  return `${(distanceM / 1000).toFixed(1)} km`;
+}
+
+function formatDuration(durationS: number | null | undefined) {
+  if (durationS === null || durationS === undefined || Number.isNaN(durationS)) return "—";
+  const totalMinutes = Math.round(durationS / 60);
+  if (totalMinutes < 60) return `${totalMinutes} phút`;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return minute > 0 ? `${hour}h ${minute}p` : `${hour}h`;
 }
 
 function getAvatarColor(seed: string) {
@@ -299,7 +319,22 @@ export default function TripModerationTaskTable() {
   );
 
   const sortedCheckpoints = useMemo(
-    () => detailTrip?.checkpoints ? [...detailTrip.checkpoints].sort((a, b) => a.sequenceNo - b.sequenceNo) : [],
+    () => detailTrip?.checkpoints
+      ? [...detailTrip.checkpoints].sort((a, b) => {
+          if (a.sequenceNo !== b.sequenceNo) return a.sequenceNo - b.sequenceNo;
+          return checkpointMetaByType(a.tripCheckpointType).sortOrder - checkpointMetaByType(b.tripCheckpointType).sortOrder;
+        })
+      : [],
+    [detailTrip],
+  );
+
+  const tripLevelExpenses = useMemo(
+    () => (detailTrip?.expenseCategories ?? []).filter((expense) => !expense.tripCheckpointId),
+    [detailTrip],
+  );
+
+  const totalEstimatedCost = useMemo(
+    () => (detailTrip?.expenseCategories ?? []).reduce((sum, expense) => sum + (expense.estimatedCost ?? 0), 0),
     [detailTrip],
   );
 
@@ -540,6 +575,69 @@ export default function TripModerationTaskTable() {
                   </Card>
                 </div>
 
+                {detailTrip && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold">Phân loại chuyến đi & Chi phí dự kiến</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          <Tag className="h-3.5 w-3.5" />
+                          Loại chuyến đi
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(detailTrip.tripTypes ?? []).length === 0
+                            ? <span className="text-sm text-muted-foreground">—</span>
+                            : (detailTrip.tripTypes ?? []).map((item) => (
+                              <Badge key={item.tripTypeId} variant="outline" className="text-[11px]">
+                                {item.tripType || "Không rõ"}
+                              </Badge>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          <CarFront className="h-3.5 w-3.5" />
+                          Phương tiện
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(detailTrip.tripVehicles ?? []).length === 0
+                            ? <span className="text-sm text-muted-foreground">—</span>
+                            : (detailTrip.tripVehicles ?? []).map((item) => (
+                              <Badge key={item.tripVehicleId} variant="outline" className="text-[11px]">
+                                {item.vehicleType || "Không rõ"}
+                              </Badge>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border bg-muted/20 p-3">
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <Wallet className="h-3.5 w-3.5" />
+                            Chi phí cấp chuyến
+                          </p>
+                          <span className="text-sm font-semibold">{formatVnd(totalEstimatedCost)}</span>
+                        </div>
+                        {tripLevelExpenses.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Không có chi phí chung ở cấp chuyến.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {tripLevelExpenses.map((expense) => (
+                              <div key={expense.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-sm">
+                                <span className="text-muted-foreground">{expense.expenseType || "Chi phí khác"}</span>
+                                <span className="font-medium">{formatVnd(expense.estimatedCost)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card>
                   <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Nội dung mô tả</CardTitle></CardHeader>
                   <CardContent className="space-y-4 text-sm">
@@ -549,40 +647,105 @@ export default function TripModerationTaskTable() {
                   </CardContent>
                 </Card>
 
+                {!detailTrip && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        Lộ trình
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        Bản ghi trip gốc không còn tồn tại nên không thể hiển thị routing/mapbox.
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {sortedCheckpoints.length ? (
                   <Card>
                     <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-muted-foreground" />Lộ trình ({sortedCheckpoints.length} điểm)</CardTitle></CardHeader>
-                    <CardContent className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-                      <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                        {sortedCheckpoints.map((cp, index) => (
-                          <div key={cp.tripCheckpointId} className="rounded-lg border bg-background p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-[11px]">Điểm {index + 1}</Badge>
-                                  <Badge variant="outline" className="text-[11px]">{cp.tripCheckpointType}</Badge>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
+                        <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} checkpoint</Badge>
+                        <Badge variant="outline" className="text-[11px]">Quãng đường: {formatDistance(detailTrip?.itinerary?.distanceM)}</Badge>
+                        <Badge variant="outline" className="text-[11px]">Thời gian: {formatDuration(detailTrip?.itinerary?.durationS)}</Badge>
+                        {detailTrip?.itinerary?.travelMode && (
+                          <Badge variant="outline" className="text-[11px]">Mode: {detailTrip.itinerary.travelMode}</Badge>
+                        )}
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
+                        <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+                          {sortedCheckpoints.map((cp, index) => {
+                            const typeMeta = checkpointMetaByType(cp.tripCheckpointType);
+                            const TypeIcon = typeMeta.icon;
+                            const costs = cp.costs ?? [];
+                            return (
+                              <div key={cp.tripCheckpointId} className="rounded-lg border bg-background p-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-[11px]">Điểm {index + 1}</Badge>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[11px]"
+                                        style={{ borderColor: `${typeMeta.color}60`, color: typeMeta.color }}
+                                      >
+                                        <TypeIcon className="mr-1 h-3 w-3" />
+                                        {checkpointLabelVi(cp.tripCheckpointType)}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm font-semibold">{cp.locationName || cp.displayAddress || "—"}</p>
+                                    {cp.locationName && cp.displayAddress && (
+                                      <p className="text-xs text-muted-foreground">{cp.displayAddress}</p>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] text-muted-foreground">#{cp.sequenceNo}</span>
                                 </div>
-                                <p className="text-sm font-semibold">{cp.locationName || cp.displayAddress || "—"}</p>
-                                {cp.locationName && cp.displayAddress && (
-                                  <p className="text-xs text-muted-foreground">{cp.displayAddress}</p>
+
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                  <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
+                                    <Clock3 className="h-3 w-3" />
+                                    {formatDateTime(cp.plannedAt)}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
+                                    <Route className="h-3 w-3" />
+                                    {Number.isFinite(cp.lat) && Number.isFinite(cp.lng)
+                                      ? `${cp.lat.toFixed(6)}, ${cp.lng.toFixed(6)}`
+                                      : "Chưa có tọa độ"}
+                                  </span>
+                                </div>
+
+                                {cp.note && (
+                                  <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                                    {cp.note}
+                                  </div>
+                                )}
+
+                                {costs.length > 0 && (
+                                  <div className="mt-2 rounded-md border bg-amber-50/50 p-2">
+                                    <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                                      <Wallet className="h-3 w-3" />
+                                      Chi phí tại điểm
+                                    </p>
+                                    <div className="space-y-1">
+                                      {costs.map((cost) => (
+                                        <div key={cost.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-[11px]">
+                                          <span className="truncate text-muted-foreground">{cost.expenseType || "Chi phí khác"}</span>
+                                          <span className="font-medium">{formatVnd(cost.estimatedCost)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
-                              <span className="text-[11px] text-muted-foreground">#{cp.sequenceNo}</span>
-                            </div>
-
-                            {cp.note && (
-                              <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-                                {cp.note}
-                              </div>
-                            )}
-
-                            <div className="mt-2 text-[11px] text-muted-foreground">
-                              {cp.lat.toFixed(6)}, {cp.lng.toFixed(6)}
-                            </div>
-                          </div>
-                        ))}
+                            );
+                          })}
+                        </div>
+                        <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={detailTrip?.itinerary} />
                       </div>
-                      <TripCheckpointMap checkpoints={sortedCheckpoints} />
                     </CardContent>
                   </Card>
                 ) : null}

@@ -243,11 +243,46 @@ export interface TripOwner {
   experienceLevel: number | null;
 }
 
+export interface TripItinerary {
+  itineraryId: string;
+  provider: string | null;
+  providerRouteId: string | null;
+  providerLink: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  destinationLat: number | null;
+  destinationLng: number | null;
+  travelMode: string | null;
+  distanceM: number | null;
+  durationS: number | null;
+  waypoints: string | null;
+}
+
+export interface TripVehicleDetail {
+  tripVehicleId: string;
+  vehicleType: string | null;
+}
+
+export interface TripTypeDetail {
+  tripTypeId: string;
+  tripType: string | null;
+}
+
+export interface TripExpenseCategory {
+  tripExpenseCategoryId: string;
+  tripCheckpointId: string | null;
+  expenseType: string | null;
+  estimatedCost: number | null;
+  note: string | null;
+  isRequired: boolean;
+}
+
 export interface TripCheckpoint {
   tripCheckpointId: string;
   lat: number;
   lng: number;
   sequenceNo: number;
+  plannedAt: string | null;
   note: string | null;
   tripCheckpointType: CheckpointTypeCode;
   status: string;
@@ -256,6 +291,11 @@ export interface TripCheckpoint {
   wardCode: number | null;
   locationName: string | null;
   displayAddress: string | null;
+  mappingStatus: string | null;
+  mappingReason: string | null;
+  geocodeProvider: string | null;
+  geocodeConfidence: number | null;
+  costs: TripExpenseCategory[];
 }
 
 export interface TripParticipant {
@@ -301,7 +341,11 @@ export interface TripDetail {
   createdAt: string;
   participantCount: number;
   owner: TripOwner | null;
+  itinerary: TripItinerary | null;
+  tripVehicles: TripVehicleDetail[];
+  tripTypes: TripTypeDetail[];
   checkpoints: TripCheckpoint[];
+  expenseCategories: TripExpenseCategory[];
   participants: TripParticipant[];
   mediaAttachments: MediaAttachment[];
 }
