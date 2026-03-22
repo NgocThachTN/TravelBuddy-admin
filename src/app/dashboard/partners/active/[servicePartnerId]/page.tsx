@@ -9,7 +9,6 @@ import { ROUTES } from "@/lib/constants";
 import {
   formatFullAddress,
   formatWardLabel,
-  getMapEmbedUrl,
   getServicePartnerStatusMeta,
   getVehicleServiceScopeLabel,
   getVerificationStatusLabel,
@@ -29,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, FileText, Loader2, MapPin, Store, User } from "lucide-react";
+import { PartnerMap } from "../../components/PartnerMap";
 
 function formatDateTime(value?: string) {
   if (!value) return "-";
@@ -188,8 +188,6 @@ export default function ServicePartnerDetailPage() {
     return null;
   }
 
-  const mapEmbedUrl = getMapEmbedUrl(detail.addressLat, detail.addressLng);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -309,14 +307,8 @@ export default function ServicePartnerDetailPage() {
               <Separator />
               <div className="space-y-2">
                 <Label>Bản đồ</Label>
-                {mapEmbedUrl ? (
-                  <iframe
-                    title="Bản đồ vị trí đối tác"
-                    src={mapEmbedUrl}
-                    className="h-72 w-full rounded-md border"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
+                {detail.addressLat && detail.addressLng ? (
+                  <PartnerMap lat={detail.addressLat} lng={detail.addressLng} />
                 ) : (
                   <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                     Chưa có vị trí để hiển thị bản đồ.

@@ -121,14 +121,3 @@ export function formatFullAddress(parts: Array<string | number | null | undefine
 
   return normalized.length > 0 ? normalized.join(", ") : "-";
 }
-
-export function getMapEmbedUrl(lat?: number, lng?: number) {
-  if (lat == null || lng == null) return null;
-
-  const delta = 0.005;
-  const bbox = [lng - delta, lat - delta, lng + delta, lat + delta]
-    .map((value) => value.toFixed(6))
-    .join("%2C");
-
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
-}
