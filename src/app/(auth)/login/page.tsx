@@ -481,13 +481,6 @@ export default function LoginPage() {
                 >
                   Mật khẩu
                 </label>
-                <button
-                  type="button"
-                  className="text-xs font-medium text-primary hover:text-primary-hover transition-colors cursor-pointer"
-                  tabIndex={-1}
-                >
-                  Quên mật khẩu?
-                </button>
               </div>
               <div className="relative group">
                 <div
