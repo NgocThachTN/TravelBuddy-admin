@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
   AlertTriangle,
   Calendar,
@@ -22,8 +21,8 @@ import {
   fetchTripById,
   fetchTripModerationTaskDetail,
   fetchTripModerationTasks,
+  reviewTrip,
 } from "@/lib/api";
-import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type {
   GetTripModerationTasksParams,
@@ -46,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -69,9 +69,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
 import PaginationControl from "@/components/pagination-control";
 import TripCheckpointMap from "./TripCheckpointMap";
 import { checkpointLabelVi, checkpointMetaByType } from "./checkpoint-meta";
+import {
+  expenseTypeLabelVi,
+  memberLevelLabelVi,
+  travelModeLabelVi,
+  tripTypeLabelVi,
+  vehicleTypeLabelVi,
+} from "./trip-enum-labels";
 
 const PAGE_SIZE = 15;
 
@@ -106,6 +114,12 @@ function getTaskStatusStyle(status: number | string | null | undefined) {
   if (status === null || status === undefined) return "bg-gray-100 text-gray-500 border-gray-200";
   const key = typeof status === "number" ? AI_MODERATION_STATUS_CODES[status] : status;
   return TASK_STATUS_STYLES[key] ?? "bg-gray-100 text-gray-500 border-gray-200";
+}
+
+function isTaskActionable(status: number | string | null | undefined) {
+  if (status === null || status === undefined) return false;
+  const key = typeof status === "number" ? AI_MODERATION_STATUS_CODES[status] : status;
+  return key === "Open" || key === "Assigned" || key === "InReview";
 }
 
 function scanStatusLabel(value: number | string | null | undefined) {
@@ -224,6 +238,10 @@ export default function TripModerationTaskTable() {
   const [detailTripError, setDetailTripError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TripModerationTaskDetail | null>(null);
   const [detailTrip, setDetailTrip] = useState<TripDetail | null>(null);
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [decisionError, setDecisionError] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [pendingDecision, setPendingDecision] = useState<"Approve" | "Reject" | null>(null);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -277,6 +295,9 @@ export default function TripModerationTaskTable() {
     setDetailTripError(null);
     setSelectedTask(null);
     setDetailTrip(null);
+    setDecisionError(null);
+    setRejectReason("");
+    setPendingDecision(null);
 
     try {
       const taskResult = await fetchTripModerationTaskDetail(taskId);
@@ -297,6 +318,38 @@ export default function TripModerationTaskTable() {
       setDetailLoading(false);
     }
   }, []);
+
+  const submitDecision = useCallback(async (decision: "Approve" | "Reject") => {
+    if (!selectedTask) return;
+
+    const trimmedReason = rejectReason.trim();
+    if (decision === "Reject" && !trimmedReason) {
+      setDecisionError("Vui lòng nhập lý do từ chối để gửi cho chủ chuyến đi.");
+      return;
+    }
+
+    try {
+      setDecisionLoading(true);
+      setPendingDecision(decision);
+      setDecisionError(null);
+
+      await reviewTrip(selectedTask.taskId, {
+        decision,
+        decisionNote: decision === "Reject" ? trimmedReason : undefined,
+      });
+
+      setDetailOpen(false);
+      setSelectedTask(null);
+      setDetailTrip(null);
+      setRejectReason("");
+      await loadTasks(page);
+    } catch (err) {
+      setDecisionError(err instanceof Error ? err.message : "Không thể cập nhật quyết định kiểm duyệt.");
+    } finally {
+      setDecisionLoading(false);
+      setPendingDecision(null);
+    }
+  }, [selectedTask, rejectReason, loadTasks, page]);
 
   const resolvedTitle = useMemo(
     () => detailTrip?.title || selectedTask?.tripTitle || selectedTask?.safeNormalizedPreview?.title || "(Không có tiêu đề)",
@@ -336,6 +389,11 @@ export default function TripModerationTaskTable() {
   const totalEstimatedCost = useMemo(
     () => (detailTrip?.expenseCategories ?? []).reduce((sum, expense) => sum + (expense.estimatedCost ?? 0), 0),
     [detailTrip],
+  );
+
+  const canReviewInPopup = useMemo(
+    () => Boolean(selectedTask && detailTrip && isTaskActionable(selectedTask.status)),
+    [selectedTask, detailTrip],
   );
 
   if (loading && items.length === 0) {
@@ -462,13 +520,13 @@ export default function TripModerationTaskTable() {
                     <div className="space-y-1">
                       <p className="max-w-[220px] truncate text-sm font-medium">{task.tripTitle || "(Không có tiêu đề)"}</p>
                       <p className="max-w-[220px] truncate text-xs text-muted-foreground">{task.tripOwnerName || "Không rõ chủ trip"}</p>
-                      <p className="text-xs text-muted-foreground">Trip status: {tripStatusLabel(task.tripCurrentStatus)} / Moderation: {moderationStatusLabel(task.tripModerationStatus)}</p>
+                      <p className="text-xs text-muted-foreground">Trạng thái chuyến: {tripStatusLabel(task.tripCurrentStatus)} / Kiểm duyệt: {moderationStatusLabel(task.tripModerationStatus)}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <Badge variant="outline" className={cn("text-[11px]", getScanStatusStyle(task.aiStatus))}>{scanStatusLabel(task.aiStatus)}</Badge>
-                      <p className="text-xs text-muted-foreground">Score: {formatScore(task.aiScore)}</p>
+                      <p className="text-xs text-muted-foreground">Điểm: {formatScore(task.aiScore)}</p>
                       <p className="max-w-[200px] truncate text-xs text-muted-foreground">{task.aiLabels || "Không có nhãn"}</p>
                     </div>
                   </TableCell>
@@ -488,7 +546,17 @@ export default function TripModerationTaskTable() {
         )}
       </Card>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <Dialog
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setDecisionError(null);
+            setRejectReason("");
+            setPendingDecision(null);
+          }
+        }}
+      >
         <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">{resolvedTitle}</DialogTitle>
@@ -515,8 +583,8 @@ export default function TripModerationTaskTable() {
                     <Badge variant="outline" className={cn("text-[11px]", getTaskStatusStyle(selectedTask.status))}>{aiModerationStatusLabel(selectedTask.status)}</Badge>
                     <Badge variant="outline" className={cn("text-[11px]", getScanStatusStyle(selectedTask.aiStatus))}>{scanStatusLabel(selectedTask.aiStatus)}</Badge>
                     <Badge variant="outline">Ưu tiên P{selectedTask.priority}</Badge>
-                    {selectedTask.aiScore !== null && <Badge variant="outline">Score {formatScore(selectedTask.aiScore)}</Badge>}
-                    {selectedTask.aiConfidence !== null && <Badge variant="outline">Confidence {selectedTask.aiConfidence}%</Badge>}
+                    {selectedTask.aiScore !== null && <Badge variant="outline">Điểm {formatScore(selectedTask.aiScore)}</Badge>}
+                    {selectedTask.aiConfidence !== null && <Badge variant="outline">Độ tin cậy {selectedTask.aiConfidence}%</Badge>}
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">Task tạo lúc {formatDateTime(selectedTask.createdAt)}</p>
                 </div>
@@ -544,8 +612,8 @@ export default function TripModerationTaskTable() {
                       <div className="flex justify-between"><span className="text-muted-foreground">Quay về</span><span className="font-medium">{formatDateTime(detailTrip?.backTime)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Hạn đăng ký</span><span className="font-medium">{formatDateTime(detailTrip?.registrationDeadline ?? selectedTask.tripRegistrationDeadline)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Tiền cọc</span><span className="font-medium">{formatVnd(detailTrip?.depositAmount)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Trip status</span><Badge variant="outline" className={cn("text-[11px]", getTripStatusStyle(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus))}>{tripStatusLabel(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus)}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Moderation status</span><span className="font-medium">{moderationStatusLabel(detailTrip?.moderationStatus ?? selectedTask.tripModerationStatus)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái chuyến</span><Badge variant="outline" className={cn("text-[11px]", getTripStatusStyle(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus))}>{tripStatusLabel(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus)}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái kiểm duyệt</span><span className="font-medium">{moderationStatusLabel(detailTrip?.moderationStatus ?? selectedTask.tripModerationStatus)}</span></div>
                     </CardContent>
                   </Card>
 
@@ -561,7 +629,7 @@ export default function TripModerationTaskTable() {
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium">{detailTrip?.owner ? ([detailTrip.owner.firstName, detailTrip.owner.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)") : selectedTask.tripOwnerName || "Không rõ chủ trip"}</p>
-                          {detailTrip?.owner?.experienceLevel !== null && detailTrip?.owner?.experienceLevel !== undefined && <p className="text-xs text-muted-foreground">Level: {detailTrip.owner.experienceLevel}</p>}
+                          {detailTrip?.owner?.experienceLevel !== null && detailTrip?.owner?.experienceLevel !== undefined && <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelVi(detailTrip.owner.experienceLevel)}</p>}
                         </div>
                       </div>
 
@@ -569,7 +637,7 @@ export default function TripModerationTaskTable() {
                         <div className="flex justify-between"><span className="text-muted-foreground">Số người tham gia</span><span className="font-medium">{detailTrip?.participantCount ?? "—"}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Tối thiểu</span><span className="font-medium">{detailTrip?.minParticipants ?? "—"}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Tối đa</span><span className="font-medium">{detailTrip?.maxParticipants ?? "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Scan status</span><span className="font-medium">{scanStatusLabel(detailTrip?.scanStatus ?? selectedTask.aiStatus)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái quét</span><span className="font-medium">{scanStatusLabel(detailTrip?.scanStatus ?? selectedTask.aiStatus)}</span></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -591,7 +659,7 @@ export default function TripModerationTaskTable() {
                             ? <span className="text-sm text-muted-foreground">—</span>
                             : (detailTrip.tripTypes ?? []).map((item) => (
                               <Badge key={item.tripTypeId} variant="outline" className="text-[11px]">
-                                {item.tripType || "Không rõ"}
+                                {tripTypeLabelVi(item.tripType)}
                               </Badge>
                             ))}
                         </div>
@@ -607,7 +675,7 @@ export default function TripModerationTaskTable() {
                             ? <span className="text-sm text-muted-foreground">—</span>
                             : (detailTrip.tripVehicles ?? []).map((item) => (
                               <Badge key={item.tripVehicleId} variant="outline" className="text-[11px]">
-                                {item.vehicleType || "Không rõ"}
+                                {vehicleTypeLabelVi(item.vehicleType)}
                               </Badge>
                             ))}
                         </div>
@@ -627,7 +695,7 @@ export default function TripModerationTaskTable() {
                           <div className="space-y-1.5">
                             {tripLevelExpenses.map((expense) => (
                               <div key={expense.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-muted-foreground">{expense.expenseType || "Chi phí khác"}</span>
+                                <span className="text-muted-foreground">{expenseTypeLabelVi(expense.expenseType)}</span>
                                 <span className="font-medium">{formatVnd(expense.estimatedCost)}</span>
                               </div>
                             ))}
@@ -668,11 +736,11 @@ export default function TripModerationTaskTable() {
                     <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-muted-foreground" />Lộ trình ({sortedCheckpoints.length} điểm)</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
-                        <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} checkpoint</Badge>
+                        <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} điểm</Badge>
                         <Badge variant="outline" className="text-[11px]">Quãng đường: {formatDistance(detailTrip?.itinerary?.distanceM)}</Badge>
                         <Badge variant="outline" className="text-[11px]">Thời gian: {formatDuration(detailTrip?.itinerary?.durationS)}</Badge>
                         {detailTrip?.itinerary?.travelMode && (
-                          <Badge variant="outline" className="text-[11px]">Mode: {detailTrip.itinerary.travelMode}</Badge>
+                          <Badge variant="outline" className="text-[11px]">Kiểu di chuyển: {travelModeLabelVi(detailTrip.itinerary.travelMode)}</Badge>
                         )}
                       </div>
 
@@ -733,7 +801,7 @@ export default function TripModerationTaskTable() {
                                     <div className="space-y-1">
                                       {costs.map((cost) => (
                                         <div key={cost.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-[11px]">
-                                          <span className="truncate text-muted-foreground">{cost.expenseType || "Chi phí khác"}</span>
+                                          <span className="truncate text-muted-foreground">{expenseTypeLabelVi(cost.expenseType)}</span>
                                           <span className="font-medium">{formatVnd(cost.estimatedCost)}</span>
                                         </div>
                                       ))}
@@ -821,18 +889,18 @@ export default function TripModerationTaskTable() {
                     {selectedTask.scanErrorMessage && <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">Lỗi scan: {selectedTask.scanErrorMessage}</p>}
 
                     <div className="space-y-2">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Findings ({selectedTask.aiFindings.length})</h4>
-                      {selectedTask.aiFindings.length === 0 ? <p className="text-sm text-muted-foreground">Không có finding chi tiết.</p> : (
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nhận định ({selectedTask.aiFindings.length})</h4>
+                      {selectedTask.aiFindings.length === 0 ? <p className="text-sm text-muted-foreground">Không có nhận định chi tiết.</p> : (
                         <div className="space-y-2">
                           {selectedTask.aiFindings.map((f, index) => (
                             <div key={`${f.field}-${f.label}-${index}`} className="rounded-md border p-3">
                               <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline" className="text-[11px]">{f.field || "unknown-field"}</Badge>
-                                <Badge variant="outline" className="text-[11px]">{f.label || "unknown-label"}</Badge>
-                                <Badge variant="outline" className={cn("text-[11px]", findingSeverityStyle(f.severity))}>{f.severity || "unknown"}</Badge>
+                                <Badge variant="outline" className="text-[11px]">{f.field || "không rõ trường"}</Badge>
+                                <Badge variant="outline" className="text-[11px]">{f.label || "không rõ nhãn"}</Badge>
+                                <Badge variant="outline" className={cn("text-[11px]", findingSeverityStyle(f.severity))}>{f.severity || "không rõ"}</Badge>
                               </div>
-                              <p className="mt-2 text-sm">{f.reason || "Không có reason"}</p>
-                              {f.evidence && <p className="mt-1 text-xs text-muted-foreground">Evidence: {f.evidence}</p>}
+                              <p className="mt-2 text-sm">{f.reason || "Không có lý do chi tiết."}</p>
+                              {f.evidence && <p className="mt-1 text-xs text-muted-foreground">Bằng chứng: {f.evidence}</p>}
                             </div>
                           ))}
                         </div>
@@ -841,14 +909,81 @@ export default function TripModerationTaskTable() {
                   </CardContent>
                 </Card>
 
-                {detailTrip && (
-                  <div className="flex justify-end">
-                    <Button asChild size="sm"><Link href={`${ROUTES.TRIPS}/${detailTrip.tripId}?taskId=${selectedTask.taskId}`}>Mở trang duyệt đầy đủ</Link></Button>
-                  </div>
-                )}
               </>
             )}
           </div>
+
+          {!detailLoading && !detailError && selectedTask && (
+            <div className="border-t pt-3">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="reject-reason" className="text-sm">
+                    Lý do từ chối (bắt buộc nếu bấm Từ chối)
+                  </Label>
+                  <Textarea
+                    id="reject-reason"
+                    placeholder="Nhập lý do để thông báo cho người đăng chuyến đi..."
+                    value={rejectReason}
+                    onChange={(event) => setRejectReason(event.target.value)}
+                    maxLength={2000}
+                    rows={3}
+                    disabled={decisionLoading || !canReviewInPopup}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">{rejectReason.length}/2000</p>
+                </div>
+
+                {decisionError && (
+                  <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                    {decisionError}
+                  </p>
+                )}
+
+                {!detailTrip && (
+                  <p className="text-xs text-amber-700">
+                    Không thể duyệt trực tiếp vì bản ghi trip gốc không còn tồn tại.
+                  </p>
+                )}
+
+                {selectedTask && !isTaskActionable(selectedTask.status) && (
+                  <p className="text-xs text-muted-foreground">
+                    Task này đã được xử lý trước đó, không thể duyệt lại trong popup.
+                  </p>
+                )}
+
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDetailOpen(false)}
+                    disabled={decisionLoading}
+                  >
+                    Đóng
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => submitDecision("Reject")}
+                    disabled={decisionLoading || !canReviewInPopup}
+                  >
+                    {decisionLoading && pendingDecision === "Reject" && (
+                      <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    )}
+                    Từ chối
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => submitDecision("Approve")}
+                    disabled={decisionLoading || !canReviewInPopup}
+                  >
+                    {decisionLoading && pendingDecision === "Approve" && (
+                      <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    )}
+                    Duyệt
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

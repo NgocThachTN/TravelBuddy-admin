@@ -239,7 +239,7 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
 
           const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(
             `<div style="font-size:12px;line-height:1.4">
-              <strong>${cp.locationName || cp.displayAddress || "Checkpoint"}</strong><br/>
+              <strong>${cp.locationName || cp.displayAddress || "Điểm dừng"}</strong><br/>
               <span>${checkpointLabelVi(cp.tripCheckpointType)}</span>
             </div>`,
           );
@@ -337,4 +337,3 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
     </div>
   );
 }
-
