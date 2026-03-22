@@ -46,9 +46,6 @@ export const API_ROUTES = {
   ADMIN_EXPENSE_CATEGORIES: "/api/admin/trip-metadata/expense-categories",
   ADMIN_TRIPS: "/api/admin/trips",
   ADMIN_TRIPS_DETAIL: (tripId: string) => `/api/admin/trips/${tripId}`,
-  ADMIN_TRIP_MODERATION_TASKS: "/api/admin/moderation/trips/tasks",
-  ADMIN_TRIP_MODERATION_TASK_DETAIL: (taskId: string) =>
-    `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
   ADMIN_REPORTS: "/api/admin/reports",

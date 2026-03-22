@@ -48,6 +48,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    label: "Qu\u1ea3n l\u00fd chuy\u1ebfn \u0111i",
+    href: ROUTES.TRIPS,
+    icon: Map,
+    roles: ["ADMIN"],
+  },
+  {
     label: "B\u00e1o c\u00e1o & Khi\u1ebfu n\u1ea1i",
     href: ROUTES.REPORTS,
     icon: Megaphone,

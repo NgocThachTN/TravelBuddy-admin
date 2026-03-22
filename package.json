@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "dev:turbo": "next dev",
+    "predev": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -match 'travelbuddy-admin\\\\node_modules\\\\next\\\\dist\\\\bin\\\\next.*dev|travelbuddy-admin\\\\node_modules\\\\next\\\\dist\\\\server\\\\lib\\\\start-server.js|travelbuddy-admin\\\\.next\\\\dev\\\\build\\\\postcss.js' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 500; if (Test-Path '.next') { Remove-Item '.next' -Recurse -Force -ErrorAction SilentlyContinue }\"",
+    "dev": "next dev --turbopack",
+    "dev:turbo": "next dev --turbopack",
+    "dev:webpack": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
