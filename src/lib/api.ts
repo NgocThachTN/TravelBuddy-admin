@@ -22,6 +22,9 @@ import type {
   TripListItem,
   TripDetail,
   GetTripsParams,
+  GetTripModerationTasksParams,
+  TripModerationTaskListItem,
+  TripModerationTaskDetail,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
   ReportListItem,
@@ -277,6 +280,25 @@ export async function fetchTripById(
 ): Promise<BeWrapper<TripDetail>> {
   const { data } = await api.get<BeWrapper<TripDetail>>(
     API_ROUTES.ADMIN_TRIPS_DETAIL(tripId),
+  );
+  return data;
+}
+
+export async function fetchTripModerationTasks(
+  params: GetTripModerationTasksParams = {},
+): Promise<BePagedWrapper<TripModerationTaskListItem>> {
+  const { data } = await api.get<BePagedWrapper<TripModerationTaskListItem>>(
+    API_ROUTES.ADMIN_TRIP_MODERATION_TASKS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchTripModerationTaskDetail(
+  taskId: string,
+): Promise<BeWrapper<TripModerationTaskDetail>> {
+  const { data } = await api.get<BeWrapper<TripModerationTaskDetail>>(
+    API_ROUTES.ADMIN_TRIP_MODERATION_TASK_DETAIL(taskId),
   );
   return data;
 }

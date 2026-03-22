@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -166,7 +166,9 @@ interface TripDetailClientProps {
 export default function TripDetailClient({ role }: TripDetailClientProps) {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tripId = params.tripId as string;
+  const taskId = searchParams.get("taskId")?.trim() ?? "";
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,10 +193,10 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
   }, [loadTrip]);
 
   async function handleDecisionConfirm(note: string) {
-    if (!decision || !trip) return;
+    if (!decision || !trip || !taskId) return;
     try {
       setDecisionLoading(true);
-      await reviewTrip(trip.tripId, {
+      await reviewTrip(taskId, {
         decision,
         decisionNote: note || undefined,
       });
@@ -248,13 +250,17 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     );
   }
 
+  const isWaitingManualModeration =
+    trip.currentStatus === 10 ||
+    trip.currentStatus === "InReview" ||
+    trip.moderationStatus === 1 ||
+    trip.moderationStatus === "PendingReview";
+
   const canModerate =
-    role === "ADMIN" &&
+    (role === "ADMIN" || role === "MODERATOR") &&
+    !!taskId &&
     (
-      trip.currentStatus === 10 ||
-      trip.currentStatus === "InReview" ||
-      trip.moderationStatus === 1 ||
-      trip.moderationStatus === "PendingReview"
+      isWaitingManualModeration
     );
 
   return (
@@ -306,6 +312,13 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                 Từ chối
               </Button>
             </div>
+          )}
+
+          {!taskId && isWaitingManualModeration && (
+            <p className="text-xs text-muted-foreground">
+              Thiếu <code className="rounded bg-muted px-1">taskId</code>. Vui lòng mở chi tiết từ trang{" "}
+              <code className="rounded bg-muted px-1">/dashboard/moderation</code> để duyệt đúng task.
+            </p>
           )}
         </div>
 

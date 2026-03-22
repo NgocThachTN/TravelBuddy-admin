@@ -41,6 +41,7 @@ export type {
   TripModerationStatus,
   ContentScanStatusCode,
   ModerationDecisionCode,
+  AiModerationStatusCode,
   TripRoleCode,
   ParticipantStatusCode,
   TripCategorySummary,
@@ -53,6 +54,11 @@ export type {
   GetTripsParams,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
+  GetTripModerationTasksParams,
+  TripModerationTaskListItem,
+  TripModerationAiFinding,
+  TripModerationSafePreview,
+  TripModerationTaskDetail,
 } from "./trip";
 export {
   TRIP_STATUS_CODES,
@@ -62,11 +68,14 @@ export {
   MODERATION_STATUS_CODES,
   MODERATION_STATUS_LABELS,
   SCAN_STATUS_LABELS,
+  AI_MODERATION_STATUS_CODES,
+  AI_MODERATION_STATUS_LABELS,
   PARTICIPANT_STATUS_LABELS,
   tripStatusFromNumber,
   tripStatusLabel,
   moderationStatusFromNumber,
   moderationStatusLabel,
+  aiModerationStatusLabel,
   tripRoleLabel,
 } from "./trip";
 export type {

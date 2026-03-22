@@ -99,6 +99,35 @@ export type ModerationDecisionCode =
   | "Hide"
   | "NeedsEdit";
 
+export const AI_MODERATION_STATUS_CODES = [
+  "Open",
+  "Assigned",
+  "InReview",
+  "Resolved",
+  "Dismissed",
+  "Failed",
+] as const;
+
+export type AiModerationStatusCode = (typeof AI_MODERATION_STATUS_CODES)[number];
+
+export const AI_MODERATION_STATUS_LABELS: Record<AiModerationStatusCode, string> = {
+  Open: "Mới tạo",
+  Assigned: "Đã giao",
+  InReview: "Đang duyệt",
+  Resolved: "Đã xử lý",
+  Dismissed: "Đã đóng",
+  Failed: "Lỗi",
+};
+
+export function aiModerationStatusLabel(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return "Không rõ";
+  if (typeof value === "number") {
+    const code = AI_MODERATION_STATUS_CODES[value];
+    return code ? AI_MODERATION_STATUS_LABELS[code] : `Trạng thái ${value}`;
+  }
+  return AI_MODERATION_STATUS_LABELS[value as AiModerationStatusCode] ?? String(value);
+}
+
 // ── Participant & Checkpoint enums ──
 
 // BE returns TripRoleCode as integer:
@@ -303,4 +332,79 @@ export interface TripModerationDecisionResponse {
   currentStatus: TripStatusCode | null;
   scanStatus: ContentScanStatusCode | null;
   reviewedAt: string;
+}
+
+export interface GetTripModerationTasksParams {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: string;
+  scanStatus?: string;
+  search?: string;
+  sortBy?: string;
+  sortDirection?: string;
+}
+
+export interface TripModerationTaskListItem {
+  taskId: string;
+  tripId: string;
+  tripTitle: string | null;
+  tripOwnerName: string | null;
+  aiScore: number | null;
+  aiLabels: string | null;
+  aiStatus: number | ContentScanStatusCode | string | null;
+  priority: number;
+  status: number | AiModerationStatusCode | string;
+  tripCurrentStatus: number | TripStatusCode | null;
+  tripModerationStatus: number | TripModerationStatus | null;
+  createdAt: string;
+  assignedToName: string | null;
+}
+
+export interface TripModerationAiFinding {
+  field: string | null;
+  label: string | null;
+  severity: string | null;
+  reason: string | null;
+  evidence: string | null;
+}
+
+export interface TripModerationSafePreview {
+  title: string | null;
+  description: string | null;
+  rule: string | null;
+  itemRequired: string | null;
+}
+
+export interface TripModerationTaskDetail {
+  taskId: string;
+  tripId: string;
+  status: number | AiModerationStatusCode | string;
+  priority: number;
+  createdAt: string;
+  assignedToName: string | null;
+
+  aiScore: number | null;
+  aiLabels: string | null;
+  aiStatus: number | ContentScanStatusCode | string | null;
+  scanErrorMessage: string | null;
+
+  aiConfidence: number | null;
+  aiTotalScore: number | null;
+  aiSummary: string | null;
+  aiFindings: TripModerationAiFinding[];
+  safeNormalizedPreview: TripModerationSafePreview | null;
+
+  tripExists: boolean;
+  isTripDeleted: boolean;
+  tripTitle: string | null;
+  tripDescription: string | null;
+  tripRule: string | null;
+  tripItemRequired: string | null;
+  tripOwnerName: string | null;
+  tripCurrentStatus: number | TripStatusCode | null;
+  tripModerationStatus: number | TripModerationStatus | null;
+  tripCreatedAt: string | null;
+  tripStartTime: string | null;
+  tripEndTime: string | null;
+  tripRegistrationDeadline: string | null;
 }
