@@ -17,8 +17,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ROUTES, COOKIE_NAME } from "@/lib/constants";
 import { backendApi } from "@/lib/axios";
+import { verifyAdminToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import type { UserDetail } from "@/types";
+import type { BePagedWrapper, TripListItem, UserDetail } from "@/types";
 import {
   ArrowLeft,
   Mail,
@@ -31,6 +32,7 @@ import {
   BadgeCheck,
   Link as LinkIcon,
 } from "lucide-react";
+import UserTripsTabs from "@/app/dashboard/users/components/UserTripsTabs";
 
 /* ── Avatar / name helpers ── */
 const avatarColors = [
@@ -77,6 +79,60 @@ interface PageProps {
   params: Promise<{ userId: string }>;
 }
 
+const TRIP_PAGE_SIZE = 50;
+const TRIP_MAX_PAGES = 6;
+
+function sortTripsByStartDesc(items: TripListItem[]) {
+  return [...items].sort((a, b) => {
+    const aTime = a.startTime ? new Date(a.startTime).getTime() : 0;
+    const bTime = b.startTime ? new Date(b.startTime).getTime() : 0;
+    return bTime - aTime;
+  });
+}
+
+async function fetchAdminUserTripsByType(
+  token: string,
+  userId: string,
+  type: "owned" | "joined",
+): Promise<TripListItem[]> {
+  const allItems: TripListItem[] = [];
+
+  for (let pageNumber = 1; pageNumber <= TRIP_MAX_PAGES; pageNumber++) {
+    const { data } = await backendApi.get<BePagedWrapper<TripListItem>>(
+      `/api/v1/admin/users/${userId}/trips/${type}`,
+      {
+        params: {
+          pageNumber,
+          pageSize: TRIP_PAGE_SIZE,
+          sortBy: "createdAt",
+          sortDirection: "desc",
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+
+    const pageItems = data?.data?.items ?? [];
+    allItems.push(...pageItems);
+
+    const totalPages = data?.data?.totalPages ?? pageNumber;
+    if (pageNumber >= totalPages || pageItems.length === 0) break;
+  }
+
+  return allItems;
+}
+
+async function buildAdminUserTrips(userId: string, token: string) {
+  const [ownedTrips, joinedTrips] = await Promise.all([
+    fetchAdminUserTripsByType(token, userId, "owned"),
+    fetchAdminUserTripsByType(token, userId, "joined"),
+  ]);
+
+  return {
+    ownedTrips: sortTripsByStartDesc(ownedTrips),
+    joinedTrips: sortTripsByStartDesc(joinedTrips),
+  };
+}
+
 export default async function UserDetailPage({ params }: PageProps) {
   const { userId } = await params;
 
@@ -85,6 +141,11 @@ export default async function UserDetailPage({ params }: PageProps) {
   const token = cookieStore.get(COOKIE_NAME)?.value;
 
   if (!token) {
+    notFound();
+  }
+
+  const session = await verifyAdminToken(token);
+  if (!session) {
     notFound();
   }
 
@@ -97,6 +158,15 @@ export default async function UserDetailPage({ params }: PageProps) {
     user = data.data;
   } catch {
     notFound();
+  }
+
+  let joinedTrips: TripListItem[] = [];
+  let ownedTrips: TripListItem[] = [];
+
+  if (session.role === "ADMIN") {
+    const userTrips = await buildAdminUserTrips(userId, token);
+    joinedTrips = userTrips.joinedTrips;
+    ownedTrips = userTrips.ownedTrips;
   }
 
   const displayName = getDisplayName(user);
@@ -287,6 +357,10 @@ export default async function UserDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {session.role === "ADMIN" && (
+        <UserTripsTabs joinedTrips={joinedTrips} ownedTrips={ownedTrips} />
+      )}
     </div>
   );
 }
