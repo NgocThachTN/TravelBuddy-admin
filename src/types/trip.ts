@@ -434,6 +434,7 @@ export interface TripModerationTaskDetail {
 
   aiConfidence: number | null;
   aiTotalScore: number | null;
+  aiDecision: string | null;
   aiSummary: string | null;
   aiFindings: TripModerationAiFinding[];
   safeNormalizedPreview: TripModerationSafePreview | null;
