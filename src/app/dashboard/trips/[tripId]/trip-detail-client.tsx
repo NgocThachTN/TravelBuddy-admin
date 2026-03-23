@@ -1,18 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
+  CarFront,
   CheckCircle,
+  Clock3,
   Image as ImageIcon,
   Map,
   MapPin,
   RefreshCw,
+  Route,
   Shield,
   Star,
+  Tag,
   Users,
+  Wallet,
   XCircle,
 } from "lucide-react";
 import { fetchTripById, reviewTrip } from "@/lib/api";
@@ -50,6 +55,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import TripCheckpointMap from "@/app/dashboard/moderation/components/TripCheckpointMap";
+import { checkpointLabelVi, checkpointMetaByType } from "@/app/dashboard/moderation/components/checkpoint-meta";
+import {
+  expenseTypeLabelVi,
+  memberLevelLabelVi,
+  travelModeLabelVi,
+  tripTypeLabelVi,
+  vehicleTypeLabelVi,
+} from "@/app/dashboard/moderation/components/trip-enum-labels";
 
 const STATUS_STYLES: Record<string, string> = {
   Draft: "bg-gray-100 text-gray-700",
@@ -101,6 +115,31 @@ function formatDateTime(dateStr: string | null) {
 function formatVnd(amount: number | null) {
   if (amount === null || amount === undefined) return "—";
   return `${amount.toLocaleString("vi-VN")} ₫`;
+}
+
+function formatDistance(distanceM: number | null | undefined) {
+  if (distanceM === null || distanceM === undefined || Number.isNaN(distanceM)) return "—";
+  return `${(distanceM / 1000).toFixed(1)} km`;
+}
+
+function formatDuration(durationS: number | null | undefined) {
+  if (durationS === null || durationS === undefined || Number.isNaN(durationS)) return "—";
+  const totalMinutes = Math.round(durationS / 60);
+  if (totalMinutes < 60) return `${totalMinutes} phút`;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return minute > 0 ? `${hour}h ${minute}p` : `${hour}h`;
+}
+
+function formatCoordinates(lat: number | null | undefined, lng: number | null | undefined) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "Chưa có tọa độ";
+  return `${lat!.toFixed(6)}, ${lng!.toFixed(6)}`;
+}
+
+function participantStatusLabel(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "number") return PARTICIPANT_STATUS_LABELS[value] ?? `${value}`;
+  return String(value);
 }
 
 interface ModerationDialogProps {
@@ -191,6 +230,26 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
   useEffect(() => {
     loadTrip();
   }, [loadTrip]);
+
+  const sortedCheckpoints = useMemo(
+    () => [...(trip?.checkpoints ?? [])].sort((a, b) => a.sequenceNo - b.sequenceNo),
+    [trip?.checkpoints],
+  );
+
+  const orderedMediaAttachments = useMemo(
+    () => [...(trip?.mediaAttachments ?? [])].sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999)),
+    [trip?.mediaAttachments],
+  );
+
+  const tripLevelExpenses = useMemo(
+    () => (trip?.expenseCategories ?? []).filter((expense) => !expense.tripCheckpointId),
+    [trip?.expenseCategories],
+  );
+
+  const totalEstimatedCost = useMemo(
+    () => (trip?.expenseCategories ?? []).reduce((sum, expense) => sum + (expense.estimatedCost ?? 0), 0),
+    [trip?.expenseCategories],
+  );
 
   async function handleDecisionConfirm(note: string) {
     if (!decision || !trip || !taskId) return;
@@ -387,7 +446,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                         {[trip.owner.firstName, trip.owner.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)"}
                       </p>
                       {trip.owner.experienceLevel !== null && (
-                        <p className="text-xs text-muted-foreground">Level: {trip.owner.experienceLevel}</p>
+                        <p className="text-xs text-muted-foreground">Level: {memberLevelLabelVi(trip.owner.experienceLevel)}</p>
                       )}
                     </div>
                   </div>
@@ -441,50 +500,176 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
           </Card>
         )}
 
-        {trip.checkpoints.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              Phân loại chuyến đi & chi phí
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Loại chuyến đi
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {trip.tripTypes.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">—</span>
+                ) : (
+                  trip.tripTypes.map((item) => (
+                    <Badge key={item.tripTypeId} variant="outline" className="text-[11px]">
+                      {tripTypeLabelVi(item.tripType)}
+                    </Badge>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <CarFront className="h-3.5 w-3.5" />
+                Phương tiện
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {trip.tripVehicles.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">—</span>
+                ) : (
+                  trip.tripVehicles.map((item) => (
+                    <Badge key={item.tripVehicleId} variant="outline" className="text-[11px]">
+                      {vehicleTypeLabelVi(item.vehicleType)}
+                    </Badge>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Chi phí dự kiến
+                </p>
+                <span className="text-sm font-semibold">{formatVnd(totalEstimatedCost)}</span>
+              </div>
+              {tripLevelExpenses.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Không có chi phí cấp chuyến.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {tripLevelExpenses.map((expense) => (
+                    <div key={expense.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">{expenseTypeLabelVi(expense.expenseType)}</span>
+                      <span className="font-medium">{formatVnd(expense.estimatedCost)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Nội dung bổ sung</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <p className="mb-1 text-xs text-muted-foreground">Quy định</p>
+              <p className="whitespace-pre-wrap text-muted-foreground">{trip.rule || "—"}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-muted-foreground">Vật dụng cần mang</p>
+              <p className="whitespace-pre-wrap text-muted-foreground">{trip.itemRequired || "—"}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {sortedCheckpoints.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                Điểm dừng ({trip.checkpoints.length})
+                Lộ trình ({sortedCheckpoints.length} điểm)
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Địa điểm</TableHead>
-                    <TableHead>Loại</TableHead>
-                    <TableHead>Ghi chú</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {trip.checkpoints
-                    .sort((left, right) => left.sequenceNo - right.sequenceNo)
-                    .map((checkpoint) => (
-                      <TableRow key={checkpoint.tripCheckpointId}>
-                        <TableCell className="text-muted-foreground">{checkpoint.sequenceNo}</TableCell>
-                        <TableCell>
-                          <p className="text-sm font-medium">
-                            {checkpoint.locationName || checkpoint.displayAddress || "—"}
-                          </p>
-                          {checkpoint.displayAddress && checkpoint.locationName && (
-                            <p className="text-xs text-muted-foreground">{checkpoint.displayAddress}</p>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-[11px]">
-                            {checkpoint.tripCheckpointType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                          {checkpoint.note || "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
+                <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} điểm</Badge>
+                <Badge variant="outline" className="text-[11px]">Quãng đường: {formatDistance(trip.itinerary?.distanceM)}</Badge>
+                <Badge variant="outline" className="text-[11px]">Thời gian: {formatDuration(trip.itinerary?.durationS)}</Badge>
+                {trip.itinerary?.travelMode && (
+                  <Badge variant="outline" className="text-[11px]">
+                    Kiểu di chuyển: {travelModeLabelVi(trip.itinerary.travelMode)}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
+                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+                  {sortedCheckpoints.map((checkpoint, index) => {
+                    const typeMeta = checkpointMetaByType(checkpoint.tripCheckpointType);
+                    const TypeIcon = typeMeta.icon;
+                    return (
+                      <div key={checkpoint.tripCheckpointId} className="rounded-lg border bg-background p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[11px]">Điểm {index + 1}</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-[11px]"
+                                style={{ borderColor: `${typeMeta.color}60`, color: typeMeta.color }}
+                              >
+                                <TypeIcon className="mr-1 h-3 w-3" />
+                                {checkpointLabelVi(checkpoint.tripCheckpointType)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm font-semibold">{checkpoint.locationName || checkpoint.displayAddress || "—"}</p>
+                            {checkpoint.locationName && checkpoint.displayAddress && (
+                              <p className="text-xs text-muted-foreground">{checkpoint.displayAddress}</p>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">#{checkpoint.sequenceNo}</span>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
+                            <Clock3 className="h-3 w-3" />
+                            {formatDateTime(checkpoint.plannedAt)}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
+                            <Route className="h-3 w-3" />
+                            {formatCoordinates(checkpoint.lat, checkpoint.lng)}
+                          </span>
+                        </div>
+
+                        {checkpoint.note && (
+                          <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                            {checkpoint.note}
+                          </div>
+                        )}
+
+                        {checkpoint.costs.length > 0 && (
+                          <div className="mt-2 rounded-md border bg-amber-50/50 p-2">
+                            <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                              <Wallet className="h-3 w-3" />
+                              Chi phí tại điểm
+                            </p>
+                            <div className="space-y-1">
+                              {checkpoint.costs.map((cost) => (
+                                <div key={cost.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-[11px]">
+                                  <span className="truncate text-muted-foreground">{expenseTypeLabelVi(cost.expenseType)}</span>
+                                  <span className="font-medium">{formatVnd(cost.estimatedCost)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={trip.itinerary} />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -539,11 +724,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {participant.participantStatusId !== null && participant.participantStatusId !== undefined
-                            ? (typeof participant.participantStatusId === "number"
-                                ? PARTICIPANT_STATUS_LABELS[participant.participantStatusId] ?? `${participant.participantStatusId}`
-                                : String(participant.participantStatusId))
-                            : "—"}
+                          {participantStatusLabel(participant.participantStatusId)}
                         </TableCell>
                       </TableRow>
                     );
@@ -554,17 +735,17 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
           </Card>
         )}
 
-        {trip.mediaAttachments.length > 0 && (
+        {orderedMediaAttachments.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                Hình ảnh & Media ({trip.mediaAttachments.length})
+                Hình ảnh & Media ({orderedMediaAttachments.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {trip.mediaAttachments.map((media) => (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {orderedMediaAttachments.map((media) => (
                   <div key={media.mediaAttachmentId} className="overflow-hidden rounded-lg border">
                     {media.mediaType === "Image" || media.mediaType === 0 ? (
                       <img src={media.mediaUrl} alt="" className="aspect-video w-full object-cover" />
