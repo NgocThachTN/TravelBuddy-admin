@@ -229,6 +229,8 @@ export interface TripListItem {
   tripTypeCategories: TripCategorySummary[];
   minParticipants: number | null;
   maxParticipants: number | null;
+  currentMemberCount?: number | null;
+  pendingJoinRequestCount?: number | null;
   currentStatus: number | TripStatusCode | null;
   distanceKm?: number | null;
 }

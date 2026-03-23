@@ -139,7 +139,50 @@ function formatCoordinates(lat: number | null | undefined, lng: number | null | 
 function participantStatusLabel(value: number | string | null | undefined) {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") return PARTICIPANT_STATUS_LABELS[value] ?? `${value}`;
-  return String(value);
+  const normalized = String(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    joined: "Đã tham gia",
+    left: "Đã rời",
+    removed: "Bị xoá",
+    banned: "Bị cấm",
+  };
+  return labels[normalized] ?? String(value);
+}
+
+function scanStatusLabelVi(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "number") return SCAN_STATUS_LABELS[value] ?? `${value}`;
+  const normalized = String(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    notscanned: "Chưa quét",
+    clean: "Sạch",
+    flagged: "Cảnh báo",
+    error: "Lỗi",
+  };
+  return labels[normalized] ?? String(value);
+}
+
+function mediaTypeLabelVi(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return "Không rõ";
+  if (typeof value === "number") {
+    const numericLabels: Record<number, string> = {
+      0: "Ảnh",
+      1: "Video",
+      2: "Âm thanh",
+      3: "Tệp",
+      4: "Khác",
+    };
+    return numericLabels[value] ?? `${value}`;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  const labels: Record<string, string> = {
+    image: "Ảnh",
+    video: "Video",
+    audio: "Âm thanh",
+    file: "Tệp",
+    other: "Khác",
+  };
+  return labels[normalized] ?? String(value);
 }
 
 interface ModerationDialogProps {
@@ -478,9 +521,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Quét nội dung</span>
                     <span className="font-medium">
-                      {typeof trip.scanStatus === "number"
-                        ? SCAN_STATUS_LABELS[trip.scanStatus] ?? `${trip.scanStatus}`
-                        : String(trip.scanStatus)}
+                      {scanStatusLabelVi(trip.scanStatus)}
                     </span>
                   </div>
                 )}
@@ -751,7 +792,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                       <img src={media.mediaUrl} alt="" className="aspect-video w-full object-cover" />
                     ) : (
                       <div className="flex aspect-video items-center justify-center bg-muted">
-                        <span className="text-xs text-muted-foreground">{media.mediaType}</span>
+                        <span className="text-xs text-muted-foreground">{mediaTypeLabelVi(media.mediaType)}</span>
                       </div>
                     )}
                   </div>

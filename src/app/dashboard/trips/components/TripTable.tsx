@@ -55,6 +55,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import PaginationControl from "@/components/pagination-control";
+import { tripTypeLabelVi } from "@/app/dashboard/moderation/components/trip-enum-labels";
 
 const PAGE_SIZE = 15;
 
@@ -114,6 +115,17 @@ function formatDate(dateStr: string | null) {
     month: "short",
     year: "numeric",
   });
+}
+
+function formatParticipantSummary(trip: TripListItem) {
+  const countedMembers =
+    typeof trip.currentMemberCount === "number" && Number.isFinite(trip.currentMemberCount)
+      ? Math.max(1, trip.currentMemberCount)
+      : 1;
+
+  return trip.maxParticipants
+    ? `${countedMembers} / ${trip.maxParticipants}`
+    : `${countedMembers}`;
 }
 
 interface TripTableProps {
@@ -308,7 +320,10 @@ export default function TripTable({ role }: TripTableProps) {
                       </p>
                       {trip.tripTypeCategories.length > 0 && (
                         <p className="max-w-[200px] truncate text-xs text-muted-foreground">
-                          {trip.tripTypeCategories.map((item) => item.name).filter(Boolean).join(", ")}
+                          {trip.tripTypeCategories
+                            .map((item) => tripTypeLabelVi(item.name))
+                            .filter(Boolean)
+                            .join(", ")}
                         </p>
                       )}
                     </div>
@@ -338,7 +353,7 @@ export default function TripTable({ role }: TripTableProps) {
                 </TableCell>
 
                 <TableCell className="text-sm text-muted-foreground">
-                  {trip.maxParticipants ? `— / ${trip.maxParticipants}` : "—"}
+                  {formatParticipantSummary(trip)}
                 </TableCell>
 
                 <TableCell>
