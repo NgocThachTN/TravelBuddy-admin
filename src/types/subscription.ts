@@ -5,6 +5,7 @@ export interface SubscriptionPackage {
   durationDays: number;
   description?: string;
   isEnabled: boolean;
+  isDefaultFree: boolean;
   tripCreateLimit: number;
   tripParticipantLimit: number;
   aiUsageLimit: number;
@@ -25,6 +26,7 @@ export interface CreateSubscriptionPackagePayload {
   durationDays: number;
   description?: string;
   isEnabled: boolean;
+  isDefaultFree: boolean;
   tripCreateLimit: number;
   tripParticipantLimit: number;
   aiUsageLimit: number;

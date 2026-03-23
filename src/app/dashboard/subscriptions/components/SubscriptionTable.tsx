@@ -220,6 +220,7 @@ function PackageCard({
     <Card
       className={cn(
         "group relative overflow-hidden border transition-all duration-200 hover:shadow-lg py-0",
+        pkg.isDefaultFree && "border-amber-300/70 bg-amber-50/30",
         pkg.isEnabled
           ? "border-border/50 hover:border-border"
           : "border-dashed border-border/40 opacity-70",
@@ -257,6 +258,14 @@ function PackageCard({
                 >
                   {pkg.isEnabled ? "Hoạt động" : "Tắt"}
                 </Badge>
+                {pkg.isDefaultFree && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-amber-300 bg-amber-50 px-2 py-0 text-[10px] font-medium text-amber-700"
+                  >
+                    Free mặc định
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -277,7 +286,8 @@ function PackageCard({
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-destructive"
               onClick={onDelete}
-              title="Xóa"
+              disabled={pkg.isDefaultFree}
+              title={pkg.isDefaultFree ? "Không thể xóa gói Free mặc định" : "Xóa"}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -288,7 +298,7 @@ function PackageCard({
         <div className="mb-4">
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-bold tracking-tight text-foreground">
-              {formatVnd(pkg.price)}
+              {pkg.isDefaultFree ? "Miễn phí" : formatVnd(pkg.price)}
             </span>
           </div>
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -409,6 +419,11 @@ export default function SubscriptionTable() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    if (deleteTarget.isDefaultFree) {
+      alert("Không thể xóa gói Free mặc định.");
+      return;
+    }
+
     try {
       setDeleteLoading(true);
       await deleteSubscriptionPackage(deleteTarget.subscriptionPackageId);
@@ -625,7 +640,9 @@ export default function SubscriptionTable() {
                   pkg={pkg}
                   tierIndex={idx}
                   onEdit={() => openEdit(pkg)}
-                  onDelete={() => setDeleteTarget(pkg)}
+                  onDelete={() => {
+                    if (!pkg.isDefaultFree) setDeleteTarget(pkg);
+                  }}
                 />
               ))}
             </div>
@@ -670,6 +687,14 @@ export default function SubscriptionTable() {
                             <p className="font-medium text-sm leading-none">
                               {pkg.name}
                             </p>
+                            {pkg.isDefaultFree && (
+                              <Badge
+                                variant="outline"
+                                className="mt-1 rounded-full border-amber-300 bg-amber-50 px-2 py-0 text-[10px] font-medium text-amber-700"
+                              >
+                                Free mặc định
+                              </Badge>
+                            )}
                             {pkg.description && (
                               <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                                 {pkg.description}
@@ -679,7 +704,7 @@ export default function SubscriptionTable() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm font-semibold text-emerald-600">
-                        {formatVnd(pkg.price)}
+                        {pkg.isDefaultFree ? "Miễn phí" : formatVnd(pkg.price)}
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         {pkg.durationDays} ngày
@@ -736,8 +761,11 @@ export default function SubscriptionTable() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => setDeleteTarget(pkg)}
-                            title="Xóa"
+                            onClick={() => {
+                              if (!pkg.isDefaultFree) setDeleteTarget(pkg);
+                            }}
+                            disabled={pkg.isDefaultFree}
+                            title={pkg.isDefaultFree ? "Không thể xóa gói Free mặc định" : "Xóa"}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
