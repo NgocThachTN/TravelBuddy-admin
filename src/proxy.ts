@@ -40,9 +40,6 @@ function decodeSession(token: string): { role: Role } | null {
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(Buffer.from(base64, "base64").toString("utf-8"));
 
-    const exp = typeof payload.exp === "number" ? payload.exp : null;
-    if (exp && Date.now() / 1000 > exp) return null;
-
     const beRole = payload[ROLE_CLAIM] as string | undefined;
     if (!beRole) return null;
 

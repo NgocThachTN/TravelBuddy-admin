@@ -1,4 +1,5 @@
 export const COOKIE_NAME = "tb_admin_session";
+export const REFRESH_COOKIE_NAME = "tb_admin_refresh_session";
 
 export const ROUTES = {
   LOGIN: "/login",
@@ -36,6 +37,7 @@ export const ROUTES = {
 export const API_ROUTES = {
   AUTH_LOGIN: "/api/auth/admin/login",
   AUTH_LOGOUT: "/api/auth/admin/logout",
+  AUTH_REFRESH: "/api/auth/admin/refresh",
   AUTH_PROFILE: "/api/auth/profile",
   AUTH_CHANGE_PASSWORD: "/api/auth/change-password",
   ADMIN_USERS: "/api/admin/users",

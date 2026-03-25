@@ -1,4 +1,10 @@
 import axios from "axios";
+import { API_ROUTES } from "./constants";
+
+type RetriableRequestConfig = {
+  _retry?: boolean;
+  url?: string;
+};
 
 /**
  * Client-side axios instance.
@@ -10,21 +16,56 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAdminSession(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post<{ success?: boolean }>(API_ROUTES.AUTH_REFRESH)
+      .then((res) => Boolean(res.data?.success))
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 api.interceptors.response.use(
   (res) => {
     console.log(
-      `[API ✓ ${res.status}] ${(res.config.method ?? "?").toUpperCase()} ${res.config.url}`,
+      `[API OK ${res.status}] ${(res.config.method ?? "?").toUpperCase()} ${res.config.url}`,
     );
     return res;
   },
-  (error) => {
+  async (error) => {
+    const status = error?.response?.status;
+    const originalRequest = (error?.config ?? null) as RetriableRequestConfig | null;
+    const requestUrl = originalRequest?.url ?? "";
+    const isRefreshRequest = requestUrl.includes(API_ROUTES.AUTH_REFRESH);
+
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isRefreshRequest
+    ) {
+      originalRequest._retry = true;
+      const refreshed = await refreshAdminSession();
+
+      if (refreshed) {
+        return api.request(originalRequest);
+      }
+    }
+
     const data = error?.response?.data;
-    const status = error?.response?.status ?? "network";
+    const responseStatus = status ?? "network";
     const method = (error?.config?.method ?? "?").toUpperCase();
     const url = error?.config?.url ?? "unknown";
     const detail =
       data?.detail ?? data?.message ?? data?.error ?? JSON.stringify(data);
-    console.error(`[API ✗ ${status}] ${method} ${url} — ${detail}`);
+    console.error(`[API ERROR ${responseStatus}] ${method} ${url} - ${detail}`);
     return Promise.reject(error);
   },
 );
@@ -42,7 +83,7 @@ backendApi.interceptors.request.use((config) => {
   const method = (config.method ?? "?").toUpperCase();
   const url = `${config.baseURL ?? ""}${config.url ?? ""}`;
   const body = config.data ? JSON.stringify(config.data) : "";
-  console.log(`[Backend →] ${method} ${url}`, body ? `\n  body: ${body}` : "");
+  console.log(`[Backend ->] ${method} ${url}`, body ? `\n  body: ${body}` : "");
   return config;
 });
 
@@ -51,7 +92,7 @@ backendApi.interceptors.response.use(
     const method = (res.config.method ?? "?").toUpperCase();
     const url = res.config.url ?? "unknown";
     console.log(
-      `[Backend ✓ ${res.status}] ${method} ${url}`,
+      `[Backend OK ${res.status}] ${method} ${url}`,
       `\n  response: ${JSON.stringify(res.data)}`.slice(0, 500),
     );
     return res;
@@ -62,7 +103,7 @@ backendApi.interceptors.response.use(
     const method = (error?.config?.method ?? "?").toUpperCase();
     const url = error?.config?.url ?? "unknown";
     console.error(
-      `[Backend ✗ ${status}] ${method} ${url}`,
+      `[Backend ERROR ${status}] ${method} ${url}`,
       `\n  response: ${JSON.stringify(data, null, 2)}`,
     );
     return Promise.reject(error);

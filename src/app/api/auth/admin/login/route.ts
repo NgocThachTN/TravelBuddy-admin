@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_NAME } from "@/lib/constants";
+import { COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/lib/constants";
 import { backendApi } from "@/lib/axios";
 import { AxiosError } from "axios";
 
@@ -80,15 +80,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { accessToken, expiresIn } = data.data;
+    const { accessToken, refreshToken, expiresIn } = data.data;
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json(
+        { error: "Phản hồi đăng nhập không hợp lệ từ backend" },
+        { status: 502 },
+      );
+    }
 
     const response = NextResponse.json({ success: true });
 
     response.cookies.set(COOKIE_NAME, accessToken, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: expiresIn ?? 3600,
+    });
+
+    response.cookies.set(REFRESH_COOKIE_NAME, refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
     });
 
     return response;
