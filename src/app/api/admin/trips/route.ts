@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   if (searchParams.has("sortDirection")) params.sortDirection = searchParams.get("sortDirection")!;
 
   try {
-    const { data } = await backendApi.get("/api/v1/trips", {
+    const { data } = await backendApi.get("/api/v1/admin/trips", {
       params,
       headers: { Authorization: `Bearer ${token}` },
     });
