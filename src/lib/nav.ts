@@ -80,9 +80,28 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Qu\u1ea3n l\u00fd giao d\u1ecbch",
-    href: ROUTES.TRANSACTIONS,
     icon: CreditCard,
     roles: ["ADMIN"],
+    children: [
+      {
+        label: "Giao d\u1ecbch n\u1ea1p ti\u1ec1n",
+        href: ROUTES.TRANSACTIONS_DEPOSITS,
+        icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Mua g\u00f3i ng\u01b0\u1eddi d\u00f9ng",
+        href: ROUTES.TRANSACTIONS_USER_SUBSCRIPTIONS,
+        icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Mua g\u00f3i \u0111\u1ed1i t\u00e1c",
+        href: ROUTES.TRANSACTIONS_PARTNER_SUBSCRIPTIONS,
+        icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+    ],
   },
   {
     label: "Nh\u1eadt k\u00fd",

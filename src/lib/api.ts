@@ -43,6 +43,8 @@ import type {
   CreateServicePartnerFeePayload,
   UpdateServicePartnerFeePayload,
   GetServicePartnerFeesParams,
+  GetAdminTransactionsParams,
+  AdminTransactionRecord,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -56,6 +58,8 @@ export type {
   SubscriptionPackagesResponse,
   CreateSubscriptionPackagePayload,
   UpdateSubscriptionPackagePayload,
+  GetAdminTransactionsParams,
+  AdminTransactionRecord,
 } from "@/types";
 // Backward-compat alias
 export type { UserListItem as User } from "@/types";
@@ -117,8 +121,10 @@ export async function logoutAdmin(): Promise<void> {
   await api.post(API_ROUTES.AUTH_LOGOUT);
 }
 
-export async function getMyProfile(): Promise<BeWrapper<any>> {
-  const { data } = await api.get<BeWrapper<any>>(API_ROUTES.AUTH_PROFILE);
+export async function getMyProfile(): Promise<BeWrapper<Record<string, unknown>>> {
+  const { data } = await api.get<BeWrapper<Record<string, unknown>>>(
+    API_ROUTES.AUTH_PROFILE,
+  );
   return data;
 }
 
@@ -128,8 +134,8 @@ export async function updateMyProfile(payload: {
   bio?: string;
   avatarUrl?: string;
   relativePhone?: string;
-}): Promise<BeWrapper<any>> {
-  const { data } = await api.put<BeWrapper<any>>(
+}): Promise<BeWrapper<Record<string, unknown>>> {
+  const { data } = await api.put<BeWrapper<Record<string, unknown>>>(
     API_ROUTES.AUTH_PROFILE,
     payload,
   );
@@ -180,6 +186,26 @@ export async function updateSubscriptionPackage(
 
 export async function deleteSubscriptionPackage(id: string): Promise<void> {
   await api.delete(`${API_ROUTES.ADMIN_SUBSCRIPTIONS}/${id}`);
+}
+
+export async function fetchAdminDepositTransactions(
+  params: GetAdminTransactionsParams = {},
+): Promise<BePagedWrapper<AdminTransactionRecord>> {
+  const { data } = await api.get<BePagedWrapper<AdminTransactionRecord>>(
+    API_ROUTES.ADMIN_TRANSACTIONS_DEPOSITS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchAdminUserSubscriptionTransactions(
+  params: GetAdminTransactionsParams = {},
+): Promise<BePagedWrapper<AdminTransactionRecord>> {
+  const { data } = await api.get<BePagedWrapper<AdminTransactionRecord>>(
+    API_ROUTES.ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS,
+    { params },
+  );
+  return data;
 }
 
 // ── Trip Metadata API ─────────────────────────────────────────────────

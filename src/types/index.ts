@@ -14,6 +14,10 @@ export type {
   CreateSubscriptionPackagePayload,
   UpdateSubscriptionPackagePayload,
 } from "./subscription";
+export type {
+  AdminTransactionRecord,
+  GetAdminTransactionsParams,
+} from "./transaction";
 export type { BePagedWrapper, BeWrapper } from "./api";
 export type { NavItem, NavGroup } from "./nav";
 export type { TimeRange } from "./dashboard";

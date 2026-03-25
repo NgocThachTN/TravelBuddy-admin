@@ -20,6 +20,10 @@ export const ROUTES = {
       : "/dashboard/moderation-reports",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
+  TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
+  TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
+  TRANSACTIONS_PARTNER_SUBSCRIPTIONS:
+    "/dashboard/transactions/partner-subscriptions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
   SUBSCRIPTIONS_PARTNERS: "/dashboard/subscriptions/partners",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
@@ -41,6 +45,9 @@ export const API_ROUTES = {
   ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
   ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
+  ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
+  ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS:
+    "/api/admin/transactions/user-subscriptions",
   ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
   ADMIN_VEHICLE_CATEGORIES: "/api/admin/trip-metadata/vehicle-categories",
   ADMIN_EXPENSE_CATEGORIES: "/api/admin/trip-metadata/expense-categories",
