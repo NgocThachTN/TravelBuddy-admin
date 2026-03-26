@@ -7,6 +7,7 @@ import {
   deleteServicePartnerFee,
   fetchServicePartnerFees,
 } from "@/lib/api";
+import { extractApiError } from "@/lib/api-error";
 import type { ServicePartnerFee } from "@/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -304,11 +305,8 @@ export default function ServicePartnerFeeTable() {
         setError(null);
       } catch (err) {
         if (requestId !== requestIdRef.current) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách gói đối tác.",
-        );
+        const apiError = extractApiError(err, "Không thể tải danh sách gói đối tác.");
+        setError(apiError.message);
       } finally {
         if (requestId === requestIdRef.current) {
           setIsFetching(false);
@@ -327,11 +325,14 @@ export default function ServicePartnerFeeTable() {
     if (!deleteTarget) return;
     try {
       setDeleteLoading(true);
+      setError(null);
       await deleteServicePartnerFee(deleteTarget.servicePartnerFeeId);
       setDeleteTarget(null);
       loadFees(page, includeInactive);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Xóa thất bại");
+      const apiError = extractApiError(err, "Xóa thất bại");
+      setError(apiError.message);
+      alert(apiError.message);
     } finally {
       setDeleteLoading(false);
     }
@@ -341,6 +342,7 @@ export default function ServicePartnerFeeTable() {
     if (!toggleTarget) return;
     try {
       setToggleLoading(true);
+      setError(null);
       if (toggleTarget.isActive) {
         await deactivateServicePartnerFee(toggleTarget.servicePartnerFeeId);
       } else {
@@ -349,7 +351,9 @@ export default function ServicePartnerFeeTable() {
       setToggleTarget(null);
       loadFees(page, includeInactive);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Cập nhật trạng thái thất bại");
+      const apiError = extractApiError(err, "Cập nhật trạng thái thất bại");
+      setError(apiError.message);
+      alert(apiError.message);
     } finally {
       setToggleLoading(false);
     }

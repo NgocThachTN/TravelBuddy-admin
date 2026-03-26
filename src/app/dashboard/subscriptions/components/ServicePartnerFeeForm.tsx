@@ -24,6 +24,7 @@ import {
   createServicePartnerFee,
   updateServicePartnerFee,
 } from "@/lib/api";
+import { extractApiError } from "@/lib/api-error";
 import type {
   CreateServicePartnerFeePayload,
   ServicePartnerFee,
@@ -104,9 +105,8 @@ export default function ServicePartnerFeeForm({
       onSuccess();
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Không thể lưu gói đối tác.",
-      );
+      const apiError = extractApiError(err, "Không thể lưu gói đối tác.");
+      setError(apiError.message);
     } finally {
       setLoading(false);
     }
