@@ -45,6 +45,7 @@ import type {
   GetServicePartnerFeesParams,
   GetAdminTransactionsParams,
   AdminTransactionRecord,
+  MyProfileData,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -121,8 +122,8 @@ export async function logoutAdmin(): Promise<void> {
   await api.post(API_ROUTES.AUTH_LOGOUT);
 }
 
-export async function getMyProfile(): Promise<BeWrapper<Record<string, unknown>>> {
-  const { data } = await api.get<BeWrapper<Record<string, unknown>>>(
+export async function getMyProfile(): Promise<BeWrapper<MyProfileData>> {
+  const { data } = await api.get<BeWrapper<MyProfileData>>(
     API_ROUTES.AUTH_PROFILE,
   );
   return data;
@@ -134,8 +135,8 @@ export async function updateMyProfile(payload: {
   bio?: string;
   avatarUrl?: string;
   relativePhone?: string;
-}): Promise<BeWrapper<Record<string, unknown>>> {
-  const { data } = await api.put<BeWrapper<Record<string, unknown>>>(
+}): Promise<BeWrapper<MyProfileData>> {
+  const { data } = await api.put<BeWrapper<MyProfileData>>(
     API_ROUTES.AUTH_PROFILE,
     payload,
   );

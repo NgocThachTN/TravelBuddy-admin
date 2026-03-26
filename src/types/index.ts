@@ -1,4 +1,10 @@
-export type { Role, AdminSession, AdminPayload } from "./auth";
+export type {
+  Role,
+  AdminSession,
+  AdminPayload,
+  MyProfileInfo,
+  MyProfileData,
+} from "./auth";
 export type {
   User,
   UserListItem,

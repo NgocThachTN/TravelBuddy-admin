@@ -33,6 +33,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import UserTripsTabs from "@/app/dashboard/users/components/UserTripsTabs";
+import { memberLevelLabelVi } from "@/app/dashboard/moderation/components/trip-enum-labels";
 
 /* ── Avatar / name helpers ── */
 const avatarColors = [
@@ -341,7 +342,7 @@ export default async function UserDetailPage({ params }: PageProps) {
                 <DetailRow
                   icon={Shield}
                   label="Mức kinh nghiệm"
-                  value={user.experienceLevel}
+                  value={memberLevelLabelVi(user.experienceLevel)}
                 />
               )}
               {user.bio && (

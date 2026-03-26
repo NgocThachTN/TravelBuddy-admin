@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyProfile, updateMyProfile, changePassword } from "@/lib/api";
+import type { MyProfileData } from "@/types";
 
 export default function SettingsPage() {
   // Profile state
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<MyProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({
     firstName: "",
