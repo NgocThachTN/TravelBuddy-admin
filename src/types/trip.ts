@@ -406,19 +406,14 @@ export interface TripModerationTaskListItem {
   assignedToName: string | null;
 }
 
-export interface TripModerationAiFinding {
-  field: string | null;
-  label: string | null;
+export interface TripModerationFlaggedItem {
   severity: string | null;
-  reason: string | null;
+  confidence: number | null;
+  contentPath: string | null;
   evidence: string | null;
-}
-
-export interface TripModerationSafePreview {
-  title: string | null;
-  description: string | null;
-  rule: string | null;
-  itemRequired: string | null;
+  reason: string | null;
+  whatReviewerShouldCheck: string | null;
+  suggestedReviewerAction: string | null;
 }
 
 export interface TripModerationTaskDetail {
@@ -434,12 +429,14 @@ export interface TripModerationTaskDetail {
   aiStatus: number | ContentScanStatusCode | string | null;
   scanErrorMessage: string | null;
 
-  aiConfidence: number | null;
-  aiTotalScore: number | null;
-  aiDecision: string | null;
-  aiSummary: string | null;
-  aiFindings: TripModerationAiFinding[];
-  safeNormalizedPreview: TripModerationSafePreview | null;
+  success: boolean | null;
+  moderationCode: string | null;
+  reviewPriority: string | null;
+  overallSummary: string | null;
+  recommendedDecision: string | null;
+  flaggedItems: TripModerationFlaggedItem[];
+  safeSignals: string[];
+  missingContext: string[];
 
   tripExists: boolean;
   isTripDeleted: boolean;

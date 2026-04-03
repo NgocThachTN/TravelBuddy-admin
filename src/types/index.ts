@@ -71,8 +71,7 @@ export type {
   TripModerationDecisionResponse,
   GetTripModerationTasksParams,
   TripModerationTaskListItem,
-  TripModerationAiFinding,
-  TripModerationSafePreview,
+  TripModerationFlaggedItem,
   TripModerationTaskDetail,
 } from "./trip";
 export {
