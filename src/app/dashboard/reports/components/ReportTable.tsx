@@ -83,7 +83,7 @@ const PAGE_SIZE = 15;
 type StatusFilter = "all" | "Pending" | "Reviewing" | "Resolved" | "Rejected" | "Duplicate";
 type TargetTypeFilter = "all" | string;
 
-/* ── Helpers ── */
+/* -- Helpers -- */
 const avatarColors = [
   "bg-blue-100 text-blue-700",
   "bg-purple-100 text-purple-700",
@@ -143,7 +143,31 @@ function targetTypeIcon(targetType: number | string) {
   }
 }
 
-/* ── Process Dialog (unified resolve/reject/duplicate) ── */
+function getAvailableResolvedActions(targetType: number | string): ResolvedActionCode[] {
+  const targetCode = typeof targetType === "number"
+    ? (["Trip", "Post", "PostComment", "ServicePartner", "RescueRequest", "RescueRequestMessage", "TripMessage", "SocialCheckpoint", "User", "Other"] as const)[targetType]
+    : targetType;
+
+  if (targetCode === "ServicePartner") {
+    return ["None", "Warn", "SuspendPartner"];
+  }
+
+  if (targetCode === "User") {
+    return ["None", "Warn", "LockUser", "BanUser"];
+  }
+
+  return ["None", "Warn"];
+}
+
+const ACTION_DESCRIPTIONS: Partial<Record<ResolvedActionCode, string>> = {
+  None: "Kh\u00f4ng \u00e1p d\u1ee5ng bi\u1ec7n ph\u00e1p n\u00e0o, ch\u1ec9 l\u01b0u k\u1ebft qu\u1ea3 x\u00e1c minh.",
+  Warn: "G\u1eedi nh\u1eafc nh\u1edf \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng \u0111i\u1ec1u ch\u1ec9nh h\u00e0nh vi.",
+  LockUser: "Kh\u00f3a t\u1ea1m th\u1eddi t\u00e0i kho\u1ea3n \u0111\u1ec3 ng\u0103n vi ph\u1ea1m ti\u1ebfp t\u1ee5c.",
+  BanUser: "Ch\u1eb7n v\u0129nh vi\u1ec5n t\u00e0i kho\u1ea3n v\u00ec vi ph\u1ea1m nghi\u00eam tr\u1ecdng.",
+  SuspendPartner: "T\u1ea1m d\u1eebng t\u00e0i kho\u1ea3n \u0111\u1ed1i t\u00e1c cho \u0111\u1ebfn khi \u0111\u01b0\u1ee3c m\u1edf l\u1ea1i.",
+};
+
+/* -- Process Dialog (unified resolve/reject/duplicate) -- */
 interface ProcessDialogProps {
   report: ReportListItem | null;
   onClose: () => void;
@@ -179,24 +203,51 @@ function ProcessForm({
   onConfirm: (payload: ProcessReportPayload) => Promise<void>;
   loading: boolean;
 }) {
+  const availableActions = getAvailableResolvedActions(report.targetType);
+  const defaultSelectedAction: ResolvedActionCode =
+    availableActions.includes("Warn") ? "Warn" : availableActions[0];
   const [decision, setDecision] = useState<ReportDecisionCode>("Resolved");
-  const [action, setAction] = useState<ResolvedActionCode>("Warn");
+  const [selectedActions, setSelectedActions] = useState<ResolvedActionCode[]>([defaultSelectedAction]);
   const [note, setNote] = useState("");
   const [createStrike, setCreateStrike] = useState(false);
   const [strikeExpiresAt, setStrikeExpiresAt] = useState("");
 
-  // Admin actions
-  const availableActions: ResolvedActionCode[] = ["None", "Warn", "LockUser", "BanUser", "SuspendPartner", "Refund"];
-
   const decisionIndex = REPORT_DECISION_CODES.indexOf(decision);
+  const normalizedSelectedActions = selectedActions.filter((action) =>
+    availableActions.includes(action),
+  );
+
+  function toggleAction(action: ResolvedActionCode) {
+    setSelectedActions((current) => {
+      const normalizedCurrent = current.filter((value) =>
+        availableActions.includes(value),
+      );
+
+      if (action === "None") {
+        return normalizedCurrent.includes("None") ? [] : ["None"];
+      }
+
+      const withoutNone = normalizedCurrent.filter((value) => value !== "None");
+      if (withoutNone.includes(action)) {
+        return withoutNone.filter((value) => value !== action);
+      }
+
+      return [...withoutNone, action];
+    });
+  }
 
   function handleSubmit() {
     const payload: ProcessReportPayload = {
       decision: decisionIndex,
     };
     if (decision === "Resolved") {
-      const actionIndex = (["None", "Warn", "RemoveContent", "LockUser", "BanUser", "Refund", "SuspendPartner", "CancelRescueRequest"] as const).indexOf(action);
-      if (actionIndex >= 0) payload.resolvedAction = actionIndex;
+      const resolvedActionIndexes = normalizedSelectedActions
+        .map((action) => (["None", "Warn", "RemoveContent", "LockUser", "BanUser", "Refund", "SuspendPartner", "CancelRescueRequest"] as const).indexOf(action))
+        .filter((value) => value >= 0);
+      if (resolvedActionIndexes.length > 0) {
+        payload.resolvedActions = resolvedActionIndexes;
+        payload.resolvedAction = resolvedActionIndexes[0];
+      }
     }
     if (note) payload.resolvedNote = note;
     if (createStrike) {
@@ -206,6 +257,8 @@ function ProcessForm({
     onConfirm(payload);
   }
 
+  const disableSubmit = decision === "Resolved" && normalizedSelectedActions.length === 0;
+
   return (
     <>
       <DialogHeader>
@@ -213,14 +266,14 @@ function ProcessForm({
         <DialogDescription>
           Báo cáo từ{" "}
           <span className="font-semibold">{getReporterName(report)}</span>
-          {" — "}
+          {" � "}
           {reportTargetTypeLabel(report.targetType)}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4">
         {/* Decision */}
         <div className="space-y-2">
-          <Label>Quyết định</Label>
+          <Label>Quyết ��9nh</Label>
           <Select value={decision} onValueChange={(v) => setDecision(v as ReportDecisionCode)}>
             <SelectTrigger>
               <SelectValue />
@@ -237,20 +290,40 @@ function ProcessForm({
 
         {/* Resolved Action (only when Resolved) */}
         {decision === "Resolved" && (
-          <div className="space-y-2">
-            <Label>Hành động xử lý</Label>
-            <Select value={action} onValueChange={(v) => setAction(v as ResolvedActionCode)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableActions.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {RESOLVED_ACTION_LABELS[key]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-2 rounded-lg border p-3">
+            <Label>H\u00e0nh \u0111\u1ed9ng x\u1eed l\u00fd (c\u00f3 th\u1ec3 ch\u1ecdn nhi\u1ec1u)</Label>
+            <div className="space-y-2">
+              {availableActions.map((action) => {
+                const isChecked = normalizedSelectedActions.includes(action);
+                return (
+                  <label
+                    key={action}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-md border p-2",
+                      isChecked ? "border-primary bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleAction(action)}
+                      className="mt-0.5 h-4 w-4 rounded border-border"
+                    />
+                    <span className="space-y-0.5">
+                      <span className="block text-sm font-medium">{RESOLVED_ACTION_LABELS[action]}</span>
+                      {ACTION_DESCRIPTIONS[action] && (
+                        <span className="block text-xs text-muted-foreground">
+                          {ACTION_DESCRIPTIONS[action]}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {normalizedSelectedActions.length === 0 && (
+              <p className="text-xs text-destructive">Vui l\u00f2ng ch\u1ecdn \u00edt nh\u1ea5t 1 h\u00e0nh \u0111\u1ed9ng x\u1eed l\u00fd.</p>
+            )}
           </div>
         )}
 
@@ -280,12 +353,15 @@ function ProcessForm({
                 className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="create-strike" className="cursor-pointer">
-                Tạo strike cho người vi phạm
+                Ghi nh\u1eadn vi ph\u1ea1m cho ng\u01b0\u1eddi d\u00f9ng
               </Label>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Ghi nh\u1eadn vi ph\u1ea1m gi\u00fap h\u1ec7 th\u1ed1ng theo d\u00f5i l\u1ecbch s\u1eed t\u00e1i ph\u1ea1m \u0111\u1ec3 x\u1eed l\u00fd m\u1ea1nh h\u01a1n khi c\u1ea7n.
+            </p>
             {createStrike && (
               <div className="space-y-2">
-                <Label htmlFor="strike-expires">Hết hạn strike (không bắt buộc)</Label>
+                <Label htmlFor="strike-expires">Hết hạn strike (không bắt bu�"c)</Label>
                 <Input
                   id="strike-expires"
                   type="datetime-local"
@@ -303,7 +379,7 @@ function ProcessForm({
         </Button>
         <Button
           variant={decision === "Rejected" ? "destructive" : "default"}
-          disabled={loading}
+          disabled={loading || disableSubmit}
           onClick={handleSubmit}
         >
           {loading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
@@ -314,7 +390,7 @@ function ProcessForm({
   );
 }
 
-/* ── Main Report Table ── */
+/* -- Main Report Table -- */
 export default function ReportTable() {
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -361,7 +437,7 @@ export default function ReportTable() {
       setTotalPages(result.data.totalPages);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách báo cáo");
+      setError(err instanceof Error ? err.message : "Không thỒ tải danh sách báo cáo");
     } finally {
       setLoading(false);
     }
@@ -383,7 +459,7 @@ export default function ReportTable() {
     }
   }
 
-  /* ── Loading Skeleton ── */
+  /* -- Loading Skeleton -- */
   if (loading && reports.length === 0) {
     return (
       <Card>
@@ -408,7 +484,7 @@ export default function ReportTable() {
     );
   }
 
-  /* ── Error State ── */
+  /* -- Error State -- */
   if (error) {
     return (
       <Card className="border-destructive/20 bg-destructive/5">
@@ -441,12 +517,12 @@ export default function ReportTable() {
       />
 
       <Card className="overflow-hidden">
-        {/* ── Toolbar ── */}
+        {/* -- Toolbar -- */}
         <div className="flex flex-wrap items-center gap-3 border-b p-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm báo cáo…"
+              placeholder="Tìm kiếm báo cáo⬦"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 pl-9 bg-background"
@@ -463,7 +539,7 @@ export default function ReportTable() {
               <SelectItem value="Pending">Chờ xử lý</SelectItem>
               <SelectItem value="Reviewing">Đang xem xét</SelectItem>
               <SelectItem value="Resolved">Đã giải quyết</SelectItem>
-              <SelectItem value="Rejected">Đã từ chối</SelectItem>
+              <SelectItem value="Rejected">Đã từ ch�i</SelectItem>
               <SelectItem value="Duplicate">Trùng lặp</SelectItem>
             </SelectContent>
           </Select>
@@ -471,12 +547,12 @@ export default function ReportTable() {
           {/* Target Type Filter */}
           <Select value={targetTypeFilter} onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}>
             <SelectTrigger className="h-9 w-[170px]">
-              <SelectValue placeholder="Loại đối tượng" />
+              <SelectValue placeholder="Loại ��i tượng" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả loại</SelectItem>
               <SelectItem value="User">Người dùng</SelectItem>
-              <SelectItem value="ServicePartner">Đối tác</SelectItem>
+              <SelectItem value="ServicePartner">Đ�i tác</SelectItem>
             </SelectContent>
           </Select>
 
@@ -491,21 +567,21 @@ export default function ReportTable() {
           </Button>
         </div>
 
-        {/* ── Count Bar ── */}
+        {/* -- Count Bar -- */}
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            Tổng cộng <span className="font-semibold text-foreground">{totalCount}</span> báo cáo
+            T�"ng c�"ng <span className="font-semibold text-foreground">{totalCount}</span> báo cáo
           </span>
         </div>
 
-        {/* ── Table ── */}
+        {/* -- Table -- */}
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Người báo cáo</TableHead>
               <TableHead>Loại</TableHead>
-              <TableHead>Bên bị tố</TableHead>
+              <TableHead>Bên b�9 t�</TableHead>
               <TableHead>Lý do</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead>Ưu tiên</TableHead>
@@ -522,7 +598,7 @@ export default function ReportTable() {
                   </div>
                   <p className="text-sm font-medium">Không tìm thấy báo cáo</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Hãy thử thay đổi bộ lọc hoặc từ khoá tìm kiếm
+                    Hãy thử thay ��"i b�" lọc hoặc từ khoá tìm kiếm
                   </p>
                 </TableCell>
               </TableRow>
@@ -570,7 +646,7 @@ export default function ReportTable() {
                     {/* Reason */}
                     <TableCell className="max-w-[200px]">
                       <p className="truncate text-sm">
-                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "—"}
+                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "�"}
                       </p>
                     </TableCell>
 
@@ -633,7 +709,7 @@ export default function ReportTable() {
           </TableBody>
         </Table>
 
-        {/* ── Pagination ── */}
+        {/* -- Pagination -- */}
         <PaginationControl
           currentPage={page}
           totalPages={totalPages}
@@ -644,3 +720,4 @@ export default function ReportTable() {
     </>
   );
 }
+

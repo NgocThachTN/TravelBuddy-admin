@@ -1,5 +1,6 @@
 import { Shield } from "lucide-react";
 import ModerationReportTable from "./components/ModerationReportTable";
+import ModerationReportsQuickTabs from "./components/ModerationReportsQuickTabs";
 
 export default function ModerationReportsPage() {
   const title = "B\u00e1o c\u00e1o n\u1ed9i dung";
@@ -18,6 +19,7 @@ export default function ModerationReportsPage() {
         </div>
       </div>
 
+      <ModerationReportsQuickTabs />
       <ModerationReportTable />
     </div>
   );

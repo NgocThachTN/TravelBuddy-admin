@@ -126,6 +126,7 @@ export {
   reportPriorityLabel,
   reportedPartyTypeLabel,
   resolvedActionLabel,
+  resolvedActionsLabel,
 } from "./report";
 export type {
   PartnerRequestListItem,
