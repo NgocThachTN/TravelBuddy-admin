@@ -45,8 +45,33 @@ export interface PartnerRequestDetail {
   addressLng?: number;
   contactName?: string;
   contactPhone?: string;
+  mediaAttachments?: PartnerDocumentMediaAttachment[];
+  taxVerification?: PartnerTaxVerification;
   identifyCardUrl?: string;
   licenseFileUrl?: string;
+  businessLicenseFileUrl?: string;
+}
+
+export interface PartnerDocumentMediaAttachment {
+  mediaAttachmentId?: string;
+  targetType?: "PartnerIdentityCard" | "PartnerBusinessLicense" | string;
+  mediaUrl?: string;
+  mediaType?: string;
+  visibility?: string;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
+export interface PartnerTaxVerification {
+  verificationStatus?: string;
+  taxCode?: string;
+  provider?: string;
+  providerCode?: string;
+  providerDesc?: string;
+  isBusinessActive?: boolean;
+  providerBusinessStatus?: string;
+  verifiedAt?: string;
+  errorMessage?: string;
 }
 
 export interface GetPartnerRequestsParams {
