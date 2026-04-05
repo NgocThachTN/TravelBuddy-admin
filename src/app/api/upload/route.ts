@@ -1,49 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
-const API_KEY = process.env.CLOUDINARY_API_KEY!;
-const API_SECRET = process.env.CLOUDINARY_API_SECRET!;
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"];
 
 export async function POST(req: NextRequest) {
   try {
+    if (!CLOUD_NAME || !UPLOAD_PRESET) {
+      return NextResponse.json(
+        { error: "Thiếu cấu hình Cloudinary (CLOUDINARY_CLOUD_NAME hoặc CLOUDINARY_UPLOAD_PRESET)." },
+        { status: 500 },
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json({ error: "Không có tệp được gửi lên." }, { status: 400 });
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "File type not allowed. Use PNG, JPG, WebP, SVG, or GIF." },
+        { error: "Định dạng tệp không hợp lệ. Chỉ chấp nhận PNG, JPG, WebP, SVG hoặc GIF." },
         { status: 400 },
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum 2 MB." },
+        { error: "Tệp quá lớn. Kích thước tối đa là 2 MB." },
         { status: 400 },
       );
     }
 
-    const timestamp = Math.floor(Date.now() / 1000);
-    const folder = "travelbuddy/icons";
-
-    // Cloudinary requires a signature over alphabetically-sorted params
-    const signaturePayload = `folder=${folder}&timestamp=${timestamp}${API_SECRET}`;
-    const signature = crypto.createHash("sha1").update(signaturePayload).digest("hex");
+    const folder = "travelbuddy/avatars";
 
     const uploadForm = new FormData();
     uploadForm.append("file", file);
-    uploadForm.append("api_key", API_KEY);
-    uploadForm.append("timestamp", String(timestamp));
+    uploadForm.append("upload_preset", UPLOAD_PRESET);
     uploadForm.append("folder", folder);
-    uploadForm.append("signature", signature);
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
@@ -57,7 +55,7 @@ export async function POST(req: NextRequest) {
       const message =
         typeof detail === "object" && detail !== null && "message" in detail
           ? (detail as { message: string }).message
-          : "Upload to Cloudinary failed";
+          : "Tải ảnh lên Cloudinary thất bại.";
       return NextResponse.json({ error: message }, { status: 502 });
     }
 
@@ -65,6 +63,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: data.secure_url });
   } catch (err) {
     console.error("Upload error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Lỗi hệ thống khi tải ảnh lên." }, { status: 500 });
   }
 }

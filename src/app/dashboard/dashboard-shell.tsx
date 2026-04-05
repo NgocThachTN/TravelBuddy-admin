@@ -36,6 +36,7 @@ const LABELS: Record<string, string> = {
   support: "Hỗ trợ",
   "audit-logs": "Nhật ký",
   settings: "Cài đặt",
+  profile: "Thông tin cá nhân",
   admin: "Quản trị",
 };
 

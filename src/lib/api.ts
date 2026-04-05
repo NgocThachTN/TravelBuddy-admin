@@ -135,6 +135,8 @@ export async function updateMyProfile(payload: {
   bio?: string;
   avatarUrl?: string;
   relativePhone?: string;
+  gender?: string;
+  dateOfBirth?: string;
 }): Promise<BeWrapper<MyProfileData>> {
   const { data } = await api.put<BeWrapper<MyProfileData>>(
     API_ROUTES.AUTH_PROFILE,

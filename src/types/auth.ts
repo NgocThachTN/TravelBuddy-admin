@@ -12,11 +12,15 @@ export interface MyProfileInfo {
   bio?: string;
   avatarUrl?: string;
   relativePhone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  [key: string]: unknown;
 }
 
 export interface MyProfileData {
   username?: string;
-  profile?: MyProfileInfo;
+  profile?: MyProfileInfo | null;
+  [key: string]: unknown;
 }
 
 /** @deprecated Use AdminSession */

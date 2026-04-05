@@ -32,6 +32,7 @@ export const ROUTES = {
   SUPPORT: "/dashboard/support",
   AUDIT_LOGS: "/dashboard/audit-logs",
   SETTINGS: "/dashboard/settings",
+  PROFILE: "/dashboard/profile",
 } as const;
 
 export const API_ROUTES = {

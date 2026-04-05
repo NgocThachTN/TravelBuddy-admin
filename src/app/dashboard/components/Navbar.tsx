@@ -1,8 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
+import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
 import { logoutAction } from "@/server/auth/actions";
+import { ROUTES } from "@/lib/constants";
 import type { Role } from "@/types";
+import { getMyProfile } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -15,15 +18,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, Bell, LogOut, ChevronDown, User } from "lucide-react";
 
 interface NavbarProps {
   email: string;
   role: Role;
 }
 
-/** Get initials from email: admin@example.com → "AD" */
 function initials(email: string): string {
   const name = email.split("@")[0];
   return name.slice(0, 2).toUpperCase();
@@ -31,6 +33,42 @@ function initials(email: string): string {
 
 export default function Navbar({ email, role }: NavbarProps) {
   const [isPending, startTransition] = useTransition();
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    void getMyProfile()
+      .then((response) => {
+        if (ignore) return;
+
+        const raw = response.data as Record<string, unknown>;
+        const profile = raw.profile as Record<string, unknown> | undefined;
+        const avatar =
+          (typeof raw.avatarUrl === "string" && raw.avatarUrl) ||
+          (typeof raw.avatar_url === "string" && raw.avatar_url) ||
+          (typeof profile?.avatarUrl === "string" && profile.avatarUrl) ||
+          (typeof profile?.avatar_url === "string" && profile.avatar_url) ||
+          "";
+
+        setAvatarUrl(avatar);
+      })
+      .catch(() => undefined);
+
+    const handleAvatarUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ avatarUrl?: string }>).detail;
+      if (typeof detail?.avatarUrl === "string") {
+        setAvatarUrl(detail.avatarUrl);
+      }
+    };
+
+    window.addEventListener("profile-avatar-updated", handleAvatarUpdated);
+
+    return () => {
+      ignore = true;
+      window.removeEventListener("profile-avatar-updated", handleAvatarUpdated);
+    };
+  }, []);
 
   function handleLogout() {
     startTransition(() => {
@@ -40,22 +78,20 @@ export default function Navbar({ email, role }: NavbarProps) {
 
   const roleLabel = role === "MODERATOR" ? "Kiểm duyệt viên" : "Quản trị viên";
   const isAdmin = role === "ADMIN";
+  const isModerator = role === "MODERATOR";
 
   return (
     <div className="flex h-full items-center justify-between pr-6">
-      {/* Left — Search */}
       <div className="relative max-w-md flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Tìm kiếm người dùng, chuyến đi…"
+          placeholder="Tìm kiếm người dùng, chuyến đi..."
           className="h-9 pl-9 pr-4 text-sm bg-background"
         />
       </div>
 
-      {/* Right — Actions */}
       <div className="flex items-center gap-2">
-        {/* Role Badge */}
         <Badge
           variant="outline"
           className={
@@ -67,7 +103,6 @@ export default function Navbar({ email, role }: NavbarProps) {
           {roleLabel}
         </Badge>
 
-        {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative h-9 w-9">
           <Bell className="h-4 w-4 text-muted-foreground" />
           <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
@@ -75,7 +110,6 @@ export default function Navbar({ email, role }: NavbarProps) {
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -83,17 +117,14 @@ export default function Navbar({ email, role }: NavbarProps) {
               className="flex items-center gap-2 px-2 py-1.5 h-auto"
             >
               <Avatar className="h-8 w-8">
+                <AvatarImage src={avatarUrl} alt="Ảnh đại diện" />
                 <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary-dark">
                   {initials(email)}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold leading-tight">
-                  {roleLabel}
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  {email}
-                </p>
+                <p className="text-sm font-semibold leading-tight">{roleLabel}</p>
+                <p className="text-[11px] text-muted-foreground leading-tight">{email}</p>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
@@ -101,10 +132,19 @@ export default function Navbar({ email, role }: NavbarProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <p className="font-semibold">{roleLabel}</p>
-              <p className="text-xs font-normal text-muted-foreground">
-                {email}
-              </p>
+              <p className="text-xs font-normal text-muted-foreground">{email}</p>
             </DropdownMenuLabel>
+            {isModerator && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href={ROUTES.PROFILE} className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    Thông tin cá nhân
+                  </Link>
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
@@ -112,7 +152,7 @@ export default function Navbar({ email, role }: NavbarProps) {
               className="text-destructive focus:text-destructive cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              {isPending ? "Đang đăng xuất…" : "Đăng xuất"}
+              {isPending ? "Đang đăng xuất..." : "Đăng xuất"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
