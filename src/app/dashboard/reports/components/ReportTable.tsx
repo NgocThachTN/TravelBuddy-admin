@@ -100,7 +100,7 @@ function getAvatarColor(seed: string) {
 
 function getReporterName(item: ReportListItem) {
   const full = [item.reporterFirstName, item.reporterLastName].filter(Boolean).join(" ").trim();
-  return full || "(Ẩn danh)";
+  return full || "(Ã¡ÂºÂ¨n danh)";
 }
 
 function getInitials(item: ReportListItem) {
@@ -262,18 +262,18 @@ function ProcessForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Xử lý báo cáo</DialogTitle>
+        <DialogTitle>Xá»­ lÃ½ bÃ¡o cÃ¡o</DialogTitle>
         <DialogDescription>
-          Báo cáo từ{" "}
+          BÃ¡o cÃ¡o tá»«{" "}
           <span className="font-semibold">{getReporterName(report)}</span>
-          {" � "}
+          {" \u2014 "}
           {reportTargetTypeLabel(report.targetType)}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4">
         {/* Decision */}
         <div className="space-y-2">
-          <Label>Quyết ��9nh</Label>
+          <Label>{"Quy\u1ebft \u0111\u1ecbnh"}</Label>
           <Select value={decision} onValueChange={(v) => setDecision(v as ReportDecisionCode)}>
             <SelectTrigger>
               <SelectValue />
@@ -329,10 +329,10 @@ function ProcessForm({
 
         {/* Note */}
         <div className="space-y-2">
-          <Label htmlFor="process-note">Ghi chú</Label>
+          <Label htmlFor="process-note">Ghi chÃº</Label>
           <Textarea
             id="process-note"
-            placeholder="Nhập ghi chú xử lý..."
+            placeholder="Nháº­p ghi chÃº xá»­ lÃ½..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
@@ -361,7 +361,7 @@ function ProcessForm({
             </p>
             {createStrike && (
               <div className="space-y-2">
-                <Label htmlFor="strike-expires">Hết hạn strike (không bắt bu�"c)</Label>
+                <Label htmlFor="strike-expires">{"H\u1ebft h\u1ea1n strike (kh\u00f4ng b\u1eaft bu\u1ed9c)"}</Label>
                 <Input
                   id="strike-expires"
                   type="datetime-local"
@@ -375,7 +375,7 @@ function ProcessForm({
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onClose} disabled={loading}>
-          Huỷ
+          HuÃ¡Â»Â·
         </Button>
         <Button
           variant={decision === "Rejected" ? "destructive" : "default"}
@@ -383,7 +383,7 @@ function ProcessForm({
           onClick={handleSubmit}
         >
           {loading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-          Xác nhận
+          XÃ¡c nháº­n
         </Button>
       </DialogFooter>
     </>
@@ -437,7 +437,7 @@ export default function ReportTable() {
       setTotalPages(result.data.totalPages);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thỒ tải danh sách báo cáo");
+      setError(err instanceof Error ? err.message : "Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch b\u00e1o c\u00e1o");
     } finally {
       setLoading(false);
     }
@@ -453,7 +453,7 @@ export default function ReportTable() {
       setProcessTarget(null);
       await loadReports(page);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Xử lý báo cáo thất bại");
+      alert(err instanceof Error ? err.message : "Xá»­ lÃ½ bÃ¡o cÃ¡o tháº¥t báº¡i");
     } finally {
       setDialogLoading(false);
     }
@@ -495,7 +495,7 @@ export default function ReportTable() {
           <p className="text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => loadReports(page)}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
-            Thử lại
+            ThÃ¡Â»Â­ lÃ¡ÂºÂ¡i
           </Button>
         </CardContent>
       </Card>
@@ -522,7 +522,7 @@ export default function ReportTable() {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm báo cáo⬦"
+              placeholder="TÃ¬m kiáº¿m bÃ¡o cÃ¡o..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 pl-9 bg-background"
@@ -532,27 +532,27 @@ export default function ReportTable() {
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger className="h-9 w-[160px]">
-              <SelectValue placeholder="Trạng thái" />
+              <SelectValue placeholder="Tráº¡ng thÃ¡i" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="Pending">Chờ xử lý</SelectItem>
-              <SelectItem value="Reviewing">Đang xem xét</SelectItem>
-              <SelectItem value="Resolved">Đã giải quyết</SelectItem>
-              <SelectItem value="Rejected">Đã từ ch�i</SelectItem>
-              <SelectItem value="Duplicate">Trùng lặp</SelectItem>
+              <SelectItem value="all">Táº¥t cáº£ tráº¡ng thÃ¡i</SelectItem>
+              <SelectItem value="Pending">Chá» xá»­ lÃ½</SelectItem>
+              <SelectItem value="Reviewing">Äang xem xÃ©t</SelectItem>
+              <SelectItem value="Resolved">ÄÃ£ giáº£i quyáº¿t</SelectItem>
+              <SelectItem value="Rejected">{"\u0110\u00e3 t\u1eeb ch\u1ed1i"}</SelectItem>
+              <SelectItem value="Duplicate">TrÃ¹ng láº·p</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Target Type Filter */}
           <Select value={targetTypeFilter} onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}>
             <SelectTrigger className="h-9 w-[170px]">
-              <SelectValue placeholder="Loại ��i tượng" />
+              <SelectValue placeholder={"Lo\u1ea1i \u0111\u1ed1i t\u01b0\u1ee3ng"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả loại</SelectItem>
-              <SelectItem value="User">Người dùng</SelectItem>
-              <SelectItem value="ServicePartner">Đ�i tác</SelectItem>
+              <SelectItem value="all">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ loÃ¡ÂºÂ¡i</SelectItem>
+              <SelectItem value="User">NgÆ°á»i dÃ¹ng</SelectItem>
+              <SelectItem value="ServicePartner">{"\u0110\u1ed1i t\u00e1c"}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -571,7 +571,7 @@ export default function ReportTable() {
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            T�"ng c�"ng <span className="font-semibold text-foreground">{totalCount}</span> báo cáo
+            {"T\u1ed5ng c\u1ed9ng "}<span className="font-semibold text-foreground">{totalCount}</span>{" b\u00e1o c\u00e1o"}
           </span>
         </div>
 
@@ -579,14 +579,14 @@ export default function ReportTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Người báo cáo</TableHead>
-              <TableHead>Loại</TableHead>
-              <TableHead>Bên b�9 t�</TableHead>
-              <TableHead>Lý do</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Ưu tiên</TableHead>
-              <TableHead>Ngày tạo</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead>NgÆ°á»i bÃ¡o cÃ¡o</TableHead>
+              <TableHead>LoÃ¡ÂºÂ¡i</TableHead>
+              <TableHead>{"B\u00ean b\u1ecb t\u1ed1"}</TableHead>
+              <TableHead>LÃ½ do</TableHead>
+              <TableHead>Tráº¡ng thÃ¡i</TableHead>
+              <TableHead>Æ¯u tiÃªn</TableHead>
+              <TableHead>NgÃ y táº¡o</TableHead>
+              <TableHead className="text-right">Thao tÃ¡c</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -596,9 +596,9 @@ export default function ReportTable() {
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
                     <Megaphone className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium">Không tìm thấy báo cáo</p>
+                  <p className="text-sm font-medium">KhÃ´ng tÃ¬m tháº¥y bÃ¡o cÃ¡o</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Hãy thử thay ��"i b�" lọc hoặc từ khoá tìm kiếm
+                    {"H\u00e3y th\u1eed thay \u0111\u1ed5i b\u1ed9 l\u1ecdc ho\u1eb7c t\u1eeb kho\u00e1 t\u00ecm ki\u1ebfm"}
                   </p>
                 </TableCell>
               </TableRow>
@@ -646,7 +646,7 @@ export default function ReportTable() {
                     {/* Reason */}
                     <TableCell className="max-w-[200px]">
                       <p className="truncate text-sm">
-                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "�"}
+                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "\u2014"}
                       </p>
                     </TableCell>
 
@@ -689,7 +689,7 @@ export default function ReportTable() {
                             onClick={() => setProcessTarget(report)}
                           >
                             <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                            Xử lý
+                            Xá»­ lÃ½
                           </Button>
                         )}
                         <Button

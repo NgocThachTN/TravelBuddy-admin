@@ -15,7 +15,7 @@ export default function ModerationReportsQuickTabs() {
     <Tabs value={tabValue}>
       <TabsList>
         <TabsTrigger value="all" asChild>
-          <Link href={ROUTES.MODERATION_REPORTS}>T�t c�</Link>
+          <Link href={ROUTES.MODERATION_REPORTS}>Tất cả</Link>
         </TabsTrigger>
         <TabsTrigger value="trip" asChild>
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("Trip")}>

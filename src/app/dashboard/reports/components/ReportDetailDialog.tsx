@@ -153,7 +153,7 @@ export default function ReportDetailDialog({
           return;
         }
         setError(
-          err instanceof Error ? err.message : "Kh�ng th� t�i chi ti�t b�o c�o",
+          err instanceof Error ? err.message : "Không thể tải chi tiết báo cáo",
         );
       } finally {
         if (active) {
@@ -184,7 +184,7 @@ export default function ReportDetailDialog({
 
     if (!targetTripId) {
       setTripDetail(null);
-      setTripError("Kh�ng t�m th�y m� chuy�n i trong b�o c�o.");
+      setTripError("Không tìm thấy mã chuyến đi trong báo cáo.");
       setTripLoading(false);
       return;
     }
@@ -205,7 +205,7 @@ export default function ReportDetailDialog({
           return;
         }
         setTripError(
-          err instanceof Error ? err.message : "Kh�ng th� t�i chi ti�t chuy�n i.",
+          err instanceof Error ? err.message : "Không thể tải chi tiết chuyến đi.",
         );
       } finally {
         if (active) {
@@ -226,7 +226,7 @@ export default function ReportDetailDialog({
         .filter(Boolean)
         .join(" ")
         .trim() ||
-      "(�n danh)"
+      "(Ẩn danh)"
     : "";
 
   const initials = report
@@ -253,7 +253,7 @@ export default function ReportDetailDialog({
     >
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Chi ti�t b�o c�o</DialogTitle>
+          <DialogTitle>Chi tiết báo cáo</DialogTitle>
         </DialogHeader>
 
         {loading && (
@@ -275,7 +275,7 @@ export default function ReportDetailDialog({
               onClick={() => setReloadKey((x) => x + 1)}
             >
               <RefreshCw className="mr-2 h-3.5 w-3.5" />
-              Th� l�i
+              Thử lại
             </Button>
           </div>
         )}
@@ -293,53 +293,53 @@ export default function ReportDetailDialog({
               </Avatar>
               <div>
                 <p className="text-sm font-semibold">{reporterName}</p>
-                <p className="text-xs text-muted-foreground">Ng��i b�o c�o</p>
+                <p className="text-xs text-muted-foreground">Người báo cáo</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">Lo�i �i t��ng</p>
+                <p className="text-xs text-muted-foreground">Loại đối tượng</p>
                 <p className="font-medium">
                   {reportTargetTypeLabel(report.targetType)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">M� �i t��ng</p>
+                <p className="text-xs text-muted-foreground">Mã đối tượng</p>
                 <p className="break-all font-mono text-xs font-medium">
                   {report.targetPk}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tr�ng th�i</p>
+                <p className="text-xs text-muted-foreground">Trạng thái</p>
                 <Badge variant="secondary">{reportStatusLabel(report.status)}</Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">�u ti�n</p>
+                <p className="text-xs text-muted-foreground">Ưu tiên</p>
                 <p className="font-medium">{reportPriorityLabel(report.priority)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">B�n b� t� c�o</p>
+                <p className="text-xs text-muted-foreground">Bên bị tố cáo</p>
                 <p className="font-medium">
                   {reportedPartyTypeLabel(report.reportedPartyType)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Ng�y t�o</p>
+                <p className="text-xs text-muted-foreground">Ngày tạo</p>
                 <p className="font-medium">
                   {new Date(report.createdAt).toLocaleString("vi-VN")}
                 </p>
               </div>
               {report.assignedToName && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Ng��i x� l�</p>
+                  <p className="text-xs text-muted-foreground">Người xử lý</p>
                   <p className="font-medium">{report.assignedToName}</p>
                 </div>
               )}
             </div>
 
             <div>
-              <p className="mb-1 text-xs text-muted-foreground">L� do b�o c�o</p>
+              <p className="mb-1 text-xs text-muted-foreground">Lý do báo cáo</p>
               <p className="text-sm">
                 {report.reason?.displayName || report.reasonDisplayName || "-"}
               </p>
@@ -350,7 +350,7 @@ export default function ReportDetailDialog({
 
             {report.evidenceNote && (
               <div>
-                <p className="mb-1 text-xs text-muted-foreground">B�ng ch�ng</p>
+                <p className="mb-1 text-xs text-muted-foreground">Bằng chứng</p>
                 <p className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">
                   {report.evidenceNote}
                 </p>
@@ -360,31 +360,31 @@ export default function ReportDetailDialog({
             {report.targetDetail && (
               <div className="space-y-2 rounded-lg border p-4">
                 <p className="text-xs font-medium text-muted-foreground">
-                  Th�ng tin �i t��ng b� b�o c�o
+                  Thông tin đối tượng bị báo cáo
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {report.targetDetail.displayName && (
                     <div>
-                      <p className="text-xs text-muted-foreground">T�n</p>
+                      <p className="text-xs text-muted-foreground">Tên</p>
                       <p className="font-medium">{report.targetDetail.displayName}</p>
                     </div>
                   )}
                   {report.targetDetail.status && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Tr�ng th�i</p>
+                      <p className="text-xs text-muted-foreground">Trạng thái</p>
                       <p className="font-medium">{report.targetDetail.status}</p>
                     </div>
                   )}
                   {report.targetDetail.ownerName && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Ch� s� h�u</p>
+                      <p className="text-xs text-muted-foreground">Chủ sở hữu</p>
                       <p className="font-medium">{report.targetDetail.ownerName}</p>
                     </div>
                   )}
                 </div>
                 {report.targetDetail.content && (
                   <div>
-                    <p className="text-xs text-muted-foreground">N�i dung</p>
+                    <p className="text-xs text-muted-foreground">Nội dung</p>
                     <p className="mt-1 whitespace-pre-wrap rounded-md bg-muted p-2 text-sm">
                       {report.targetDetail.content}
                     </p>
@@ -397,12 +397,12 @@ export default function ReportDetailDialog({
               <div className="space-y-3 rounded-lg border p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-medium text-muted-foreground">
-                    Chi ti�t chuy�n i b� b�o c�o
+                    Chi tiết chuyến đi bị báo cáo
                   </p>
                   {tripDetail?.tripId && (
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/dashboard/trips/${tripDetail.tripId}`} target="_blank">
-                        M� trang chi ti�t
+                        Mở trang chi tiết
                       </Link>
                     </Button>
                   )}
@@ -422,23 +422,23 @@ export default function ReportDetailDialog({
                   <div className="space-y-3 text-sm">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <p className="text-xs text-muted-foreground">T�n chuy�n i</p>
+                        <p className="text-xs text-muted-foreground">Tên chuyến đi</p>
                         <p className="font-medium">{tripDetail.title || "-"}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Tr�ng th�i</p>
+                        <p className="text-xs text-muted-foreground">Trạng thái</p>
                         <p className="font-medium">
                           {tripStatusLabel(tripDetail.currentStatus)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Ch� chuy�n i</p>
+                        <p className="text-xs text-muted-foreground">Chủ chuyến đi</p>
                         <p className="font-medium">
                           {getTripOwnerDisplayName(tripDetail)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Th�nh vi�n</p>
+                        <p className="text-xs text-muted-foreground">Thành viên</p>
                         <p className="font-medium">
                           {tripDetail.participantCount}/{tripDetail.maxParticipants ?? "-"}
                         </p>
@@ -447,12 +447,12 @@ export default function ReportDetailDialog({
 
                     {(tripDetail.startTime || tripDetail.endTime) && (
                       <div className="rounded-md bg-muted p-2">
-                        <p className="text-xs text-muted-foreground">Th�i gian</p>
+                        <p className="text-xs text-muted-foreground">Thời gian</p>
                         <p className="font-medium">
                           {tripDetail.startTime
                             ? new Date(tripDetail.startTime).toLocaleString("vi-VN")
                             : "-"}
-                          {" � "}
+                          {" → "}
                           {tripDetail.endTime
                             ? new Date(tripDetail.endTime).toLocaleString("vi-VN")
                             : "-"}
@@ -462,7 +462,7 @@ export default function ReportDetailDialog({
 
                     {tripDetail.description && (
                       <div>
-                        <p className="text-xs text-muted-foreground">M� t�</p>
+                        <p className="text-xs text-muted-foreground">Mô tả</p>
                         <p className="whitespace-pre-wrap rounded-md bg-muted p-2">
                           {tripDetail.description}
                         </p>
@@ -471,7 +471,7 @@ export default function ReportDetailDialog({
 
                     {tripDetail.rule && (
                       <div>
-                        <p className="text-xs text-muted-foreground">Quy �nh</p>
+                        <p className="text-xs text-muted-foreground">Quy định</p>
                         <p className="whitespace-pre-wrap rounded-md bg-muted p-2">
                           {tripDetail.rule}
                         </p>
@@ -602,17 +602,17 @@ export default function ReportDetailDialog({
             {report.resolvedAt && (
               <div className="space-y-2 rounded-lg border p-4">
                 <p className="text-xs font-medium text-muted-foreground">
-                  K�t qu� x� l�
+                  Kết quả xử lý
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">H�nh �ng</p>
+                    <p className="text-xs text-muted-foreground">Hành động</p>
                     <p className="font-medium">
                       {resolvedActionsLabel(resolvedActionValues)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Ng�y x� l�</p>
+                    <p className="text-xs text-muted-foreground">Ngày xử lý</p>
                     <p className="font-medium">
                       {new Date(report.resolvedAt).toLocaleString("vi-VN")}
                     </p>
@@ -620,13 +620,13 @@ export default function ReportDetailDialog({
                 </div>
                 {report.resolvedNote && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Ghi ch�</p>
+                    <p className="text-xs text-muted-foreground">Ghi chú</p>
                     <p className="text-sm">{report.resolvedNote}</p>
                   </div>
                 )}
                 {report.strikeExpiresAt && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Strike h�t h�n</p>
+                    <p className="text-xs text-muted-foreground">Strike hết hạn</p>
                     <p className="text-sm">
                       {new Date(report.strikeExpiresAt).toLocaleString("vi-VN")}
                     </p>
