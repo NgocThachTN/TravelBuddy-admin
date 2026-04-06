@@ -407,7 +407,7 @@ export interface TripModerationTaskListItem {
 }
 
 export interface TripModerationFlaggedItem {
-  severity: string | null;
+  severity: "low" | "medium" | "high" | null;
   confidence: number | null;
   contentPath: string | null;
   evidence: string | null;
@@ -419,6 +419,7 @@ export interface TripModerationFlaggedItem {
 export interface TripModerationTaskDetail {
   taskId: string;
   tripId: string;
+  batchId?: string | null;
   status: number | AiModerationStatusCode | string;
   priority: number;
   createdAt: string;
@@ -430,10 +431,10 @@ export interface TripModerationTaskDetail {
   scanErrorMessage: string | null;
 
   success: boolean | null;
-  moderationCode: string | null;
-  reviewPriority: string | null;
+  moderationCode: "Clean" | "Flagged" | null;
+  reviewPriority: "low" | "medium" | "high" | null;
   overallSummary: string | null;
-  recommendedDecision: string | null;
+  recommendedDecision: "approve" | "review" | "reject" | null;
   flaggedItems: TripModerationFlaggedItem[];
   safeSignals: string[];
   missingContext: string[];

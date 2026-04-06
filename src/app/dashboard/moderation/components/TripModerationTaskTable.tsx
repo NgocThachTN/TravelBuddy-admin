@@ -1,11 +1,12 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Calendar,
   CarFront,
   Clock3,
+  Clock,
   Filter,
   Image as ImageIcon,
   MapPin,
@@ -16,6 +17,9 @@ import {
   Tag,
   Users,
   Wallet,
+  PlayCircle,
+  Flag,
+  Home,
 } from "lucide-react";
 import {
   fetchTripById,
@@ -39,11 +43,13 @@ import {
   tripRoleLabel,
   tripStatusLabel,
   TRIP_STATUS_CODES,
+  MODERATION_STATUS_CODES,
 } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,7 +57,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -87,19 +92,19 @@ type TaskStatusFilter = "openQueue" | "all" | "Open" | "Assigned" | "InReview" |
 type ScanFilter = "all" | "Clean" | "Flagged" | "Error";
 
 const TASK_STATUS_STYLES: Record<string, string> = {
-  Open: "bg-blue-100 text-blue-700 border-blue-200",
-  Assigned: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  InReview: "bg-amber-100 text-amber-700 border-amber-200",
-  Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  Dismissed: "bg-gray-100 text-gray-600 border-gray-200",
-  Failed: "bg-red-100 text-red-700 border-red-200",
+  Open: "bg-transparent text-foreground border-border",
+  Assigned: "bg-transparent text-foreground border-border",
+  InReview: "bg-transparent text-foreground border-border",
+  Resolved: "bg-transparent text-foreground border-border",
+  Dismissed: "bg-transparent text-muted-foreground border-border",
+  Failed: "bg-transparent text-destructive border-border",
 };
 
 const SCAN_STATUS_STYLES: Record<string, string> = {
-  Clean: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  Flagged: "bg-amber-100 text-amber-700 border-amber-200",
-  Error: "bg-red-100 text-red-700 border-red-200",
-  NotScanned: "bg-gray-100 text-gray-600 border-gray-200",
+  Clean: "bg-transparent text-foreground border-border",
+  Flagged: "bg-transparent text-foreground border-border",
+  Error: "bg-transparent text-destructive border-border",
+  NotScanned: "bg-transparent text-muted-foreground border-border",
 };
 
 const FLAGGED_FIELD_LABELS_VI: Record<string, string> = {
@@ -112,42 +117,18 @@ const FLAGGED_FIELD_LABELS_VI: Record<string, string> = {
   itemRequired: "Vật dụng cần mang",
 };
 
-const REVIEW_PRIORITY_LABELS_VI: Record<string, string> = {
-  low: "Thấp",
-  medium: "Trung bình",
-  high: "Cao",
-};
-
-const RECOMMENDED_DECISION_LABELS_VI: Record<string, string> = {
-  approve: "Đề xuất duyệt",
-  review: "Cần duyệt thủ công",
-  manual_review: "Cần duyệt thủ công",
-  reject: "Đề xuất từ chối",
-};
-
-const MODERATION_CODE_LABELS_VI: Record<string, string> = {
-  clean: "Sạch",
-  safe: "Sạch",
-  flagged: "Cảnh báo",
-  reject: "Từ chối",
-  blocked: "Chặn",
-  violation: "Vi phạm",
-  unsafe: "Không an toàn",
-  error: "Lỗi",
-};
-
 const AVATAR_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-purple-100 text-purple-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
+  "bg-secondary text-foreground",
+  "bg-secondary text-foreground",
+  "bg-secondary text-foreground",
+  "bg-secondary text-foreground",
+  "bg-muted text-foreground",
 ];
 
 function getTaskStatusStyle(status: number | string | null | undefined) {
-  if (status === null || status === undefined) return "bg-gray-100 text-gray-500 border-gray-200";
+  if (status === null || status === undefined) return "bg-secondary text-foreground border-border";
   const key = typeof status === "number" ? AI_MODERATION_STATUS_CODES[status] : status;
-  return TASK_STATUS_STYLES[key] ?? "bg-gray-100 text-gray-500 border-gray-200";
+  return TASK_STATUS_STYLES[key] ?? "bg-secondary text-foreground border-border";
 }
 
 function isTaskActionable(status: number | string | null | undefined) {
@@ -168,7 +149,7 @@ function scanStatusLabel(value: number | string | null | undefined) {
 }
 
 function getScanStatusStyle(status: number | string | null | undefined) {
-  if (status === null || status === undefined) return "bg-gray-100 text-gray-500 border-gray-200";
+  if (status === null || status === undefined) return "bg-secondary text-foreground border-border";
   if (typeof status === "number") {
     return status === 1
       ? SCAN_STATUS_STYLES.Clean
@@ -183,26 +164,39 @@ function getScanStatusStyle(status: number | string | null | undefined) {
   if (key === "flagged") return SCAN_STATUS_STYLES.Flagged;
   if (key === "error") return SCAN_STATUS_STYLES.Error;
   if (key === "notscanned") return SCAN_STATUS_STYLES.NotScanned;
-  return "bg-gray-100 text-gray-500 border-gray-200";
+  return "bg-secondary text-foreground border-border";
 }
 
 function getTripStatusStyle(status: number | string | null | undefined) {
-  if (status === null || status === undefined) return "bg-gray-100 text-gray-500";
+  if (status === null || status === undefined) return "bg-slate-100 text-slate-800 border-slate-200";
   const code = typeof status === "number" ? TRIP_STATUS_CODES[status] : status;
   const styles: Record<string, string> = {
-    Draft: "bg-gray-100 text-gray-700",
-    Processing: "bg-sky-100 text-sky-700",
-    Recruiting: "bg-emerald-100 text-emerald-700",
-    AlmostFull: "bg-amber-100 text-amber-700",
-    Full: "bg-orange-100 text-orange-700",
-    Confirmed: "bg-blue-100 text-blue-700",
-    Ongoing: "bg-indigo-100 text-indigo-700",
-    Completed: "bg-gray-100 text-gray-600",
-    Cancelled: "bg-red-100 text-red-700",
-    Hidden: "bg-gray-100 text-gray-500",
-    InReview: "bg-yellow-100 text-yellow-700",
+    Draft: "bg-slate-100 text-slate-800 border-slate-200",
+    Processing: "bg-blue-100 text-blue-800 border-blue-200",
+    Recruiting: "bg-indigo-100 text-indigo-800 border-indigo-200",
+    AlmostFull: "bg-amber-100 text-amber-800 border-amber-200",
+    Full: "bg-orange-100 text-orange-800 border-orange-200",
+    Confirmed: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    Ongoing: "bg-green-100 text-green-800 border-green-200",
+    Completed: "bg-teal-100 text-teal-800 border-teal-200",
+    Cancelled: "bg-red-100 text-red-800 border-red-200",
+    Hidden: "bg-zinc-100 text-zinc-800 border-zinc-200",
+    InReview: "bg-purple-100 text-purple-800 border-purple-200",
   };
-  return (code && styles[code]) || "bg-gray-100 text-gray-500";
+  return (code && styles[code]) || "bg-slate-100 text-slate-800 border-slate-200";
+}
+
+function getModerationStatusStyle(status: number | string | null | undefined) {
+  if (status === null || status === undefined) return "bg-slate-100 text-slate-800 border-slate-200";
+  const code = typeof status === "number" ? MODERATION_STATUS_CODES[status] : status;
+  const styles: Record<string, string> = {
+    Draft: "bg-slate-100 text-slate-800 border-slate-200",
+    PendingReview: "bg-amber-100 text-amber-800 border-amber-200",
+    Approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    Rejected: "bg-red-100 text-red-800 border-red-200",
+    Hidden: "bg-zinc-100 text-zinc-800 border-zinc-200",
+  };
+  return (code && styles[code]) || "bg-slate-100 text-slate-800 border-slate-200";
 }
 
 function formatDateTime(dateStr: string | null | undefined) {
@@ -214,11 +208,6 @@ function formatDateTime(dateStr: string | null | undefined) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function formatScore(score: number | null) {
-  if (score === null || score === undefined) return "—";
-  return `${Math.round(score * 100)}%`;
 }
 
 function formatVnd(amount: number | null | undefined) {
@@ -240,6 +229,144 @@ function formatDuration(durationS: number | null | undefined) {
   return minute > 0 ? `${hour}h ${minute}p` : `${hour}h`;
 }
 
+function getParticipantStatusLabel(status: string | number | null | undefined): string {
+  if (status === null || status === undefined) return "Không xác định";
+  const strStatus = String(status).toLowerCase();
+  if (strStatus === "0" || strStatus === "joined") return "Đã tham gia";
+  if (strStatus === "1" || strStatus === "left") return "Đã rời nhóm";
+  if (strStatus === "2" || strStatus === "removed") return "Bị mời ra";
+  if (strStatus === "3" || strStatus === "banned") return "Bị chặn";
+  return String(status);
+}
+
+const CHECKPOINT_TYPE_LABELS: Record<string, string> = {
+  "0": "Bắt đầu",
+  "1": "Điểm dừng",
+  "2": "Điểm đến",
+  "3": "Quay về",
+  "4": "Kết thúc",
+  "Start": "Bắt đầu",
+  "Stop": "Điểm dừng",
+  "Destination": "Điểm đến",
+  "Return": "Quay về",
+  "End": "Kết thúc",
+};
+
+function getCheckpointTypeLabel(type: string | number | null | undefined): string {
+  if (type == null) return "Điểm dừng";
+  return CHECKPOINT_TYPE_LABELS[String(type)] || "Điểm dừng";
+}
+
+const EXPERIENCE_LEVEL_LABELS: Record<string, string> = {
+  "0": "Mới toanh",
+  "1": "Nhập môn",
+  "2": "Tập sự",
+  "3": "Đi ổn",
+  "4": "Cứng cáp",
+  "5": "Lão làng",
+  "6": "Kỳ cựu",
+  "Newbie": "Mới toanh",
+  "Fresher": "Nhập môn",
+  "Junior": "Tập sự",
+  "Regular": "Đi ổn",
+  "Experienced": "Cứng cáp",
+  "Veteran": "Lão làng",
+  "Hardcore": "Kỳ cựu"
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  "Motorbike": "Xe máy",
+  "Car": "Ô tô",
+  "Suv": "SUV",
+  "Bus": "Xe buýt",
+  "Bicycle": "Xe đạp",
+  "ElectricBike": "Xe đạp điện",
+  "Jeep": "Xe Jeep / off-road",
+  "PickupTruck": "Xe bán tải",
+  "Limousine": "Limousine",
+  "TukTuk": "TukTuk",
+  "Boat": "Thuyền đò",
+  "Walking": "Đi bộ",
+  "Scooter": "Xe tay ga",
+  "UnderboneMotorbike": "Xe côn tay",
+  "OffroadMotorbike": "Xe cào cào",
+  "Other": "Loại khác"
+};
+
+const TRIP_TYPE_LABELS: Record<string, string> = {
+  "Adventure": "Mạo hiểm",
+  "Relaxation": "Nghỉ dưỡng",
+  "Cultural": "Văn hoá",
+  "Touring": "Touring",
+  "Trekking": "Trekking / Leo núi",
+  "Camping": "Cắm trại",
+  "Beach": "Biển đảo",
+  "Ecotourism": "Sinh thái",
+  "FoodTour": "Food Tour",
+  "ExtremeSport": "Thể thao mạo hiểm",
+  "Spiritual": "Tâm linh",
+  "Volunteer": "Thiện nguyện",
+  "Photography": "Nhiếp ảnh",
+  "MotorbikeTour": "Phượt xe máy",
+  "NightTour": "Tour đêm",
+  "Teambuilding": "Team building",
+  "CityExploration": "Khám phá thành phố",
+  "RoadTrip": "Đi đường dài",
+  "Backpacking": "Du lịch bụi",
+  "CloudHunting": "Săn mây",
+  "IslandHopping": "Du lịch đảo",
+  "SeasonalFlowerTrip": "Ngắm hoa theo mùa",
+  "Other": "Loại khác",
+};
+
+function translateExperienceLevel(level: string | number | null | undefined): string {
+  if (level == null) return "Chưa xác định";
+  return EXPERIENCE_LEVEL_LABELS[String(level)] || String(level);
+}
+
+function translateVehicle(type: string | null | undefined): string {
+  if (!type) return "Chưa xác định";
+  return VEHICLE_LABELS[type] || type;
+}
+
+function translateTripType(type: string | null | undefined): string {
+  if (!type) return "Chưa xác định";
+  return TRIP_TYPE_LABELS[type] || type;
+}
+
+const EXPENSE_TYPE_LABELS: Record<string, string> = {
+  Fuel: "Xăng xe",
+  Food: "Ăn uống",
+  Accommodation: "Lưu trú",
+  Ticket: "Vé tham quan",
+  Equipment: "Đồ dùng - thiết bị",
+  Toll: "Phí cầu đường",
+  Parking: "Gửi xe",
+  Insurance: "Bảo hiểm",
+  Emergency: "Khẩn cấp",
+  Shopping: "Mua sắm",
+  Other: "Chi phí khác",
+  Transportation: "Di chuyển",
+  Activity: "Hoạt động",
+  GuideService: "Hướng dẫn viên",
+  Communication: "Liên lạc",
+  Healthcare: "Y tế",
+  TaxFee: "Thuế phí",
+  MotorbikeRental: "Thuê xe máy",
+  MotorbikeMaintenance: "Bảo dưỡng xe",
+  FerryBoatFee: "Phí phà/đò",
+  CoffeeBreak: "Cà phê/Giải",
+  LocalSpecialty: "Đặc sản địa phương",
+  HomestayFee: "Phí homestay",
+  CampingFee: "Phí cắm trại",
+  BorderPermitFee: "Phí biên giới"
+};
+
+function translateExpenseType(type: string | null | undefined): string {
+  if (!type) return "Chi phí khác";
+  return EXPENSE_TYPE_LABELS[type] || type;
+}
+
 function getAvatarColor(seed: string) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
@@ -250,50 +377,32 @@ function normalizedCode(value: string | null | undefined) {
   return value?.trim().toLowerCase() || "";
 }
 
-function moderationCodeLabelVi(value: string | null | undefined) {
-  const code = normalizedCode(value);
-  if (!code) return "Không rõ";
-  return MODERATION_CODE_LABELS_VI[code] ?? value ?? "Không rõ";
-}
-
 function moderationCodeStyle(value: string | null | undefined) {
   const code = normalizedCode(value);
-  if (!code) return "bg-gray-100 text-gray-600 border-gray-200";
-  if (code === "clean" || code === "safe") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (code === "flagged") return "bg-amber-100 text-amber-700 border-amber-200";
+  if (!code) return "bg-transparent text-muted-foreground border-border";
+  if (code === "clean" || code === "safe") return "bg-transparent text-foreground border-border";
+  if (code === "flagged") return "bg-transparent text-foreground border-border";
   if (code === "reject" || code === "blocked" || code === "violation" || code === "unsafe") {
-    return "bg-red-100 text-red-700 border-red-200";
+    return "bg-transparent text-destructive border-border";
   }
-  if (code === "error") return "bg-red-100 text-red-700 border-red-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
-}
-
-function reviewPriorityLabelVi(value: string | null | undefined) {
-  const code = normalizedCode(value);
-  if (!code) return "Không rõ";
-  return REVIEW_PRIORITY_LABELS_VI[code] ?? value ?? "Không rõ";
+  if (code === "error") return "bg-transparent text-destructive border-border";
+  return "bg-transparent text-muted-foreground border-border";
 }
 
 function reviewPriorityStyle(value: string | null | undefined) {
   const code = normalizedCode(value);
-  if (code === "high") return "bg-red-100 text-red-700 border-red-200";
-  if (code === "medium") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (code === "low") return "bg-sky-100 text-sky-700 border-sky-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
-}
-
-function recommendedDecisionLabelVi(value: string | null | undefined) {
-  const code = normalizedCode(value);
-  if (!code) return "Không rõ";
-  return RECOMMENDED_DECISION_LABELS_VI[code] ?? value ?? "Không rõ";
+  if (code === "high") return "bg-transparent text-destructive border-border";
+  if (code === "medium") return "bg-transparent text-foreground border-border";
+  if (code === "low") return "bg-secondary text-foreground border-border";
+  return "bg-transparent text-muted-foreground border-border";
 }
 
 function recommendedDecisionStyle(value: string | null | undefined) {
   const code = normalizedCode(value);
-  if (code === "approve") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (code === "review" || code === "manual_review") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (code === "reject") return "bg-red-100 text-red-700 border-red-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+  if (code === "approve") return "bg-transparent text-foreground border-border";
+  if (code === "review" || code === "manual_review") return "bg-transparent text-foreground border-border";
+  if (code === "reject") return "bg-transparent text-destructive border-border";
+  return "bg-transparent text-muted-foreground border-border";
 }
 
 function contentPathLabelVi(contentPath: string | null | undefined) {
@@ -302,21 +411,12 @@ function contentPathLabelVi(contentPath: string | null | undefined) {
   return FLAGGED_FIELD_LABELS_VI[code] ?? contentPath ?? "Không rõ vị trí nội dung";
 }
 
-function flaggedSeverityLabelVi(value: string | null | undefined) {
-  const code = normalizedCode(value);
-  if (!code) return "Không rõ";
-  if (code === "high") return "Cao";
-  if (code === "medium") return "Trung bình";
-  if (code === "low") return "Thấp";
-  return value ?? "Không rõ";
-}
-
 function flaggedSeverityStyle(value: string | null | undefined) {
   const code = normalizedCode(value);
-  if (code === "high") return "bg-red-100 text-red-700 border-red-200";
-  if (code === "medium") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (code === "low") return "bg-sky-100 text-sky-700 border-sky-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+  if (code === "high") return "bg-transparent text-destructive border-border";
+  if (code === "medium") return "bg-transparent text-foreground border-border";
+  if (code === "low") return "bg-secondary text-foreground border-border";
+  return "bg-transparent text-muted-foreground border-border";
 }
 
 function flaggedSeverityOrder(value: string | null | undefined) {
@@ -328,15 +428,105 @@ function flaggedSeverityOrder(value: string | null | undefined) {
 }
 
 function moderationSuccessStyle(value: boolean | null | undefined) {
-  if (value === true) return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (value === false) return "bg-red-100 text-red-700 border-red-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+  if (value === true) return "bg-transparent text-foreground border-border";
+  if (value === false) return "bg-transparent text-destructive border-border";
+  return "bg-transparent text-muted-foreground border-border";
 }
 
 function moderationSuccessLabel(value: boolean | null | undefined) {
   if (value === true) return "success: true";
   if (value === false) return "success: false";
   return "success: không rõ";
+}
+
+function ReviewerMetaCard({
+  label,
+  value,
+  hint,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-2xl border border-border/70 bg-background/90 p-3 shadow-sm", className)}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
+      <div className="mt-2 text-sm font-semibold text-foreground">{value}</div>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+type NormalizedModerationResult = {
+  batchId: string | null;
+  tripId: string;
+  moderationCode: "Clean" | "Flagged";
+  reviewPriority: "low" | "medium" | "high";
+  overallSummary: string;
+  flaggedItems: TripModerationTaskDetail["flaggedItems"];
+  safeSignals: string[];
+  missingContext: string[];
+  recommendedDecision: "approve" | "review" | "reject";
+};
+
+function normalizeReviewPriority(
+  input: string | null | undefined,
+  flaggedItems: TripModerationTaskDetail["flaggedItems"],
+): "low" | "medium" | "high" {
+  const code = normalizedCode(input);
+  if (code === "low" || code === "medium" || code === "high") return code;
+
+  const maxSeverity = Math.max(...flaggedItems.map((item) => flaggedSeverityOrder(item.severity)), 0);
+  if (maxSeverity >= 3) return "high";
+  if (maxSeverity >= 2) return "medium";
+  return "low";
+}
+
+function normalizeRecommendedDecision(
+  input: string | null | undefined,
+  moderationCode: "Clean" | "Flagged",
+  reviewPriority: "low" | "medium" | "high",
+): "approve" | "review" | "reject" {
+  const code = normalizedCode(input);
+  if (code === "approve" || code === "review" || code === "reject") return code;
+  if (code === "manual_review") return "review";
+  if (moderationCode === "Clean") return "approve";
+  if (reviewPriority === "high") return "reject";
+  return "review";
+}
+
+function normalizeModerationResult(task: TripModerationTaskDetail | null): NormalizedModerationResult | null {
+  if (!task) return null;
+
+  const originalCode = normalizedCode(task.moderationCode);
+  const hasFlaggedItems = task.flaggedItems.length > 0;
+  const moderationCode: "Clean" | "Flagged" =
+    originalCode === "clean" && !hasFlaggedItems ? "Clean" : hasFlaggedItems || originalCode === "flagged" ? "Flagged" : "Clean";
+
+  const flaggedItems = moderationCode === "Clean" ? [] : task.flaggedItems;
+  const reviewPriority = normalizeReviewPriority(task.reviewPriority, flaggedItems);
+  const recommendedDecision = normalizeRecommendedDecision(task.recommendedDecision, moderationCode, reviewPriority);
+
+  const fallbackSummary =
+    moderationCode === "Clean"
+      ? "Noi dung trip tam thoi sach, co the xem nhanh truoc khi phe duyet."
+      : flaggedItems.length > 0
+        ? `Trip co ${flaggedItems.length} muc can reviewer kiem tra ky truoc khi ra quyet dinh.`
+        : "Trip co dau hieu can xem xet thu cong truoc khi phe duyet.";
+
+  return {
+    batchId: task.batchId ?? null,
+    tripId: task.tripId,
+    moderationCode,
+    reviewPriority,
+    overallSummary: task.overallSummary?.trim() || fallbackSummary,
+    flaggedItems,
+    safeSignals: task.safeSignals,
+    missingContext: task.missingContext,
+    recommendedDecision,
+  };
 }
 
 export default function TripModerationTaskTable() {
@@ -354,7 +544,7 @@ export default function TripModerationTaskTable() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [detailTripError, setDetailTripError] = useState<string | null>(null);
+  
   const [selectedTask, setSelectedTask] = useState<TripModerationTaskDetail | null>(null);
   const [detailTrip, setDetailTrip] = useState<TripDetail | null>(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
@@ -411,7 +601,6 @@ export default function TripModerationTaskTable() {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetailError(null);
-    setDetailTripError(null);
     setSelectedTask(null);
     setDetailTrip(null);
     setDecisionError(null);
@@ -428,7 +617,7 @@ export default function TripModerationTaskTable() {
           const tripResult = await fetchTripById(taskDetail.tripId);
           setDetailTrip(tripResult.data);
         } catch (tripErr) {
-          setDetailTripError(tripErr instanceof Error ? tripErr.message : "Không thể tải đầy đủ dữ liệu trip.");
+          setDetailError(tripErr instanceof Error ? tripErr.message : "Không thể tải đầy đủ dữ liệu trip.");
         }
       }
     } catch (err) {
@@ -517,20 +706,24 @@ export default function TripModerationTaskTable() {
 
   const safeSignals = selectedTask?.safeSignals ?? [];
   const missingContext = selectedTask?.missingContext ?? [];
+  const moderationResult = useMemo(
+    () => normalizeModerationResult(selectedTask),
+    [selectedTask],
+  );
 
   const sortedFlaggedItems = useMemo(() => {
-    const flaggedItems = selectedTask?.flaggedItems ?? [];
+    const flaggedItems = moderationResult?.flaggedItems ?? [];
     if (flaggedItems.length === 0) return [];
     return [...flaggedItems].sort((a, b) => {
       const severityDiff = flaggedSeverityOrder(b.severity) - flaggedSeverityOrder(a.severity);
       if (severityDiff !== 0) return severityDiff;
       return (a.contentPath ?? "").localeCompare(b.contentPath ?? "");
     });
-  }, [selectedTask?.flaggedItems]);
+  }, [moderationResult?.flaggedItems]);
 
   if (loading && items.length === 0) {
     return (
-      <Card>
+      <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden flex flex-col h-full bg-card/40">
         <div className="flex items-center gap-3 border-b p-4">
           <Skeleton className="h-9 w-64" />
           <Skeleton className="h-9 w-32" />
@@ -548,7 +741,7 @@ export default function TripModerationTaskTable() {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
@@ -572,62 +765,65 @@ export default function TripModerationTaskTable() {
   return (
     <>
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center gap-3 border-b p-4">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="flex flex-wrap items-center gap-4 border-b p-4 bg-muted/10">
+          <div className="relative min-w-[280px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo taskId, tripId, tiêu đề trip..."
+              placeholder="Tìm theo Mã task, Tên chuyến đi..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="h-9 bg-background pl-9"
+              className="h-9 bg-background pl-9 shadow-sm"
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatusFilter)}>
-            <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Trạng thái task" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="openQueue">Queue mở (Open/Assigned/InReview)</SelectItem>
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="Assigned">Assigned</SelectItem>
-              <SelectItem value="InReview">InReview</SelectItem>
-              <SelectItem value="Resolved">Resolved</SelectItem>
-              <SelectItem value="Dismissed">Dismissed</SelectItem>
-              <SelectItem value="Failed">Failed</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatusFilter)}>
+              <SelectTrigger className="h-9 w-[180px] bg-background shadow-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openQueue">Queue mở (Open, etc)</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="Open">Open</SelectItem>
+                <SelectItem value="Assigned">Assigned</SelectItem>
+                <SelectItem value="InReview">InReview</SelectItem>
+                <SelectItem value="Resolved">Resolved</SelectItem>
+                <SelectItem value="Dismissed">Dismissed</SelectItem>
+                <SelectItem value="Failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={scanFilter} onValueChange={(value) => setScanFilter(value as ScanFilter)}>
-            <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Kết quả AI scan" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả scan</SelectItem>
-              <SelectItem value="Clean">Clean</SelectItem>
-              <SelectItem value="Flagged">Flagged</SelectItem>
-              <SelectItem value="Error">Error</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={scanFilter} onValueChange={(value) => setScanFilter(value as ScanFilter)}>
+              <SelectTrigger className="h-9 w-[150px] bg-background shadow-sm"><SelectValue placeholder="AI Scan" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="Clean">Mức Clean</SelectItem>
+                <SelectItem value="Flagged">Mức Flagged</SelectItem>
+                <SelectItem value="Error">Lỗi quét</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => loadTasks(page)} disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          </Button>
+            <Button variant="outline" size="icon" className="h-9 w-9 bg-background shadow-sm" onClick={() => loadTasks(page)} disabled={loading}>
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center bg-muted/20 px-5 py-2.5 border-b">
+          <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <Filter className="h-3.5 w-3.5" />
+            Hiển thị <span className="text-foreground tracking-tight text-sm font-semibold">{totalCount}</span> tác vụ
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
-          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Tổng cộng <span className="font-semibold text-foreground">{totalCount}</span> task</span>
-        </div>
-
-        <Table>
+        <div className="min-w-full overflow-x-auto">
+          <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Task</TableHead>
-              <TableHead>Chuyến đi</TableHead>
-              <TableHead>AI scan</TableHead>
-              <TableHead>Ưu tiên</TableHead>
+            <TableRow className="bg-muted/30">
+              <TableHead className="w-[80px]">Mã báo cáo</TableHead>
+              <TableHead className="w-[30%] min-w-[280px]">Thông tin Chuyến đi</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead>Tạo lúc</TableHead>
-              <TableHead>Phụ trách</TableHead>
-              <TableHead className="text-center">Thao tác</TableHead>
+              <TableHead className="hidden md:table-cell">AI Nhận định</TableHead>
+              <TableHead className="hidden lg:table-cell">Phân công</TableHead>
+              <TableHead className="w-[100px] text-center">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -641,37 +837,83 @@ export default function TripModerationTaskTable() {
               </TableRow>
             ) : (
               items.map((task) => (
-                <TableRow key={task.taskId}>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium">{task.taskId.slice(0, 8)}...</p>
-                      <p className="text-xs text-muted-foreground">Trip: {task.tripId.slice(0, 8)}...</p>
+              <TableRow key={task.taskId} className="hover:bg-muted/10">
+                <TableCell>
+                  <p className="text-xs font-semibold font-mono bg-secondary w-min px-1.5 py-0.5 rounded-md text-secondary-foreground">{task.taskId.slice(0, 8).toUpperCase()}</p>
+                </TableCell>
+                
+                <TableCell>
+                  <div className="space-y-1.5">
+                    <p className="max-w-[300px] truncate text-sm font-bold text-primary hover:underline cursor-pointer" onClick={() => openTaskDetail(task.taskId)}>{task.tripTitle || "(Không có tiêu đề)"}</p>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5 bg-muted">
+                        <AvatarFallback className={cn("text-[8px]", getAvatarColor(task.tripOwnerName || "U"))}>
+                          {(task.tripOwnerName || "U").substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="max-w-[150px] truncate text-xs font-medium text-muted-foreground">{task.tripOwnerName || "Không rõ chủ trip"}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="max-w-[220px] truncate text-sm font-medium">{task.tripTitle || "(Không có tiêu đề)"}</p>
-                      <p className="max-w-[220px] truncate text-xs text-muted-foreground">{task.tripOwnerName || "Không rõ chủ trip"}</p>
-                      <p className="text-xs text-muted-foreground">Trạng thái chuyến: {tripStatusLabel(task.tripCurrentStatus)} / Kiểm duyệt: {moderationStatusLabel(task.tripModerationStatus)}</p>
+                  </div>
+                </TableCell>
+
+                <TableCell>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className={cn("text-[10px] font-semibold", getTaskStatusStyle(task.status))}>
+                        {aiModerationStatusLabel(task.status)}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] font-semibold">
+                        {tripStatusLabel(task.tripCurrentStatus)}
+                      </Badge>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <Badge variant="outline" className={cn("text-[11px]", getScanStatusStyle(task.aiStatus))}>{scanStatusLabel(task.aiStatus)}</Badge>
-                      <p className="text-xs text-muted-foreground">Điểm: {formatScore(task.aiScore)}</p>
-                      <p className="max-w-[200px] truncate text-xs text-muted-foreground">{task.aiLabels || "Không có nhãn"}</p>
+                    <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20">
+                      Độ Ưu tiên: P{task.priority || "3"}
+                    </Badge>
+                  </div>
+                </TableCell>
+
+                <TableCell className="hidden md:table-cell">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className={cn("text-[10px]", getScanStatusStyle(task.aiStatus))}>{scanStatusLabel(task.aiStatus)}</Badge>
                     </div>
-                  </TableCell>
-                  <TableCell><Badge variant="outline" className="text-[11px]">P{task.priority}</Badge></TableCell>
-                  <TableCell><Badge variant="outline" className={cn("text-[11px]", getTaskStatusStyle(task.status))}>{aiModerationStatusLabel(task.status)}</Badge></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDateTime(task.createdAt)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{task.assignedToName || "Chưa gán"}</TableCell>
-                  <TableCell><div className="flex items-center justify-center"><Button size="sm" variant="outline" onClick={() => openTaskDetail(task.taskId)}>Xem trip</Button></div></TableCell>
-                </TableRow>
-              ))
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px]">
+                        Kết quả: {task.aiStatus === 2 ? "Cảnh báo" : "Sạch"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        Ưu tiên: {task.priority <= 1 ? "Cao" : task.priority === 2 ? "Vừa" : "Thấp"}
+                      </Badge>
+                    </div>
+                    {task.aiLabels && (
+                      <p className="max-w-[200px] truncate text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded border border-muted/50">
+                        {task.aiLabels}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+
+                <TableCell className="hidden lg:table-cell">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">{task.assignedToName || "Chưa gán"}</p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <Clock3 className="h-3 w-3" />
+                      {formatDateTime(task.createdAt)}
+                    </p>
+                  </div>
+                </TableCell>
+
+                <TableCell>
+                  <div className="flex justify-center">
+                    <Button size="sm" variant="default" className="shadow-sm font-semibold" onClick={() => openTaskDetail(task.taskId)}>Duyệt ngay</Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
             )}
           </TableBody>
         </Table>
+        </div>
 
         {totalPages > 1 && (
           <div className="border-t p-4"><PaginationControl currentPage={page} totalPages={totalPages} onPageChange={setPage} /></div>
@@ -689,531 +931,503 @@ export default function TripModerationTaskTable() {
           }
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-6xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">{resolvedTitle}</DialogTitle>
-            <DialogDescription>Chi tiết duyệt thủ công: hiển thị đầy đủ thông tin chuyến đi và đánh giá AI.</DialogDescription>
-          </DialogHeader>
+        
+        <DialogContent className="sm:max-w-[96vw] max-w-[96vw] w-[96vw] sm:h-[96vh] h-[96vh] max-h-[96vh] overflow-hidden p-0 gap-0 rounded-xl border border-border bg-background shadow-xl flex flex-col md:flex-row">
+  <div className="flex-1 min-w-0 flex flex-col border-r border-border bg-slate-50/50">
+    <div className="p-6 border-b border-border bg-white flex flex-row items-center justify-between">
+      <div>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">{selectedTask?.status}</Badge>
+          <span className="text-sm font-medium text-muted-foreground font-mono">ID: {selectedTask?.taskId.slice(0, 8).toUpperCase()}</span>
+        </div>
+        <DialogTitle className="text-2xl font-bold mt-2 text-foreground">{resolvedTitle}</DialogTitle>
+        <DialogDescription className="text-sm text-muted-foreground mt-1">
+          Hồ sơ chuyến đi chi tiết bên dưới. Đối chiếu và duyệt bên phải.
+        </DialogDescription>
+      </div>
+      {(detailLoading || detailTrip) && (
+        <div className="flex items-center gap-2">
+          {detailLoading && <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />}
+          <Button variant="outline" size="sm" onClick={() => loadTasks(page)}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Tải lại
+          </Button>
+        </div>
+      )}
+    </div>
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-            {detailLoading && (
-              <div className="space-y-3">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-72 w-full" />
-              </div>
-            )}
-
-            {!detailLoading && detailError && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{detailError}</div>
-            )}
-
-            {!detailLoading && !detailError && selectedTask && (
+    <div className="flex-1 overflow-y-auto min-h-0 bg-white">
+      {detailLoading && (
+        <div className="p-6 space-y-6"><div className="h-24 w-full bg-muted animate-pulse rounded" /><div className="h-48 w-full bg-muted animate-pulse rounded" /></div>
+      )}
+      {detailError && (
+        <div className="p-12 text-center text-red-500">
+          <AlertTriangle className="h-10 w-10 mx-auto mb-4" />
+          {detailError}
+        </div>
+      )}
+      {!detailLoading && !detailError && selectedTask && (
+        <Tabs defaultValue="overview" className="w-full h-full flex flex-col">
+          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border p-2 px-6">
+            <TabsList className="w-full max-w-2xl bg-slate-100">
+              <TabsTrigger value="overview" className="flex-1 rounded-md">Tổng quan</TabsTrigger>
+              <TabsTrigger value="itinerary" className="flex-1 rounded-md">Lịch trình</TabsTrigger>
+              <TabsTrigger value="members" className="flex-1 rounded-md">Thành viên</TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="p-6 overflow-y-auto">
+            {detailTrip ? (
               <>
-                <div className="rounded-lg border bg-muted/20 p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={cn("text-[11px]", getTaskStatusStyle(selectedTask.status))}>{aiModerationStatusLabel(selectedTask.status)}</Badge>
-                    <Badge variant="outline" className={cn("text-[11px]", getScanStatusStyle(selectedTask.aiStatus))}>{scanStatusLabel(selectedTask.aiStatus)}</Badge>
-                    <Badge variant="outline">Ưu tiên P{selectedTask.priority}</Badge>
-                    {selectedTask.aiScore !== null && <Badge variant="outline">Điểm {formatScore(selectedTask.aiScore)}</Badge>}
-                    <Badge variant="outline" className={cn("text-[11px]", moderationCodeStyle(selectedTask.moderationCode))}>
-                      {moderationCodeLabelVi(selectedTask.moderationCode)}
-                    </Badge>
-                    <Badge variant="outline" className={cn("text-[11px]", reviewPriorityStyle(selectedTask.reviewPriority))}>
-                      Review: {reviewPriorityLabelVi(selectedTask.reviewPriority)}
-                    </Badge>
-                    <Badge variant="outline" className={cn("text-[11px]", recommendedDecisionStyle(selectedTask.recommendedDecision))}>
-                      {recommendedDecisionLabelVi(selectedTask.recommendedDecision)}
-                    </Badge>
-                    <Badge variant="outline" className={cn("text-[11px]", moderationSuccessStyle(selectedTask.success))}>
-                      {moderationSuccessLabel(selectedTask.success)}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Task tạo lúc {formatDateTime(selectedTask.createdAt)}</p>
-                </div>
+                <TabsContent value="overview" className="m-0">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="border rounded-lg p-5 bg-card">
+                      <h3 className="font-semibold mb-4 text-base flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground"/> Thông tin & Lịch trình
+                      </h3>
+                      
+                      <div className="mb-5 ml-2">
+                        <div className="relative border-l-[3px] border-slate-200 mt-2 space-y-5 pb-2">
+                          <div className="relative pl-6">
+                            <div className="absolute w-3.5 h-3.5 bg-blue-500 rounded-full -left-[8.5px] top-1 ring-4 ring-white"></div>
+                            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1.5"><Clock className="w-3 h-3" /> Hạn đăng ký</p>
+                            <p className="font-medium text-sm text-foreground">{formatDateTime(detailTrip?.registrationDeadline ?? selectedTask.tripRegistrationDeadline)}</p>
+                          </div>
+                          <div className="relative pl-6">
+                            <div className="absolute w-3.5 h-3.5 bg-emerald-500 rounded-full -left-[8.5px] top-1 ring-4 ring-white"></div>
+                            <p className="text-[11px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1.5"><PlayCircle className="w-3 h-3" /> Khởi hành</p>
+                            <p className="font-medium text-sm text-foreground">{formatDateTime(detailTrip?.startTime ?? selectedTask.tripStartTime)}</p>
+                          </div>
+                          <div className="relative pl-6">
+                            <div className="absolute w-3.5 h-3.5 bg-amber-500 rounded-full -left-[8.5px] top-1 ring-4 ring-white"></div>
+                            <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1.5"><Flag className="w-3 h-3" /> Kết thúc</p>
+                            <p className="font-medium text-sm text-foreground">{formatDateTime(detailTrip?.endTime ?? selectedTask.tripEndTime)}</p>
+                          </div>
+                          {detailTrip?.backTime && (
+                          <div className="relative pl-6">
+                            <div className="absolute w-3.5 h-3.5 bg-slate-400 rounded-full -left-[8.5px] top-1 ring-4 ring-white"></div>
+                            <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-0.5 flex items-center gap-1.5"><Home className="w-3 h-3" /> Quay về</p>
+                            <p className="font-medium text-sm text-foreground">{formatDateTime(detailTrip?.backTime)}</p>
+                          </div>
+                          )}
+                        </div>
+                      </div>
 
-                {detailTripError && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{detailTripError}</div>}
-
-                {!detailTrip && (
-                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">Không tìm thấy đầy đủ bản ghi trip gốc.</p>
-                        <p className="text-xs">Hệ thống dùng dữ liệu snapshot lưu trong task kiểm duyệt để moderator đối chiếu.</p>
+                      <div className="space-y-3 text-sm text-muted-foreground border-t pt-4">
+                        <div className="flex justify-between"><span>Tiền cọc</span><span className="text-foreground font-medium">{formatVnd(detailTrip?.depositAmount)}</span></div>
+                        <div className="flex justify-between items-center">
+                          <span>Trạng thái chuyến</span>
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold border", getTripStatusStyle(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus))}>
+                            {tripStatusLabel(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Trạng thái duyệt</span>
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold border", getModerationStatusStyle(detailTrip?.moderationStatus ?? selectedTask.tripModerationStatus))}>
+                            {moderationStatusLabel(detailTrip?.moderationStatus ?? selectedTask.tripModerationStatus)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Card>
-                    <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><Calendar className="h-4 w-4 text-muted-foreground" />Thông tin chuyến đi</CardTitle></CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Bắt đầu</span><span className="font-medium">{formatDateTime(detailTrip?.startTime ?? selectedTask.tripStartTime)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Kết thúc</span><span className="font-medium">{formatDateTime(detailTrip?.endTime ?? selectedTask.tripEndTime)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Quay về</span><span className="font-medium">{formatDateTime(detailTrip?.backTime)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Hạn đăng ký</span><span className="font-medium">{formatDateTime(detailTrip?.registrationDeadline ?? selectedTask.tripRegistrationDeadline)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Tiền cọc</span><span className="font-medium">{formatVnd(detailTrip?.depositAmount)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái chuyến</span><Badge variant="outline" className={cn("text-[11px]", getTripStatusStyle(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus))}>{tripStatusLabel(detailTrip?.currentStatus ?? selectedTask.tripCurrentStatus)}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái kiểm duyệt</span><span className="font-medium">{moderationStatusLabel(detailTrip?.moderationStatus ?? selectedTask.tripModerationStatus)}</span></div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4 text-muted-foreground" />Chủ trip & Thống kê</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-3">
+                    <div className="border rounded-lg p-5 bg-card">
+                      <h3 className="font-semibold mb-4 text-base flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground"/> Chủ Trip & Thống kê
+                      </h3>
+                      <div className="flex items-center gap-3 mb-4">
                         <Avatar className="h-10 w-10">
-                          {detailTrip?.owner?.avatarUrl && <AvatarImage src={detailTrip.owner.avatarUrl} alt="Owner" />}
-                          <AvatarFallback className={cn("text-xs font-semibold", getAvatarColor(detailTrip?.owner?.userId ?? "owner"))}>
-                            {detailTrip?.owner ? (((detailTrip.owner.firstName?.[0] || "") + (detailTrip.owner.lastName?.[0] || "")).toUpperCase() || "??") : "??"}
-                          </AvatarFallback>
+                          <AvatarImage src={detailTrip.owner?.avatarUrl || undefined} />
+                          <AvatarFallback>OW</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{detailTrip?.owner ? ([detailTrip.owner.firstName, detailTrip.owner.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)") : selectedTask.tripOwnerName || "Không rõ chủ trip"}</p>
-                          {detailTrip?.owner?.experienceLevel !== null && detailTrip?.owner?.experienceLevel !== undefined && <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelVi(detailTrip.owner.experienceLevel)}</p>}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-muted-foreground">Số người tham gia</span><span className="font-medium">{detailTrip?.participantCount ?? "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Tối thiểu</span><span className="font-medium">{detailTrip?.minParticipants ?? "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Tối đa</span><span className="font-medium">{detailTrip?.maxParticipants ?? "—"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái quét</span><span className="font-medium">{scanStatusLabel(detailTrip?.scanStatus ?? selectedTask.aiStatus)}</span></div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {detailTrip && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold">Phân loại chuyến đi & Chi phí dự kiến</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          <Tag className="h-3.5 w-3.5" />
-                          Loại chuyến đi
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {(detailTrip.tripTypes ?? []).length === 0
-                            ? <span className="text-sm text-muted-foreground">—</span>
-                            : (detailTrip.tripTypes ?? []).map((item) => (
-                              <Badge key={item.tripTypeId} variant="outline" className="text-[11px]">
-                                {tripTypeLabelVi(item.tripType)}
-                              </Badge>
-                            ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          <CarFront className="h-3.5 w-3.5" />
-                          Phương tiện
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {(detailTrip.tripVehicles ?? []).length === 0
-                            ? <span className="text-sm text-muted-foreground">—</span>
-                            : (detailTrip.tripVehicles ?? []).map((item) => (
-                              <Badge key={item.tripVehicleId} variant="outline" className="text-[11px]">
-                                {vehicleTypeLabelVi(item.vehicleType)}
-                              </Badge>
-                            ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg border bg-muted/20 p-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            <Wallet className="h-3.5 w-3.5" />
-                            Chi phí cấp chuyến
+                          <p className="font-medium text-foreground">
+                            {detailTrip.owner?.firstName} {detailTrip.owner?.lastName}
                           </p>
-                          <span className="text-sm font-semibold">{formatVnd(totalEstimatedCost)}</span>
+                          <p className="text-xs text-muted-foreground">Cấp độ: {translateExperienceLevel(detailTrip.owner?.experienceLevel)}</p>
                         </div>
-                        {tripLevelExpenses.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">Không có chi phí chung ở cấp chuyến.</p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {tripLevelExpenses.map((expense) => (
-                              <div key={expense.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-muted-foreground">{expenseTypeLabelVi(expense.expenseType)}</span>
-                                <span className="font-medium">{formatVnd(expense.estimatedCost)}</span>
-                              </div>
+                      </div>
+                      <div className="space-y-3 text-sm text-muted-foreground border-t pt-4">
+                        <div className="flex justify-between"><span>Số người tham gia</span><span className="text-foreground font-medium">{detailTrip?.participantCount || 0}</span></div>
+                        <div className="flex justify-between"><span>Tối thiểu</span><span className="text-foreground font-medium">{detailTrip?.minParticipants || 0}</span></div>
+                        <div className="flex justify-between"><span>Tối đa</span><span className="text-foreground font-medium">{detailTrip?.maxParticipants || 0}</span></div>
+<div className="flex justify-between items-center">
+                          <span>Trạng thái quét</span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-bold border", 
+                            String(detailTrip?.scanStatus) === "Clean" || detailTrip?.scanStatus === 1 ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
+                            String(detailTrip?.scanStatus) === "Flagged" || detailTrip?.scanStatus === 2 ? "bg-red-100 text-red-800 border-red-200" :
+                            String(detailTrip?.scanStatus) === "NotScanned" || detailTrip?.scanStatus === 0 ? "bg-slate-100 text-slate-800 border-slate-200" : "bg-amber-100 text-amber-800 border-amber-200"
+                          )}>
+                            {String(detailTrip?.scanStatus) === "Clean" || detailTrip?.scanStatus === 1 ? "Sạch" : 
+                             String(detailTrip?.scanStatus) === "Flagged" || detailTrip?.scanStatus === 2 ? "Cảnh báo" :
+                             String(detailTrip?.scanStatus) === "Error" || detailTrip?.scanStatus === 3 ? "Lỗi" :
+                             String(detailTrip?.scanStatus) === "NotScanned" || detailTrip?.scanStatus === 0 ? "Chưa quét" : (detailTrip?.scanStatus || "N/A")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {detailTrip.mediaAttachments && detailTrip.mediaAttachments.length > 0 && (
+                        <div className="md:col-span-2 border rounded-lg p-5 bg-card">
+                          <h3 className="font-semibold mb-4 text-base">Media đính kèm ({detailTrip.mediaAttachments.length})</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {detailTrip.mediaAttachments.map((m: any) => (
+                              <img key={m.mediaAttachmentId} src={m.mediaUrl} className="w-32 h-32 object-cover rounded-lg border"/>
                             ))}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Card>
-                  <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Nội dung mô tả</CardTitle></CardHeader>
-                  <CardContent className="space-y-4 text-sm">
-                    <div><p className="mb-1 text-xs text-muted-foreground">Mô tả</p><p className="whitespace-pre-wrap">{resolvedDescription || "—"}</p></div>
-                    <div><p className="mb-1 text-xs text-muted-foreground">Quy định</p><p className="whitespace-pre-wrap">{resolvedRule || "—"}</p></div>
-                    <div><p className="mb-1 text-xs text-muted-foreground">Vật dụng cần mang</p><p className="whitespace-pre-wrap">{resolvedItemRequired || "—"}</p></div>
-                  </CardContent>
-                </Card>
-
-                {!detailTrip && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        Lộ trình
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                        Bản ghi trip gốc không còn tồn tại nên không thể hiển thị routing/mapbox.
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {sortedCheckpoints.length ? (
-                  <Card>
-                    <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-muted-foreground" />Lộ trình ({sortedCheckpoints.length} điểm)</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
-                        <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} điểm</Badge>
-                        <Badge variant="outline" className="text-[11px]">Quãng đường: {formatDistance(detailTrip?.itinerary?.distanceM)}</Badge>
-                        <Badge variant="outline" className="text-[11px]">Thời gian: {formatDuration(detailTrip?.itinerary?.durationS)}</Badge>
-                        {detailTrip?.itinerary?.travelMode && (
-                          <Badge variant="outline" className="text-[11px]">Kiểu di chuyển: {travelModeLabelVi(detailTrip.itinerary.travelMode)}</Badge>
-                        )}
-                      </div>
-
-                      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-                        <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                          {sortedCheckpoints.map((cp, index) => {
-                            const typeMeta = checkpointMetaByType(cp.tripCheckpointType);
-                            const TypeIcon = typeMeta.icon;
-                            const costs = cp.costs ?? [];
-                            return (
-                              <div key={cp.tripCheckpointId} className="rounded-lg border bg-background p-3">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline" className="text-[11px]">Điểm {index + 1}</Badge>
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[11px]"
-                                        style={{ borderColor: `${typeMeta.color}60`, color: typeMeta.color }}
-                                      >
-                                        <TypeIcon className="mr-1 h-3 w-3" />
-                                        {checkpointLabelVi(cp.tripCheckpointType)}
-                                      </Badge>
-                                    </div>
-                                    <p className="text-sm font-semibold">{cp.locationName || cp.displayAddress || "—"}</p>
-                                    {cp.locationName && cp.displayAddress && (
-                                      <p className="text-xs text-muted-foreground">{cp.displayAddress}</p>
-                                    )}
-                                  </div>
-                                  <span className="text-[11px] text-muted-foreground">#{cp.sequenceNo}</span>
-                                </div>
-
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                  <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
-                                    <Clock3 className="h-3 w-3" />
-                                    {formatDateTime(cp.plannedAt)}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5">
-                                    <Route className="h-3 w-3" />
-                                    {Number.isFinite(cp.lat) && Number.isFinite(cp.lng)
-                                      ? `${cp.lat.toFixed(6)}, ${cp.lng.toFixed(6)}`
-                                      : "Chưa có tọa độ"}
-                                  </span>
-                                </div>
-
-                                {cp.note && (
-                                  <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-                                    {cp.note}
-                                  </div>
-                                )}
-
-                                {costs.length > 0 && (
-                                  <div className="mt-2 rounded-md border bg-amber-50/50 p-2">
-                                    <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
-                                      <Wallet className="h-3 w-3" />
-                                      Chi phí tại điểm
-                                    </p>
-                                    <div className="space-y-1">
-                                      {costs.map((cost) => (
-                                        <div key={cost.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-[11px]">
-                                          <span className="truncate text-muted-foreground">{expenseTypeLabelVi(cost.expenseType)}</span>
-                                          <span className="font-medium">{formatVnd(cost.estimatedCost)}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
                         </div>
-                        <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={detailTrip?.itinerary} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : null}
-
-                {detailTrip?.participants?.length ? (
-                  <Card>
-                    <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4 text-muted-foreground" />Thành viên ({detailTrip.participants.length})</CardTitle></CardHeader>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader><TableRow><TableHead>Thành viên</TableHead><TableHead>Vai trò</TableHead><TableHead>Trạng thái</TableHead></TableRow></TableHeader>
-                        <TableBody>
-                          {detailTrip.participants.map((p) => {
-                            const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)";
-                            const initials = (((p.firstName?.[0] || "") + (p.lastName?.[0] || "")).toUpperCase() || "??");
-                            return (
-                              <TableRow key={p.tripParticipantId}>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7">
-                                      {p.avatarUrl && <AvatarImage src={p.avatarUrl} alt={name} />}
-                                      <AvatarFallback className={cn("text-[10px] font-semibold", getAvatarColor(p.userId || p.tripParticipantId))}>{initials}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-sm">{name}</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell><Badge variant="secondary" className="text-[11px]">{tripRoleLabel(p.roleInTrip)}</Badge></TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                  {p.participantStatusId !== null && p.participantStatusId !== undefined
-                                    ? (typeof p.participantStatusId === "number"
-                                        ? PARTICIPANT_STATUS_LABELS[p.participantStatusId] ?? `${p.participantStatusId}`
-                                        : String(p.participantStatusId))
-                                    : "—"}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                ) : null}
-
-                {detailTrip?.mediaAttachments?.length ? (
-                  <Card>
-                    <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm font-semibold"><ImageIcon className="h-4 w-4 text-muted-foreground" />Hình ảnh & Media ({detailTrip.mediaAttachments.length})</CardTitle></CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                        {detailTrip.mediaAttachments.map((m) => (
-                          <div key={m.mediaAttachmentId} className="overflow-hidden rounded-lg border">
-                            {m.mediaType === "Image" || m.mediaType === 0
-                              ? <img src={m.mediaUrl} alt="" className="aspect-video w-full object-cover" />
-                              : <div className="flex aspect-video items-center justify-center bg-muted"><span className="text-xs text-muted-foreground">{m.mediaType}</span></div>}
+                    )}
+                    <div className="md:col-span-2 border rounded-lg p-5 bg-card">
+                      <h3 className="font-semibold mb-4 text-base">Phân loại chuyến đi & Chi phí dự kiến</h3>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          <div>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">Loại chuyến đi</h4>
+                              <div className="flex flex-wrap gap-2">
+                                  {(detailTrip.tripTypes && detailTrip.tripTypes.length > 0) ? detailTrip.tripTypes.map(tt => (
+                                      <Badge key={tt.tripTypeId} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-none">{translateTripType(tt.tripType)}</Badge>
+                                  )) : <span className="text-sm text-muted-foreground italic">Trống</span>}
+                              </div>
                           </div>
-                        ))}
+                          <div>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">Phương tiện</h4>
+                              <div className="flex flex-wrap gap-2">
+                                  {(detailTrip.tripVehicles && detailTrip.tripVehicles.length > 0) ? detailTrip.tripVehicles.map(vv => (
+                                      <Badge key={vv.tripVehicleId} variant="outline" className="text-slate-600 border-slate-300">{translateVehicle(vv.vehicleType)}</Badge>
+                                  )) : <span className="text-sm text-muted-foreground italic">Trống</span>}
+                              </div>
+                          </div>
+                          <div>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">Chi phí cấp chuyến</h4>
+                              <div className="space-y-3">
+                                  {(detailTrip.expenseCategories && detailTrip.expenseCategories.filter((e: any) => e.tripCheckpointId == null).length > 0) ? 
+                                  detailTrip.expenseCategories.filter((e: any) => e.tripCheckpointId == null).map((exp: any) => (
+                                      <div key={exp.tripExpenseCategoryId} className="flex flex-col gap-1 text-sm border-l-2 pl-3 border-slate-200">
+                                          <div className="flex justify-between items-center">
+                                            <span className="font-medium text-foreground">{exp.expenseType}</span>
+                                            <span className="font-bold text-emerald-600">{formatVnd(exp.estimatedCost)}</span>
+                                          </div>
+                                          {exp.note && <span className="text-xs text-muted-foreground">{exp.note}</span>}
+                                      </div>
+                                  )) : <span className="text-sm text-muted-foreground italic">Không có phí</span>}
+                              </div>
+                          </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ) : null}
-
-                <Card>
-                  <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Đánh giá AI</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="rounded-md border bg-muted/20 p-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className={cn("text-[11px]", moderationCodeStyle(selectedTask.moderationCode))}>
-                          Kết quả: {moderationCodeLabelVi(selectedTask.moderationCode)}
-                        </Badge>
-                        <Badge variant="outline" className={cn("text-[11px]", reviewPriorityStyle(selectedTask.reviewPriority))}>
-                          Ưu tiên review: {reviewPriorityLabelVi(selectedTask.reviewPriority)}
-                        </Badge>
-                        <Badge variant="outline" className={cn("text-[11px]", recommendedDecisionStyle(selectedTask.recommendedDecision))}>
-                          Khuyến nghị: {recommendedDecisionLabelVi(selectedTask.recommendedDecision)}
-                        </Badge>
-                        <Badge variant="outline" className={cn("text-[11px]", moderationSuccessStyle(selectedTask.success))}>
-                          {moderationSuccessLabel(selectedTask.success)}
-                        </Badge>
-                      </div>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {selectedTask.overallSummary || "AI chưa trả về tổng kết."}
-                      </p>
                     </div>
 
-                    {selectedTask.scanErrorMessage && (
-                      <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-                        Lỗi scan: {selectedTask.scanErrorMessage}
+                    <div className="md:col-span-2 border rounded-lg p-5 bg-card">
+                      <h3 className="font-semibold mb-4 text-base">Mô tả</h3>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                        {detailTrip.description || "Không có mô tả."}
                       </p>
-                    )}
-
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Mục bị gắn cờ ({sortedFlaggedItems.length})
-                      </h4>
-                      {sortedFlaggedItems.length === 0 ? (
-                        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                          Không có mục nào bị gắn cờ.
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="itinerary" className="m-0">
+                  {sortedCheckpoints.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-10">Không có điểm trình</p>
+                  ) : (
+                    <div className="flex flex-col h-full gap-4">
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 p-4 rounded-lg border">
+                        <h3 className="font-bold text-foreground">Lộ trình ({sortedCheckpoints.length} điểm)</h3>
+                        <div className="flex items-center gap-6 mt-2 sm:mt-0 text-sm text-muted-foreground font-medium">
+                          <span>Quãng đường: {(detailTrip.itinerary as any)?.distance ? `${(detailTrip.itinerary as any).distance} km` : '—'}</span>
+                          <span>Thời gian: {(detailTrip.itinerary as any)?.duration ? formatDuration((detailTrip.itinerary as any).duration) : '—'}</span>
                         </div>
-                      ) : (
-                        <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
-                          {sortedFlaggedItems.map((item, index) => (
-                            <div
-                              key={`${item.contentPath}-${item.severity}-${index}`}
-                              className={cn(
-                                "rounded-md border p-2.5",
-                                flaggedSeverityOrder(item.severity) >= 2 ? "border-red-300 bg-red-50/40" : "border-amber-300 bg-amber-50/40",
-                              )}
-                            >
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium">{contentPathLabelVi(item.contentPath)}</span>
-                                <Badge variant="outline" className={cn("text-[11px]", flaggedSeverityStyle(item.severity))}>
-                                  Mức độ: {flaggedSeverityLabelVi(item.severity)}
-                                </Badge>
-                                <Badge variant="outline" className="text-[11px]">
-                                  Tin cậy: {item.confidence ?? "—"}
-                                </Badge>
-                              </div>
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                {item.reason || "Không có lý do chi tiết."}
-                              </p>
-                              {item.evidence && (
-                                <div className="mt-2 rounded-md border bg-background p-2 text-xs text-muted-foreground">
-                                  Bằng chứng: {item.evidence}
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 h-full">
+                        {/* Left: Itinerary List */}
+                        <div className="space-y-4 pr-2 overflow-y-auto max-h-[600px] scrollbar-thin">
+                          {sortedCheckpoints.map((cp: any, index: number) => {
+                            const checkpointCosts = Array.isArray(cp.costs) ? cp.costs : [];
+                            const categoryExpenses = detailTrip.expenseCategories?.filter((e: any) => e.tripCheckpointId === cp.tripCheckpointId) || [];
+                            const cpExpenses = checkpointCosts.length > 0 ? checkpointCosts : categoryExpenses;
+                            
+                            // fallback color styles based on checkpoint label
+                            const typeLabel = getCheckpointTypeLabel(cp.tripCheckpointType ?? cp.checkpointType ?? cp.type);
+                            let bgPoint = "bg-blue-100 text-blue-700";
+                            let TypeIcon = MapPin;
+                            
+                            if (typeLabel === "Bắt đầu") {
+                              bgPoint = "bg-emerald-100 text-emerald-700";
+                              TypeIcon = PlayCircle;
+                            } else if (typeLabel === "Kết thúc") {
+                              bgPoint = "bg-amber-100 text-amber-700";
+                              TypeIcon = Flag;
+                            } else if (typeLabel === "Quay về") {
+                              bgPoint = "bg-slate-200 text-slate-700";
+                              TypeIcon = Home;
+                            }
+
+                            return (
+                              <div key={cp.tripCheckpointId} className="p-4 border rounded-lg flex flex-col gap-2 bg-card">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-xs font-semibold text-muted-foreground uppercase">Điểm {index + 1}</span>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${bgPoint}`}>
+                                    <TypeIcon className="w-3 h-3" />
+                                    {typeLabel}
+                                  </span>
                                 </div>
-                              )}
-                              {item.whatReviewerShouldCheck && (
-                                <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
-                                  Moderator cần kiểm tra: {item.whatReviewerShouldCheck}
-                                </div>
-                              )}
-                              {item.suggestedReviewerAction && (
-                                <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-2 text-xs text-blue-900">
-                                  Gợi ý xử lý: {item.suggestedReviewerAction}
+                                <h4 className="font-semibold text-primary flex items-center justify-between">
+                                  {cp.locationName}
+                                  <span className="text-xs text-muted-foreground font-normal">{formatDateTime(cp.plannedAt)}</span>
+                                </h4>
+                              <p className="text-sm text-foreground">{cp.displayAddress || cp.locationName}</p>
+                              {cp.note && <p className="text-sm text-muted-foreground bg-muted p-2 rounded">{cp.note}</p>}
+                              
+                              {/* Expenses for this checkpoint */}
+                              {cpExpenses.length > 0 && (
+                                <div className="mt-2 pt-3 border-t border-dashed">
+                                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-md p-3">
+                                    <p className="text-xs font-semibold text-emerald-800 mb-2 flex items-center gap-1.5">
+                                      <Wallet className="h-3.5 w-3.5" /> Chi phí tại điểm
+                                    </p>
+                                    <div className="space-y-1.5">
+                                      {cpExpenses.map((exp: any, i: number) => {
+                                        const rawLabel = exp.expenseType || exp.type || exp.categoryName || exp.expenseCategoryName || "Other";
+                                        const label = translateExpenseType(rawLabel);
+                                        const amount = exp.estimatedCost || exp.amount || 0;
+                                        return (
+                                          <div key={exp.tripExpenseCategoryId || exp.id || i} className="flex justify-between items-center text-xs">
+                                            <span className="text-emerald-700 font-medium flex items-center gap-1.5">
+                                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                              {label}
+                                            </span>
+                                            <span className="font-semibold text-emerald-700 bg-emerald-100/50 px-2 py-0.5 rounded">{formatVnd(amount)}</span>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          ))}
+                          )
+                        })}
+                      </div>
+                      
+                      {/* Right: Map */}
+                      <div className="h-[600px] border rounded-lg overflow-hidden sticky top-0">
+                        <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={detailTrip?.itinerary || null} />
+                      </div>
+                    </div>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="members" className="m-0">
+                  {detailTrip.participants && detailTrip.participants.length > 0 ? (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {detailTrip.participants.map(member => (
+                        <div key={member.tripParticipantId} className="flex items-center gap-3 p-3 border rounded-lg bg-card">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={member.avatarUrl || undefined} />
+                            <AvatarFallback>{member.firstName?.charAt(0) || "U"}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">
+                              {member.firstName} {member.lastName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              Vai trò: {tripRoleLabel(member.roleInTrip)}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={cn(
+                            "text-[10px] whitespace-nowrap",
+                            String(member.participantStatusId).toLowerCase() === "0" || String(member.participantStatusId).toLowerCase() === "joined" ? "bg-green-50 text-green-700 border-green-200" :
+                            String(member.participantStatusId).toLowerCase() === "1" || String(member.participantStatusId).toLowerCase() === "left" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                            String(member.participantStatusId).toLowerCase() === "2" || String(member.participantStatusId).toLowerCase() === "removed" ? "bg-red-50 text-red-700 border-red-200" :
+                            String(member.participantStatusId).toLowerCase() === "3" || String(member.participantStatusId).toLowerCase() === "banned" ? "bg-slate-50 text-slate-700 border-slate-200" : ""
+                          )}>
+                            {getParticipantStatusLabel(member.participantStatusId)}
+                          </Badge>
                         </div>
-                      )}
+                      ))}
                     </div>
-
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Tín hiệu an toàn ({safeSignals.length})
-                        </h4>
-                        {safeSignals.length === 0 ? (
-                          <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-                            Không có tín hiệu an toàn bổ sung từ AI.
-                          </div>
-                        ) : (
-                          <ul className="space-y-1 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            {safeSignals.map((signal, index) => (
-                              <li key={`${signal}-${index}`} className="list-disc pl-1 ml-4">
-                                {signal}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Ngữ cảnh còn thiếu ({missingContext.length})
-                        </h4>
-                        {missingContext.length === 0 ? (
-                          <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-                            Không có ghi chú thiếu ngữ cảnh.
-                          </div>
-                        ) : (
-                          <ul className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                            {missingContext.map((context, index) => (
-                              <li key={`${context}-${index}`} className="list-disc pl-1 ml-4">
-                                {context}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-10">Không có thành viên nào.</p>
+                  )}
+                </TabsContent>
               </>
+            ) : (
+              <p className="text-center mt-10 text-muted-foreground">Chưa có thông tin</p>
             )}
           </div>
+        </Tabs>
+      )}
+    </div>
+  </div>
 
-          {!detailLoading && !detailError && selectedTask && (
-            <div className="border-t pt-3">
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="reject-reason" className="text-sm">
-                    Lý do từ chối (bắt buộc nếu bấm Từ chối)
-                  </Label>
-                  <Textarea
-                    id="reject-reason"
-                    placeholder="Nhập lý do để thông báo cho người đăng chuyến đi..."
-                    value={rejectReason}
-                    onChange={(event) => setRejectReason(event.target.value)}
-                    maxLength={2000}
-                    rows={3}
-                    disabled={decisionLoading || !canReviewInPopup}
-                  />
-                  <p className="text-right text-xs text-muted-foreground">{rejectReason.length}/2000</p>
+  <div className="w-full md:w-[450px] shrink-0 flex flex-col bg-slate-50 border-l border-border h-full overflow-hidden">
+    <div className="p-5 border-b border-border bg-white flex flex-col gap-3">
+      <h3 className="font-bold flex items-center gap-2 text-base">
+        <Shield className="h-5 w-5 text-amber-500" /> Hệ thống AI đánh giá
+      </h3>
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-1 shadow-sm">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+            <span className="text-sm text-muted-foreground">Trạng thái quét (Scan)</span>
+            <Badge variant="outline" className={cn("font-medium text-[10px] uppercase border", selectedTask?.success ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200")}>
+              {selectedTask?.success ? "Thành công" : "Thất bại"}
+            </Badge>
+          </div>
+          <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+            <span className="text-sm text-muted-foreground">Kết quả</span>
+            <Badge variant={moderationResult?.moderationCode === 'Flagged' ? "destructive" : "outline"} className={cn("text-[11px]", moderationResult?.moderationCode !== 'Flagged' && "bg-emerald-100/50 text-emerald-700 border-emerald-200")}>
+              {moderationResult?.moderationCode === 'Flagged' ? "Cảnh báo" : "Sạch"}
+            </Badge>
+          </div>
+          <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+            <span className="text-sm text-muted-foreground">Ưu tiên review</span>
+            <span className={cn("text-sm font-bold", 
+              moderationResult?.reviewPriority === 'high' ? "text-red-600" : 
+              moderationResult?.reviewPriority === 'medium' ? "text-amber-600" : "text-emerald-600"
+            )}>
+              {moderationResult?.reviewPriority === 'high' ? 'Cao' : moderationResult?.reviewPriority === 'medium' ? 'Trung bình' : 'Thấp'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Khuyến nghị</span>
+            <span className="text-sm font-bold text-slate-700">
+              {moderationResult?.recommendedDecision === 'reject' ? 'Từ chối' : 
+               moderationResult?.recommendedDecision === 'review' ? 'Cần duyệt thủ công' : 'Có thể duyệt'}
+            </span>
+          </div>
+        </div>
+      </div>
+      {selectedTask?.scanErrorMessage && (
+        <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{selectedTask.scanErrorMessage}</span>
+        </div>
+      )}
+    </div>
+    
+    <div className="flex-1 overflow-y-auto p-5 space-y-6">
+      <div>
+        <p className="text-xs text-muted-foreground font-semibold uppercase mb-3 tracking-wider">Tóm tắt chung</p>
+        <p className="text-sm bg-white p-4 border rounded-xl leading-relaxed shadow-sm text-foreground">
+          {moderationResult?.overallSummary || "AI không cung cấp tóm tắt."}
+        </p>
+      </div>
+      
+      <div>
+        <p className="text-xs text-destructive font-semibold uppercase mb-3 flex items-center gap-1 tracking-wider">
+          <AlertTriangle className="w-3.5 h-3.5" /> Mục bị gắn cờ ({sortedFlaggedItems.length})
+        </p>
+        
+        {sortedFlaggedItems.length > 0 ? (
+          <div className="space-y-3">
+            {sortedFlaggedItems.map((fi: any, i: number) => (
+              <div key={i} className="text-sm bg-red-50/50 border border-red-100/50 p-4 rounded-xl flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-red-800 uppercase tracking-wider text-[10px]">{fi.severity} risk</span>
+                  <Badge variant="outline" className="text-[10px] bg-white border-red-200 text-red-700">{fi.contentPath}</Badge>
                 </div>
-
-                {decisionError && (
-                  <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-                    {decisionError}
-                  </p>
-                )}
-
-                {!detailTrip && (
-                  <p className="text-xs text-amber-700">
-                    Không thể duyệt trực tiếp vì bản ghi trip gốc không còn tồn tại.
-                  </p>
-                )}
-
-                {selectedTask && !isTaskActionable(selectedTask.status) && (
-                  <p className="text-xs text-muted-foreground">
-                    Task này đã được xử lý trước đó, không thể duyệt lại trong popup.
-                  </p>
-                )}
-
-                <div className="flex flex-wrap justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDetailOpen(false)}
-                    disabled={decisionLoading}
-                  >
-                    Đóng
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => submitDecision("Reject")}
-                    disabled={decisionLoading || !canReviewInPopup}
-                  >
-                    {decisionLoading && pendingDecision === "Reject" && (
-                      <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                    )}
-                    Từ chối
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => submitDecision("Approve")}
-                    disabled={decisionLoading || !canReviewInPopup}
-                  >
-                    {decisionLoading && pendingDecision === "Approve" && (
-                      <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-                    )}
-                    Duyệt
-                  </Button>
+                <p className="text-red-900 font-semibold mt-1">{fi.reason}</p>
+                <div className="bg-white/60 p-2 rounded text-red-700 italic border border-red-100/50">"{fi.evidence}"</div>
+                <div className="mt-2 pt-2 border-t border-red-200/50">
+                  <p className="text-red-800 font-medium"><span className="opacity-70">Kiểm tra:</span> {fi.whatReviewerShouldCheck}</p>
+                  <p className="text-red-800 font-medium mt-1"><span className="opacity-70">Gợi ý:</span> {fi.suggestedReviewerAction}</p>
                 </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-foreground italic">Không có mục nào bị gắn cờ.</p>
+        )}
+      </div>
+
+      <div>
+        <p className="text-xs text-emerald-600 font-semibold uppercase mb-3 flex items-center gap-1 tracking-wider">
+          <Shield className="w-3.5 h-3.5" /> Tín hiệu an toàn ({safeSignals.length})
+        </p>
+        {safeSignals.length > 0 ? (
+          <div className="space-y-2">
+            {safeSignals.map((signal: string, i: number) => (
+              <div key={i} className="text-sm bg-emerald-50/50 border border-emerald-100/50 p-3 rounded-xl flex items-start gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <p className="text-emerald-800/90 leading-relaxed break-words">{signal}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-foreground italic">Không có tín hiệu an toàn nào.</p>
+        )}
+      </div>
+      
+      <div>
+        <p className="text-xs text-amber-600 font-semibold uppercase mb-3 flex items-center gap-1 tracking-wider">
+          <AlertTriangle className="w-3.5 h-3.5" /> Ngữ cảnh còn thiếu ({missingContext.length})
+        </p>
+        {missingContext.length > 0 ? (
+          <div className="space-y-2">
+            {missingContext.map((ctxMsg: string, i: number) => (
+              <div key={i} className="text-sm bg-amber-50/50 border border-amber-100/50 p-3 rounded-xl flex items-start gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                <p className="text-amber-800/90 leading-relaxed break-words">{ctxMsg}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-foreground italic">Không có ghi chú thiếu ngữ cảnh.</p>
+        )}
+      </div>
+    </div>
+
+    <div className="p-5 border-t border-border bg-white mt-auto space-y-4 shadow-[0_-5px_15px_rgba(0,0,0,0.03)] z-10 transition-all">
+      <div>
+        <Label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Lời phê (Bắt buộc nếu Từ chối)</Label>
+        <Textarea 
+          className="min-h-24 resize-none bg-slate-50 focus:bg-white text-sm" 
+          placeholder="Nhập lý do chi tiết để gửi cho người dùng..."
+          value={rejectReason}
+          onChange={e => setRejectReason(e.target.value)}
+        />
+      </div>
+      <div className="grid flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            variant="outline" 
+            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive h-11 transition-all" 
+            disabled={decisionLoading || pendingDecision === "Approve"} 
+            onClick={() => {
+              if(!selectedTask?.taskId) return;
+              setPendingDecision("Reject");
+              reviewTrip(selectedTask.taskId, { decision: "Reject", decisionNote: rejectReason }).then(() => {
+                  setPendingDecision(null);
+                  setDetailOpen(false);
+                  setRejectReason('');
+                  loadTasks(page);
+              }).catch(e => {
+                  setPendingDecision(null);
+              });
+            }}
+          >
+            {decisionLoading && pendingDecision === "Reject" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : null}
+            Từ chối
+          </Button>
+          <Button 
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 h-11 transition-all" 
+            disabled={decisionLoading || pendingDecision === "Reject"} 
+            onClick={() => {
+              if(!selectedTask?.taskId) return;
+              setPendingDecision("Approve");
+              reviewTrip(selectedTask.taskId, { decision: "Approve", decisionNote: rejectReason }).then(() => {
+                  setPendingDecision(null);
+                  setDetailOpen(false);
+                  setRejectReason('');
+                  loadTasks(page);
+              }).catch(e => {
+                  setPendingDecision(null);
+              });
+            }}
+          >
+            {decisionLoading && pendingDecision === "Approve" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : null}
+            Duyệt Trip
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</DialogContent>
+
       </Dialog>
     </>
   );

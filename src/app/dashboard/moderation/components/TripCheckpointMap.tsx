@@ -282,7 +282,7 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
 
   if (!geoCheckpoints.length) {
     return (
-      <div className="flex h-[420px] items-center justify-center rounded-lg border bg-muted/20 text-sm text-muted-foreground">
+      <div className="flex h-[65vh] min-h-[500px] items-center justify-center rounded-lg border bg-secondary text-secondary-foreground/20 text-sm text-muted-foreground">
         Không có checkpoint có tọa độ để hiển thị bản đồ.
       </div>
     );
@@ -290,25 +290,25 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
 
   if (!token) {
     return (
-      <div className="flex h-[420px] flex-col items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
-        <p className="text-sm font-medium text-amber-900">Thiếu Mapbox access token.</p>
-        <p className="text-xs text-amber-800">Thêm NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vào .env.local để hiển thị bản đồ checkpoint.</p>
+      <div className="flex h-[65vh] min-h-[500px] flex-col items-center justify-center gap-2 rounded-lg border border-border bg-secondary p-4 text-center">
+        <p className="text-sm font-medium text-secondary-foreground">Thiếu Mapbox access token.</p>
+        <p className="text-xs text-secondary-foreground">Thêm NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vào .env.local để hiển thị bản đồ checkpoint.</p>
       </div>
     );
   }
 
   if (mapError) {
     return (
-      <div className="flex h-[420px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
-        <p className="text-sm font-medium text-destructive">Không thể hiển thị Mapbox.</p>
-        <p className="text-xs text-destructive/80">{mapError}</p>
+      <div className="flex h-[65vh] min-h-[500px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-secondary text-secondary-foreground p-4 text-center">
+        <p className="text-sm font-medium text-foreground">Không thể hiển thị Mapbox.</p>
+        <p className="text-xs text-foreground/80">{mapError}</p>
       </div>
     );
   }
 
   return (
     <div className="relative">
-      <div ref={mapContainerRef} className="h-[420px] w-full overflow-hidden rounded-lg border [&_.mapboxgl-canvas]:!outline-none" />
+      <div ref={mapContainerRef} className="h-[65vh] min-h-[500px] w-full overflow-hidden rounded-lg border [&_.mapboxgl-canvas]:!outline-none" />
       <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-1.5">
         <span className="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-700 shadow">
           {mapStats.points} điểm
@@ -330,7 +330,7 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
         </span>
       )}
       {!directionsLoading && directionsError && (
-        <span className="absolute right-3 top-3 max-w-[220px] rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-800">
+        <span className="absolute right-3 top-3 max-w-[220px] rounded bg-secondary px-2 py-1 text-[10px] text-secondary-foreground">
           {directionsError}. Đang dùng đường thẳng.
         </span>
       )}
