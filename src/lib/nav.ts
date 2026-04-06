@@ -190,6 +190,12 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
         icon: Megaphone,
         roles: ["MODERATOR"],
       },
+      {
+        label: "B\u00e1o c\u00e1o c\u1ee7a t\u00f4i",
+        href: ROUTES.MODERATION_MY_REPORTS,
+        icon: Megaphone,
+        roles: ["MODERATOR"],
+      },
     ],
   },
 ];

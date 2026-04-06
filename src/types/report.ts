@@ -246,6 +246,22 @@ export interface GetReportsParams {
   sortDirection?: string;
 }
 
+export interface GetMyReportsParams {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: string;
+  targetType?: string;
+}
+
+export interface CreateReportPayload {
+  targetType: number | string | ReportTargetTypeCode;
+  targetId: string;
+  reasonId?: number | null;
+  reasonText?: string | null;
+  evidenceNote?: string | null;
+  reportedPartyType?: number | string | ReportedPartyTypeCode | null;
+}
+
 export interface ProcessReportPayload {
   decision: number;
   resolvedAction?: number;

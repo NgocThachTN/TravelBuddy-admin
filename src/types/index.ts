@@ -105,6 +105,8 @@ export type {
   ReportTargetDetailDto,
   ReportDetail,
   GetReportsParams,
+  GetMyReportsParams,
+  CreateReportPayload,
   ProcessReportPayload,
 } from "./report";
 export {

@@ -152,10 +152,14 @@ export function AppSidebar({ role }: AppSidebarProps) {
                             {item.children.map((child) => {
                               const childIsActive = matchesItem(pathname, searchParams, child);
 
+                              if (!child.href) {
+                                return null;
+                              }
+
                               return (
                                 <SidebarMenuSubItem key={child.href ?? child.label}>
                                   <SidebarMenuSubButton asChild isActive={childIsActive}>
-                                    <Link href={child.href!}>
+                                    <Link href={child.href}>
                                       <span>{child.label}</span>
                                     </Link>
                                   </SidebarMenuSubButton>
@@ -170,12 +174,19 @@ export function AppSidebar({ role }: AppSidebarProps) {
 
                   return (
                     <SidebarMenuItem key={item.href ?? item.label}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
-                        <Link href={item.href!}>
+                      {item.href ? (
+                        <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                          <Link href={item.href}>
+                            <Icon />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      ) : (
+                        <SidebarMenuButton isActive={active} tooltip={item.label}>
                           <Icon />
                           <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
+                        </SidebarMenuButton>
+                      )}
                       {item.badge != null && item.badge > 0 && (
                         <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
                       )}
