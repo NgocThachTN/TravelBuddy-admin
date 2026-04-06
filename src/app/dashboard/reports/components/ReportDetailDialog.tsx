@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   fetchModerationReportById,
+  fetchMyReportById,
   fetchReportById,
   fetchTripById,
 } from "@/lib/api";
-import type { ReportDetail, TripDetail } from "@/types";
+import type { ReportDetail, ReportListItem, TripDetail } from "@/types";
 import {
   reportPriorityLabel,
   reportStatusLabel,
@@ -34,8 +35,43 @@ import { RefreshCw } from "lucide-react";
 
 interface ReportDetailDialogProps {
   reportId: string | null;
-  scope?: "admin" | "moderation";
+  reportPreview?: ReportListItem | null;
+  scope?: "admin" | "moderation" | "mine";
   onClose: () => void;
+}
+
+function toReportDetailFallback(report: ReportListItem): ReportDetail {
+  return {
+    ...report,
+    evidenceNote: null,
+    targetSnapshot: null,
+    resolvedAction: null,
+    resolvedActions: null,
+    resolvedNote: null,
+    updatedAt: null,
+    strikeExpiresAt: null,
+    targetDetail: null,
+  };
+}
+
+function buildReporterName(report: Pick<ReportDetail, "reporterName" | "reporterFirstName" | "reporterLastName" | "reporterEmail">): string {
+  const full = [report.reporterFirstName, report.reporterLastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return report.reporterName || full || report.reporterEmail || "(Ẩn danh)";
+}
+
+function buildReporterInitials(report: Pick<ReportDetail, "reporterName" | "reporterFirstName" | "reporterLastName" | "reporterEmail">): string {
+  const source = buildReporterName(report);
+  const parts = source.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+  }
+
+  return parts[0]?.slice(0, 2).toUpperCase() || "?";
 }
 
 function isTripTargetType(targetType: number | string | null | undefined): boolean {
@@ -108,6 +144,7 @@ function getTripOwnerDisplayName(trip: TripDetail | null): string {
 
 export default function ReportDetailDialog({
   reportId,
+  reportPreview = null,
   scope = "admin",
   onClose,
 }: ReportDetailDialogProps) {
@@ -141,8 +178,15 @@ export default function ReportDetailDialog({
 
         setLoading(true);
         setError(null);
+        if (reportPreview && reportPreview.reportId === reportIdValue) {
+          setReport(toReportDetailFallback(reportPreview));
+        }
         const fetcher =
-          scope === "admin" ? fetchReportById : fetchModerationReportById;
+          scope === "admin"
+            ? fetchReportById
+            : scope === "mine"
+              ? fetchMyReportById
+              : fetchModerationReportById;
         const result = await fetcher(reportIdValue);
         if (!active) {
           return;
@@ -166,7 +210,7 @@ export default function ReportDetailDialog({
     return () => {
       active = false;
     };
-  }, [reportId, scope, reloadKey]);
+  }, [reportId, reportPreview, scope, reloadKey]);
 
   useEffect(() => {
     if (!report || !isTripTargetType(report.targetType)) {
@@ -220,19 +264,9 @@ export default function ReportDetailDialog({
     };
   }, [report]);
 
-  const reporterName = report
-    ? report.reporterName ||
-      [report.reporterFirstName, report.reporterLastName]
-        .filter(Boolean)
-        .join(" ")
-        .trim() ||
-      "(Ẩn danh)"
-    : "";
-
-  const initials = report
-    ? (report.reporterFirstName?.[0] ?? "") +
-        (report.reporterLastName?.[0] ?? "") || "?"
-    : "?";
+  const reporterName = report ? buildReporterName(report) : "";
+  const initials = report ? buildReporterInitials(report) : "?";
+  const tripCheckpoints = tripDetail?.checkpoints ?? [];
 
   const postMetadata = parsePostTargetMetadata(report?.targetDetail?.metadataJson);
   const postMediaAttachments = postMetadata?.mediaAttachments ?? [];
@@ -265,7 +299,7 @@ export default function ReportDetailDialog({
           </div>
         )}
 
-        {error && (
+        {error && !report && (
           <div className="flex flex-col items-center py-8">
             <p className="text-sm text-destructive">{error}</p>
             <Button
@@ -280,8 +314,13 @@ export default function ReportDetailDialog({
           </div>
         )}
 
-        {report && !loading && !error && (
+        {report && !loading && (
           <div className="space-y-5">
+            {error && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                {error}
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 {report.reporterAvatarUrl && (
@@ -478,11 +517,11 @@ export default function ReportDetailDialog({
                       </div>
                     )}
 
-                    {tripDetail.checkpoints.length > 0 && (
+                    {tripCheckpoints.length > 0 && (
                       <div>
                         <p className="mb-1 text-xs text-muted-foreground">Checkpoint</p>
                         <div className="space-y-1">
-                          {tripDetail.checkpoints.slice(0, 5).map((checkpoint, index) => (
+                          {tripCheckpoints.slice(0, 5).map((checkpoint, index) => (
                             <p
                               key={checkpoint.tripCheckpointId}
                               className="rounded-md bg-muted px-2 py-1 text-xs"
@@ -504,25 +543,25 @@ export default function ReportDetailDialog({
             {isPostTargetType(report.targetType) && (
               <div className="space-y-3 rounded-lg border p-4">
                 <p className="text-xs font-medium text-muted-foreground">
-                  Chi ti\u1ebft b\u00e0i vi\u1ebft b\u1ecb b\u00e1o c\u00e1o
+                  Chi tiết bài viết bị báo cáo
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">T\u00e1c gi\u1ea3</p>
+                    <p className="text-xs text-muted-foreground">Tác giả</p>
                     <p className="font-medium">
                       {report.targetDetail?.ownerName || "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Tr\u1ea1ng th\u00e1i</p>
+                    <p className="text-xs text-muted-foreground">Trạng thái</p>
                     <p className="font-medium">
                       {report.targetDetail?.status || "-"}
                     </p>
                   </div>
                   {(postMetadata?.lat !== undefined || postMetadata?.lng !== undefined) && (
                     <div className="col-span-2">
-                      <p className="text-xs text-muted-foreground">To\u1ea1 \u0111\u1ed9</p>
+                      <p className="text-xs text-muted-foreground">Toạ độ</p>
                       <p className="font-medium">
                         {postMetadata?.lat ?? "-"}, {postMetadata?.lng ?? "-"}
                       </p>
@@ -532,7 +571,7 @@ export default function ReportDetailDialog({
 
                 {report.targetDetail?.content && (
                   <div>
-                    <p className="text-xs text-muted-foreground">N\u1ed9i dung b\u00e0i vi\u1ebft</p>
+                    <p className="text-xs text-muted-foreground">Nội dung bài viết</p>
                     <p className="mt-1 whitespace-pre-wrap rounded-md bg-muted p-2 text-sm">
                       {report.targetDetail.content}
                     </p>
@@ -541,10 +580,10 @@ export default function ReportDetailDialog({
 
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Media \u0111\u00ednh k\u00e8m ({postMediaAttachments.length})
+                    Media đính kèm ({postMediaAttachments.length})
                   </p>
                   {postMediaAttachments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Kh\u00f4ng c\u00f3 media \u0111\u00ednh k\u00e8m.</p>
+                    <p className="text-sm text-muted-foreground">Không có media đính kèm.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       {postMediaAttachments.map((media, index) => {
@@ -576,18 +615,18 @@ export default function ReportDetailDialog({
                                     rel="noreferrer"
                                     className="text-primary underline"
                                   >
-                                    M\u1edf media
+                                    Mở media
                                   </a>
                                 </div>
                               )
                             ) : (
                               <div className="flex aspect-video items-center justify-center text-xs text-muted-foreground">
-                                Kh\u00f4ng c\u00f3 URL media
+                                Không có URL media
                               </div>
                             )}
                             {media.isRemoved && (
                               <p className="border-t px-2 py-1 text-[11px] text-destructive">
-                                Media \u0111\u00e3 b\u1ecb g\u1ee1
+                                Media đã bị gỡ
                               </p>
                             )}
                           </div>

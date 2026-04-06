@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROUTES } from "@/lib/constants";
 
 export default function ModerationReportsQuickTabs() {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const targetType = searchParams.get("targetType");
   const tabValue =
-    targetType === "Trip" ? "trip" : targetType === "Post" ? "post" : "all";
+    pathname === ROUTES.MODERATION_MY_REPORTS
+      ? "mine"
+      : targetType === "Trip"
+      ? "trip"
+      : targetType === "Post"
+        ? "post"
+        : "all";
 
   return (
     <Tabs value={tabValue}>
@@ -26,6 +33,9 @@ export default function ModerationReportsQuickTabs() {
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("Post")}>
             Post Reports
           </Link>
+        </TabsTrigger>
+        <TabsTrigger value="mine" asChild>
+          <Link href={ROUTES.MODERATION_MY_REPORTS}>Báo cáo của tôi</Link>
         </TabsTrigger>
       </TabsList>
     </Tabs>

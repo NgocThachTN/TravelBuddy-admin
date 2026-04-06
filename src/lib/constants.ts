@@ -15,6 +15,7 @@ export const ROUTES = {
   PARTNER_FEES: "/dashboard/partners/fees",
   MODERATION: "/dashboard/moderation",
   MODERATION_REPORTS: "/dashboard/moderation-reports",
+  MODERATION_MY_REPORTS: "/dashboard/moderation-reports/my-reports",
   MODERATION_REPORTS_BY_TYPE: (targetType?: string) =>
     targetType
       ? `/dashboard/moderation-reports?targetType=${encodeURIComponent(targetType)}`
@@ -66,6 +67,10 @@ export const API_ROUTES = {
   ADMIN_REPORTS_PROCESS: (reportId: string) =>
     `/api/admin/reports/${reportId}/process`,
   ADMIN_REPORT_REASONS: "/api/admin/report-reasons",
+  REPORTS: "/api/reports",
+  REPORTS_REASONS: "/api/reports/reasons",
+  MY_REPORTS: "/api/reports/me",
+  MY_REPORTS_DETAIL: (reportId: string) => `/api/reports/me/${reportId}`,
   MODERATION_REPORTS: "/api/admin/moderation-reports",
   MODERATION_REPORTS_DETAIL: (reportId: string) =>
     `/api/admin/moderation-reports/${reportId}`,

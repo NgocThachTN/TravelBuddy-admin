@@ -30,6 +30,8 @@ import type {
   ReportListItem,
   ReportDetail,
   GetReportsParams,
+  GetMyReportsParams,
+  CreateReportPayload,
   ProcessReportPayload,
   ReportReasonDto,
   PartnerRequestListItem,
@@ -347,6 +349,65 @@ export async function deleteTrip(tripId: string): Promise<void> {
   await api.delete(API_ROUTES.ADMIN_TRIPS_DETAIL(tripId));
 }
 
+function normalizeReportListItem(report: ReportListItem): ReportListItem {
+  const fullName = [report.reporterFirstName, report.reporterLastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const reporterName =
+    report.reporterName?.trim() || fullName || report.reporterEmail?.trim() || null;
+  const reason = report.reason;
+  const reasonId = reason?.reasonId ?? report.reasonId ?? null;
+  const reasonKey = reason?.reasonKey ?? report.reasonKey ?? null;
+  const reasonDisplayName = reason?.displayName ?? report.reasonDisplayName ?? null;
+
+  return {
+    ...report,
+    reporterFirstName: report.reporterFirstName ?? null,
+    reporterLastName: report.reporterLastName ?? null,
+    reporterAvatarUrl: report.reporterAvatarUrl ?? null,
+    reporterName,
+    reporterEmail: report.reporterEmail ?? null,
+    reportedPartyType: report.reportedPartyType ?? null,
+    reason:
+      reason ??
+      (reasonId !== null && reasonKey && reasonDisplayName
+        ? {
+            reasonId,
+            reasonKey,
+            displayName: reasonDisplayName,
+          }
+        : null),
+    reasonId,
+    reasonKey,
+    reasonDisplayName,
+    assignedToUserId: report.assignedToUserId ?? null,
+    assignedToName: report.assignedToName ?? null,
+    priority: report.priority ?? null,
+    resolvedAt: report.resolvedAt ?? null,
+  };
+}
+
+function normalizeReportDetail(report: ReportDetail): ReportDetail {
+  const normalizedListItem = normalizeReportListItem(report);
+
+  return {
+    ...normalizedListItem,
+    evidenceNote: report.evidenceNote ?? null,
+    targetSnapshot: report.targetSnapshot ?? null,
+    resolvedAction: report.resolvedAction ?? null,
+    resolvedActions:
+      report.resolvedActions ??
+      (report.resolvedAction !== null && report.resolvedAction !== undefined
+        ? [report.resolvedAction]
+        : null),
+    resolvedNote: report.resolvedNote ?? null,
+    updatedAt: report.updatedAt ?? null,
+    strikeExpiresAt: report.strikeExpiresAt ?? null,
+    targetDetail: report.targetDetail ?? null,
+  };
+}
+
 // ── Report API (Admin scope: User, ServicePartner) ────────────────────
 
 export async function fetchReports(
@@ -356,7 +417,13 @@ export async function fetchReports(
     API_ROUTES.ADMIN_REPORTS,
     { params },
   );
-  return data;
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      items: data.data.items.map(normalizeReportListItem),
+    },
+  };
 }
 
 export async function fetchReportById(
@@ -365,7 +432,10 @@ export async function fetchReportById(
   const { data } = await api.get<BeWrapper<ReportDetail>>(
     API_ROUTES.ADMIN_REPORTS_DETAIL(reportId),
   );
-  return data;
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 export async function processAdminReport(
@@ -376,7 +446,10 @@ export async function processAdminReport(
     API_ROUTES.ADMIN_REPORTS_PROCESS(reportId),
     payload,
   );
-  return data;
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 export async function fetchReportReasons(): Promise<BeWrapper<ReportReasonDto[]>> {
@@ -384,6 +457,59 @@ export async function fetchReportReasons(): Promise<BeWrapper<ReportReasonDto[]>
     API_ROUTES.ADMIN_REPORT_REASONS,
   );
   return data;
+}
+
+export async function fetchUserReportReasons(
+  targetType?: string,
+): Promise<BeWrapper<ReportReasonDto[]>> {
+  const { data } = await api.get<BeWrapper<ReportReasonDto[]>>(
+    API_ROUTES.REPORTS_REASONS,
+    {
+      params: targetType ? { targetType } : undefined,
+    },
+  );
+  return data;
+}
+
+export async function createReport(
+  payload: CreateReportPayload,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.post<BeWrapper<ReportDetail>>(
+    API_ROUTES.REPORTS,
+    payload,
+  );
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
+}
+
+export async function fetchMyReports(
+  params: GetMyReportsParams = {},
+): Promise<BePagedWrapper<ReportListItem>> {
+  const { data } = await api.get<BePagedWrapper<ReportListItem>>(
+    API_ROUTES.MY_REPORTS,
+    { params },
+  );
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      items: data.data.items.map(normalizeReportListItem),
+    },
+  };
+}
+
+export async function fetchMyReportById(
+  reportId: string,
+): Promise<BeWrapper<ReportDetail>> {
+  const { data } = await api.get<BeWrapper<ReportDetail>>(
+    API_ROUTES.MY_REPORTS_DETAIL(reportId),
+  );
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 // ── Moderation Report API (Moderator scope: Trip, Post, etc.) ─────────
@@ -395,7 +521,13 @@ export async function fetchModerationReports(
     API_ROUTES.MODERATION_REPORTS,
     { params },
   );
-  return data;
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      items: data.data.items.map(normalizeReportListItem),
+    },
+  };
 }
 
 export async function fetchModerationReportById(
@@ -404,7 +536,10 @@ export async function fetchModerationReportById(
   const { data } = await api.get<BeWrapper<ReportDetail>>(
     API_ROUTES.MODERATION_REPORTS_DETAIL(reportId),
   );
-  return data;
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 export async function processModerationReport(
@@ -415,7 +550,10 @@ export async function processModerationReport(
     API_ROUTES.MODERATION_REPORTS_PROCESS(reportId),
     payload,
   );
-  return data;
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 export async function claimReport(
@@ -424,7 +562,10 @@ export async function claimReport(
   const { data } = await api.post<BeWrapper<ReportDetail>>(
     API_ROUTES.MODERATION_REPORTS_CLAIM(reportId),
   );
-  return data;
+  return {
+    ...data,
+    data: normalizeReportDetail(data.data),
+  };
 }
 
 // ── Partner Review API ────────────────────────────────────────────────

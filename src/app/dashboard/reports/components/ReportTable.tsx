@@ -100,7 +100,7 @@ function getAvatarColor(seed: string) {
 
 function getReporterName(item: ReportListItem) {
   const full = [item.reporterFirstName, item.reporterLastName].filter(Boolean).join(" ").trim();
-  return full || "(Ã¡ÂºÂ¨n danh)";
+  return full || "(Ẩn danh)";
 }
 
 function getInitials(item: ReportListItem) {
@@ -109,6 +109,20 @@ function getInitials(item: ReportListItem) {
   if (first && last) return (first[0] + last[0]).toUpperCase();
   if (first) return first.slice(0, 2).toUpperCase();
   return "?";
+}
+
+function resolveReporterName(item: ReportListItem) {
+  const baseName = getReporterName(item);
+  return item.reporterName || item.reporterEmail || (baseName === "(áº¨n danh)" ? "(Ẩn danh)" : baseName);
+}
+
+function resolveReporterInitials(item: ReportListItem) {
+  const source = resolveReporterName(item);
+  const baseInitials = getInitials(item);
+  if (source === "(Ẩn danh)") return baseInitials === "?" ? "?" : baseInitials;
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+  return parts[0]?.slice(0, 2).toUpperCase() || baseInitials || "?";
 }
 
 function statusBadgeVariant(status: number | string): "default" | "secondary" | "destructive" | "outline" {
@@ -160,11 +174,11 @@ function getAvailableResolvedActions(targetType: number | string): ResolvedActio
 }
 
 const ACTION_DESCRIPTIONS: Partial<Record<ResolvedActionCode, string>> = {
-  None: "Kh\u00f4ng \u00e1p d\u1ee5ng bi\u1ec7n ph\u00e1p n\u00e0o, ch\u1ec9 l\u01b0u k\u1ebft qu\u1ea3 x\u00e1c minh.",
-  Warn: "G\u1eedi nh\u1eafc nh\u1edf \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng \u0111i\u1ec1u ch\u1ec9nh h\u00e0nh vi.",
-  LockUser: "Kh\u00f3a t\u1ea1m th\u1eddi t\u00e0i kho\u1ea3n \u0111\u1ec3 ng\u0103n vi ph\u1ea1m ti\u1ebfp t\u1ee5c.",
-  BanUser: "Ch\u1eb7n v\u0129nh vi\u1ec5n t\u00e0i kho\u1ea3n v\u00ec vi ph\u1ea1m nghi\u00eam tr\u1ecdng.",
-  SuspendPartner: "T\u1ea1m d\u1eebng t\u00e0i kho\u1ea3n \u0111\u1ed1i t\u00e1c cho \u0111\u1ebfn khi \u0111\u01b0\u1ee3c m\u1edf l\u1ea1i.",
+  None: "Không áp dụng biện pháp nào, chỉ lưu kết quả xác minh.",
+  Warn: "Gửi nhắc nhở để người dùng điều chỉnh hành vi.",
+  LockUser: "Khóa tạm thời tài khoản để ngăn vi phạm tiếp tục.",
+  BanUser: "Chặn vĩnh viễn tài khoản vì vi phạm nghiêm trọng.",
+  SuspendPartner: "Tạm dừng tài khoản đối tác cho đến khi được mở lại.",
 };
 
 /* -- Process Dialog (unified resolve/reject/duplicate) -- */
@@ -262,18 +276,18 @@ function ProcessForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Xá»­ lÃ½ bÃ¡o cÃ¡o</DialogTitle>
+        <DialogTitle>Xử lý báo cáo</DialogTitle>
         <DialogDescription>
-          BÃ¡o cÃ¡o tá»«{" "}
-          <span className="font-semibold">{getReporterName(report)}</span>
-          {" \u2014 "}
+          Báo cáo từ{" "}
+          <span className="font-semibold">{resolveReporterName(report)}</span>
+          {" — "}
           {reportTargetTypeLabel(report.targetType)}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4">
         {/* Decision */}
         <div className="space-y-2">
-          <Label>{"Quy\u1ebft \u0111\u1ecbnh"}</Label>
+          <Label>{"Quyết định"}</Label>
           <Select value={decision} onValueChange={(v) => setDecision(v as ReportDecisionCode)}>
             <SelectTrigger>
               <SelectValue />
@@ -291,7 +305,7 @@ function ProcessForm({
         {/* Resolved Action (only when Resolved) */}
         {decision === "Resolved" && (
           <div className="space-y-2 rounded-lg border p-3">
-            <Label>H\u00e0nh \u0111\u1ed9ng x\u1eed l\u00fd (c\u00f3 th\u1ec3 ch\u1ecdn nhi\u1ec1u)</Label>
+            <Label>Hành động xử lý (có thể chọn nhiều)</Label>
             <div className="space-y-2">
               {availableActions.map((action) => {
                 const isChecked = normalizedSelectedActions.includes(action);
@@ -322,17 +336,17 @@ function ProcessForm({
               })}
             </div>
             {normalizedSelectedActions.length === 0 && (
-              <p className="text-xs text-destructive">Vui l\u00f2ng ch\u1ecdn \u00edt nh\u1ea5t 1 h\u00e0nh \u0111\u1ed9ng x\u1eed l\u00fd.</p>
+              <p className="text-xs text-destructive">Vui lòng chọn ít nhất 1 hành động xử lý.</p>
             )}
           </div>
         )}
 
         {/* Note */}
         <div className="space-y-2">
-          <Label htmlFor="process-note">Ghi chÃº</Label>
+          <Label htmlFor="process-note">Ghi chú</Label>
           <Textarea
             id="process-note"
-            placeholder="Nháº­p ghi chÃº xá»­ lÃ½..."
+            placeholder="Nhập ghi chú xử lý..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
@@ -353,15 +367,15 @@ function ProcessForm({
                 className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="create-strike" className="cursor-pointer">
-                Ghi nh\u1eadn vi ph\u1ea1m cho ng\u01b0\u1eddi d\u00f9ng
+                Ghi nhận vi phạm cho người dùng
               </Label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Ghi nh\u1eadn vi ph\u1ea1m gi\u00fap h\u1ec7 th\u1ed1ng theo d\u00f5i l\u1ecbch s\u1eed t\u00e1i ph\u1ea1m \u0111\u1ec3 x\u1eed l\u00fd m\u1ea1nh h\u01a1n khi c\u1ea7n.
+              Ghi nhận vi phạm giúp hệ thống theo dõi lịch sử tái phạm để xử lý mạnh hơn khi cần.
             </p>
             {createStrike && (
               <div className="space-y-2">
-                <Label htmlFor="strike-expires">{"H\u1ebft h\u1ea1n strike (kh\u00f4ng b\u1eaft bu\u1ed9c)"}</Label>
+                <Label htmlFor="strike-expires">{"Hết hạn strike (không bắt buộc)"}</Label>
                 <Input
                   id="strike-expires"
                   type="datetime-local"
@@ -375,7 +389,7 @@ function ProcessForm({
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onClose} disabled={loading}>
-          HuÃ¡Â»Â·
+          Huỷ
         </Button>
         <Button
           variant={decision === "Rejected" ? "destructive" : "default"}
@@ -383,7 +397,7 @@ function ProcessForm({
           onClick={handleSubmit}
         >
           {loading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-          XÃ¡c nháº­n
+          Xác nhận
         </Button>
       </DialogFooter>
     </>
@@ -437,7 +451,7 @@ export default function ReportTable() {
       setTotalPages(result.data.totalPages);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch b\u00e1o c\u00e1o");
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách báo cáo");
     } finally {
       setLoading(false);
     }
@@ -453,7 +467,7 @@ export default function ReportTable() {
       setProcessTarget(null);
       await loadReports(page);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Xá»­ lÃ½ bÃ¡o cÃ¡o tháº¥t báº¡i");
+      alert(err instanceof Error ? err.message : "Xử lý báo cáo thất bại");
     } finally {
       setDialogLoading(false);
     }
@@ -495,7 +509,7 @@ export default function ReportTable() {
           <p className="text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => loadReports(page)}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
-            ThÃ¡Â»Â­ lÃ¡ÂºÂ¡i
+            Thử lại
           </Button>
         </CardContent>
       </Card>
@@ -512,6 +526,7 @@ export default function ReportTable() {
       />
       <ReportDetailDialog
         reportId={detailReport?.reportId ?? null}
+        reportPreview={detailReport}
         scope="admin"
         onClose={() => setDetailReport(null)}
       />
@@ -522,7 +537,7 @@ export default function ReportTable() {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="TÃ¬m kiáº¿m bÃ¡o cÃ¡o..."
+              placeholder="Tìm kiếm báo cáo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 pl-9 bg-background"
@@ -532,27 +547,27 @@ export default function ReportTable() {
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger className="h-9 w-[160px]">
-              <SelectValue placeholder="Tráº¡ng thÃ¡i" />
+              <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Táº¥t cáº£ tráº¡ng thÃ¡i</SelectItem>
-              <SelectItem value="Pending">Chá» xá»­ lÃ½</SelectItem>
-              <SelectItem value="Reviewing">Äang xem xÃ©t</SelectItem>
-              <SelectItem value="Resolved">ÄÃ£ giáº£i quyáº¿t</SelectItem>
-              <SelectItem value="Rejected">{"\u0110\u00e3 t\u1eeb ch\u1ed1i"}</SelectItem>
-              <SelectItem value="Duplicate">TrÃ¹ng láº·p</SelectItem>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="Pending">Chờ xử lý</SelectItem>
+              <SelectItem value="Reviewing">Đang xem xét</SelectItem>
+              <SelectItem value="Resolved">Đã giải quyết</SelectItem>
+              <SelectItem value="Rejected">{"Đã từ chối"}</SelectItem>
+              <SelectItem value="Duplicate">Trùng lặp</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Target Type Filter */}
           <Select value={targetTypeFilter} onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}>
             <SelectTrigger className="h-9 w-[170px]">
-              <SelectValue placeholder={"Lo\u1ea1i \u0111\u1ed1i t\u01b0\u1ee3ng"} />
+              <SelectValue placeholder={"Loại đối tượng"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ loÃ¡ÂºÂ¡i</SelectItem>
-              <SelectItem value="User">NgÆ°á»i dÃ¹ng</SelectItem>
-              <SelectItem value="ServicePartner">{"\u0110\u1ed1i t\u00e1c"}</SelectItem>
+              <SelectItem value="all">Tất cả loại</SelectItem>
+              <SelectItem value="User">Người dùng</SelectItem>
+              <SelectItem value="ServicePartner">{"Đối tác"}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -571,7 +586,7 @@ export default function ReportTable() {
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            {"T\u1ed5ng c\u1ed9ng "}<span className="font-semibold text-foreground">{totalCount}</span>{" b\u00e1o c\u00e1o"}
+            {"Tổng cộng "}<span className="font-semibold text-foreground">{totalCount}</span>{" báo cáo"}
           </span>
         </div>
 
@@ -579,14 +594,14 @@ export default function ReportTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>NgÆ°á»i bÃ¡o cÃ¡o</TableHead>
-              <TableHead>LoÃ¡ÂºÂ¡i</TableHead>
-              <TableHead>{"B\u00ean b\u1ecb t\u1ed1"}</TableHead>
-              <TableHead>LÃ½ do</TableHead>
-              <TableHead>Tráº¡ng thÃ¡i</TableHead>
-              <TableHead>Æ¯u tiÃªn</TableHead>
-              <TableHead>NgÃ y táº¡o</TableHead>
-              <TableHead className="text-right">Thao tÃ¡c</TableHead>
+              <TableHead>Người báo cáo</TableHead>
+              <TableHead>Loại</TableHead>
+              <TableHead>{"Bên bị tố"}</TableHead>
+              <TableHead>Lý do</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead>Ưu tiên</TableHead>
+              <TableHead>Ngày tạo</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -596,15 +611,15 @@ export default function ReportTable() {
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
                     <Megaphone className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium">KhÃ´ng tÃ¬m tháº¥y bÃ¡o cÃ¡o</p>
+                  <p className="text-sm font-medium">Không tìm thấy báo cáo</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {"H\u00e3y th\u1eed thay \u0111\u1ed5i b\u1ed9 l\u1ecdc ho\u1eb7c t\u1eeb kho\u00e1 t\u00ecm ki\u1ebfm"}
+                    {"Hãy thử thay đổi bộ lọc hoặc từ khoá tìm kiếm"}
                   </p>
                 </TableCell>
               </TableRow>
             ) : (
               reports.map((report) => {
-                const name = getReporterName(report);
+                const name = resolveReporterName(report);
                 const isPending = report.status === 0 || report.status === "Pending";
                 const isReviewing = report.status === 1 || report.status === "Reviewing";
                 const canAct = isPending || isReviewing;
@@ -621,7 +636,7 @@ export default function ReportTable() {
                           <AvatarFallback
                             className={cn("text-xs font-semibold", getAvatarColor(report.reporterUserId))}
                           >
-                            {getInitials(report)}
+                            {resolveReporterInitials(report)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
@@ -646,7 +661,7 @@ export default function ReportTable() {
                     {/* Reason */}
                     <TableCell className="max-w-[200px]">
                       <p className="truncate text-sm">
-                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "\u2014"}
+                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "—"}
                       </p>
                     </TableCell>
 
@@ -689,7 +704,7 @@ export default function ReportTable() {
                             onClick={() => setProcessTarget(report)}
                           >
                             <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                            Xá»­ lÃ½
+                            Xử lý
                           </Button>
                         )}
                         <Button
