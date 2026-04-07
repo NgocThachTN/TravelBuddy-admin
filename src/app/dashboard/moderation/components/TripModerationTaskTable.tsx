@@ -18,6 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import {
+  dispatchTripModerationNow,
   fetchTripById,
   fetchTripModerationTaskDetail,
   fetchTripModerationTasks,
@@ -339,7 +340,13 @@ function moderationSuccessLabel(value: boolean | null | undefined) {
   return "success: không rõ";
 }
 
-export default function TripModerationTaskTable() {
+interface TripModerationTaskTableProps {
+  canDispatchNow?: boolean;
+}
+
+export default function TripModerationTaskTable({
+  canDispatchNow = false,
+}: TripModerationTaskTableProps) {
   const [items, setItems] = useState<TripModerationTaskListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -361,6 +368,11 @@ export default function TripModerationTaskTable() {
   const [decisionError, setDecisionError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [pendingDecision, setPendingDecision] = useState<"Approve" | "Reject" | null>(null);
+  const [dispatchLoading, setDispatchLoading] = useState(false);
+  const [dispatchFeedback, setDispatchFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -469,6 +481,40 @@ export default function TripModerationTaskTable() {
       setPendingDecision(null);
     }
   }, [selectedTask, rejectReason, loadTasks, page]);
+
+  const handleDispatchNow = useCallback(async () => {
+    try {
+      setDispatchLoading(true);
+      setDispatchFeedback(null);
+
+      const result = await dispatchTripModerationNow();
+      const payload = result.data;
+
+      if (payload.hasPublishedMessage) {
+        setDispatchFeedback({
+          type: "success",
+          message: `Đã đẩy ${payload.dispatchedTripCount} chuyến đi vào hàng đợi quét AI.`,
+        });
+      } else {
+        setDispatchFeedback({
+          type: "success",
+          message: "Không có chuyến đi nào đang chờ quét AI.",
+        });
+      }
+
+      setPage(1);
+      await loadTasks(1);
+    } catch (err) {
+      setDispatchFeedback({
+        type: "error",
+        message: err instanceof Error
+          ? err.message
+          : "Không thể kích hoạt lượt quét AI ngay lúc này.",
+      });
+    } finally {
+      setDispatchLoading(false);
+    }
+  }, [loadTasks]);
 
   const resolvedTitle = useMemo(
     () => detailTrip?.title || selectedTask?.tripTitle || "(Không có tiêu đề)",
@@ -610,7 +656,32 @@ export default function TripModerationTaskTable() {
           <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => loadTasks(page)} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </Button>
+
+          {canDispatchNow && (
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={handleDispatchNow}
+              disabled={dispatchLoading}
+            >
+              {dispatchLoading && <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              Quét ngay
+            </Button>
+          )}
         </div>
+
+        {dispatchFeedback && (
+          <div
+            className={cn(
+              "border-b px-4 py-2 text-xs",
+              dispatchFeedback.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-red-200 bg-red-50 text-red-800",
+            )}
+          >
+            {dispatchFeedback.message}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />

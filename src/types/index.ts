@@ -69,6 +69,7 @@ export type {
   GetTripsParams,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
+  TripModerationDispatchNowResponse,
   GetTripModerationTasksParams,
   TripModerationTaskListItem,
   TripModerationFlaggedItem,

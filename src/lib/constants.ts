@@ -61,6 +61,8 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  ADMIN_TRIP_MODERATION_DISPATCH_NOW:
+    "/api/admin/moderation/trips/scan/dispatch-now",
   ADMIN_REPORTS: "/api/admin/reports",
   ADMIN_REPORTS_DETAIL: (reportId: string) => `/api/admin/reports/${reportId}`,
   ADMIN_REPORTS_PROCESS: (reportId: string) =>

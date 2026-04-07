@@ -19,7 +19,7 @@ export default async function ModerationPage() {
         </div>
       </div>
 
-      <TripModerationTaskTable />
+      <TripModerationTaskTable canDispatchNow={session.role === "MODERATOR"} />
     </div>
   );
 }
