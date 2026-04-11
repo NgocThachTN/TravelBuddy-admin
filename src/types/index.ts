@@ -26,7 +26,19 @@ export type {
 } from "./transaction";
 export type { BePagedWrapper, BeWrapper } from "./api";
 export type { NavItem, NavGroup } from "./nav";
-export type { TimeRange } from "./dashboard";
+export type {
+  TimeRange,
+  DashboardKpis,
+  DashboardRevenueDailyPoint,
+  DashboardRevenue,
+  DashboardUserGrowthPoint,
+  DashboardTripCreationPoint,
+  DashboardCategoryDistributionItem,
+  DashboardTopDestinationItem,
+  DashboardRecentActivityItem,
+  DashboardSystemStatus,
+  DashboardOverviewData,
+} from "./dashboard";
 export type {
   TripTypeCategoryTypeCode,
   VehicleCategoryTypeCode,

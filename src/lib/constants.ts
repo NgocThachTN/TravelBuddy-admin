@@ -48,6 +48,7 @@ export const API_ROUTES = {
   ADMIN_USERS_LOCK: (userId: string) => `/api/admin/users/${userId}/lock`,
   ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
   ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
+  ADMIN_DASHBOARD_OVERVIEW: "/api/admin/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
   ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS:

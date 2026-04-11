@@ -50,6 +50,19 @@ function extractUpstreamErrorMessage(data: unknown, status?: number) {
   return fallback;
 }
 
+function extractNetworkErrorMessage(err: AxiosError) {
+  const code = err.code?.toUpperCase();
+  if (code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "EHOSTUNREACH") {
+    return "Không kết nối được backend. Vui lòng kiểm tra BACKEND_API_URL và trạng thái server.";
+  }
+
+  if (code === "ETIMEDOUT" || code === "ECONNABORTED") {
+    return "Kết nối backend bị timeout. Vui lòng thử lại sau.";
+  }
+
+  return "Không kết nối được backend. Vui lòng thử lại sau.";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
@@ -112,7 +125,9 @@ export async function POST(req: NextRequest) {
     if (err instanceof AxiosError) {
       const status = err.response?.status;
       const hasUpstreamStatus = typeof status === "number";
-      const msg = extractUpstreamErrorMessage(err.response?.data, status);
+      const msg = hasUpstreamStatus
+        ? extractUpstreamErrorMessage(err.response?.data, status)
+        : extractNetworkErrorMessage(err);
       const resStatus =
         hasUpstreamStatus && status >= 400 && status <= 599 ? status : 503;
       const body: { error: string; upstreamStatus?: number } = { error: msg };

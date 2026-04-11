@@ -65,3 +65,25 @@ export function getAvatarColor(name: string) {
 export function getToday() {
   return new Date().toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 }
+
+export function formatDayLabel(dateInput: string | Date) {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+}
+
+export function mapRangeToWindowDays(range: TimeRange) {
+  if (range === "7d") return 7;
+  if (range === "90d") return 90;
+  return 30;
+}
+
+export function formatRelativeTime(dateInput: string | Date) {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.max(1, Math.floor(diffMs / 60000));
+  if (minutes < 60) return `${minutes} phút trước`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  return `${days} ngày trước`;
+}

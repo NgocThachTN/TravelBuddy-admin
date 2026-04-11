@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import type { TimeRange } from "@/types";
-import { DashboardHeader } from "./overview/components/dashboard-header";
+import { useCallback, useEffect, useState } from "react";
+import type { DashboardOverviewData, TimeRange } from "@/types";
+import { fetchAdminDashboardOverview } from "@/lib/api";
+import { mapRangeToWindowDays } from "./overview/components/shared";
 
 function SectionSkeleton({
   className,
@@ -25,19 +26,35 @@ function SectionSkeleton({
   );
 }
 
+const DashboardHeader = dynamic(
+  () =>
+    import("./overview/components/dashboard-header").then(
+      (mod) => mod.DashboardHeader,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton heightClass="h-20" /> },
+);
+
 const StatCards = dynamic(
   () =>
     import("./overview/components/stat-cards").then((mod) => mod.StatCards),
   {
     ssr: false,
     loading: () => (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, index) => (
           <SectionSkeleton key={index} heightClass="h-40" />
         ))}
       </div>
     ),
   },
+);
+
+const RevenueOverview = dynamic(
+  () =>
+    import("./overview/components/revenue-overview").then(
+      (mod) => mod.RevenueOverview,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton heightClass="h-[420px]" /> },
 );
 
 const UserGrowthChart = dynamic(
@@ -98,28 +115,116 @@ const RecentActivity = dynamic(
 
 export default function DashboardPage() {
   const [chartRange, setChartRange] = useState<TimeRange>("30d");
+  const [dashboardData, setDashboardData] = useState<DashboardOverviewData | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadDashboard = useCallback(
+    async (isManualRefresh = false) => {
+      if (isManualRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setErrorMessage(null);
+
+      try {
+        const windowDays = mapRangeToWindowDays(chartRange);
+        const response = await fetchAdminDashboardOverview(windowDays);
+        setDashboardData(response.data);
+      } catch {
+        setErrorMessage("Không thể tải dữ liệu dashboard. Vui lòng thử lại.");
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [chartRange],
+  );
+
+  useEffect(() => {
+    void loadDashboard(false);
+  }, [loadDashboard]);
+
+  if (isLoading && !dashboardData) {
+    return (
+      <div className="space-y-6">
+        <SectionSkeleton heightClass="h-20" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <SectionSkeleton key={index} heightClass="h-40" />
+          ))}
+        </div>
+        <SectionSkeleton heightClass="h-[420px]" />
+        <div className="grid gap-4 lg:grid-cols-10">
+          <SectionSkeleton className="lg:col-span-4" />
+          <SectionSkeleton className="lg:col-span-3" />
+          <SectionSkeleton className="lg:col-span-3" />
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage && !dashboardData) {
+    return (
+      <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive">
+        {errorMessage}
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card p-6 text-sm text-muted-foreground">
+        Chưa có dữ liệu để hiển thị tổng quan.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <DashboardHeader />
+      {errorMessage && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+          {errorMessage}
+        </div>
+      )}
 
-      <StatCards />
+      <DashboardHeader
+        systemStatusLabel={dashboardData.systemStatus.overallStatus}
+        generatedAtUtc={dashboardData.generatedAtUtc}
+        onRefresh={() => void loadDashboard(true)}
+        isRefreshing={isRefreshing}
+      />
 
-      {/* Charts */}
+      <StatCards kpis={dashboardData.kpis} />
+      <RevenueOverview
+        revenue={dashboardData.revenue}
+        windowDays={dashboardData.windowDays}
+      />
+
       <div className="grid gap-4 lg:grid-cols-10">
-        <UserGrowthChart chartRange={chartRange} onRangeChange={setChartRange} />
-        <TripActivityChart />
-        <TripCategoriesChart />
+        <UserGrowthChart
+          chartRange={chartRange}
+          onRangeChange={setChartRange}
+          data={dashboardData.series.userGrowth}
+        />
+        <TripActivityChart data={dashboardData.series.tripCreation} />
+        <TripCategoriesChart data={dashboardData.tripCategoryDistribution} />
       </div>
 
-      {/* Top Destinations + Quick Actions + System Status */}
       <div className="grid gap-4 lg:grid-cols-12">
-        <TopDestinations />
+        <TopDestinations data={dashboardData.topDestinations} />
         <QuickActions />
-        <SystemStatus />
+        <SystemStatus
+          data={dashboardData.systemStatus}
+          generatedAtUtc={dashboardData.generatedAtUtc}
+        />
       </div>
 
-      <RecentActivity />
+      <RecentActivity data={dashboardData.recentActivities} />
     </div>
   );
 }

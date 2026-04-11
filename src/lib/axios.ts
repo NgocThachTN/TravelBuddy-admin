@@ -65,7 +65,15 @@ api.interceptors.response.use(
     const url = error?.config?.url ?? "unknown";
     const detail =
       data?.detail ?? data?.message ?? data?.error ?? JSON.stringify(data);
-    console.error(`[API ERROR ${responseStatus}] ${method} ${url} - ${detail}`);
+    const networkCode = error?.code ? ` code=${error.code}` : "";
+    const networkMessage = error?.message ? ` message=${error.message}` : "";
+    const normalizedDetail =
+      detail && detail !== "undefined"
+        ? detail
+        : `Network error.${networkCode}${networkMessage}`;
+    console.error(
+      `[API ERROR ${responseStatus}] ${method} ${url} - ${normalizedDetail}`,
+    );
     return Promise.reject(error);
   },
 );

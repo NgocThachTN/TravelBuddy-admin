@@ -48,6 +48,7 @@ import type {
   GetAdminTransactionsParams,
   AdminTransactionRecord,
   MyProfileData,
+  DashboardOverviewData,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -152,6 +153,16 @@ export async function changePassword(payload: {
   newPassword: string;
 }): Promise<void> {
   await api.post(API_ROUTES.AUTH_CHANGE_PASSWORD, payload);
+}
+
+export async function fetchAdminDashboardOverview(
+  windowDays = 30,
+): Promise<BeWrapper<DashboardOverviewData>> {
+  const { data } = await api.get<BeWrapper<DashboardOverviewData>>(
+    API_ROUTES.ADMIN_DASHBOARD_OVERVIEW,
+    { params: { windowDays } },
+  );
+  return data;
 }
 
 // ── Subscription API ─────────────────────────────────────────────────
