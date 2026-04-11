@@ -1,29 +1,37 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
+  CalendarClock,
   CarFront,
   CheckCircle,
   Clock3,
+  FileText,
   Image as ImageIcon,
   Map,
   MapPin,
+  NotebookPen,
+  PackageOpen,
+  Pencil,
   RefreshCw,
   Route,
   Shield,
+  ShieldCheck,
   Star,
   Tag,
+  Type,
   Users,
+  UserRoundCog,
   Wallet,
   XCircle,
 } from "lucide-react";
-import { fetchTripById, reviewTrip } from "@/lib/api";
+import { fetchTripById, reviewTrip, updateTripByAdmin } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { ModerationDecisionCode, Role, TripDetail } from "@/types";
+import type { ModerationDecisionCode, Role, TripDetail, UpdateAdminTripPayload } from "@/types";
 import {
   moderationStatusLabel,
   PARTICIPANT_STATUS_LABELS,
@@ -37,6 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -47,6 +56,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -185,6 +195,73 @@ function mediaTypeLabelVi(value: number | string | null | undefined) {
   return labels[normalized] ?? String(value);
 }
 
+function toDateTimeLocalInput(dateStr: string | null | undefined) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalInput(value: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+}
+
+interface TripEditFormState {
+  title: string;
+  description: string;
+  rule: string;
+  itemRequired: string;
+  startTime: string;
+  endTime: string;
+  backTime: string;
+  registrationDeadline: string;
+  minParticipants: string;
+  maxParticipants: string;
+  isApprovalMemberEnable: boolean;
+}
+
+function buildTripEditFormState(trip: TripDetail): TripEditFormState {
+  return {
+    title: trip.title ?? "",
+    description: trip.description ?? "",
+    rule: trip.rule ?? "",
+    itemRequired: trip.itemRequired ?? "",
+    startTime: toDateTimeLocalInput(trip.startTime),
+    endTime: toDateTimeLocalInput(trip.endTime),
+    backTime: toDateTimeLocalInput(trip.backTime),
+    registrationDeadline: toDateTimeLocalInput(trip.registrationDeadline),
+    minParticipants: trip.minParticipants?.toString() ?? "",
+    maxParticipants: trip.maxParticipants?.toString() ?? "",
+    isApprovalMemberEnable: !!trip.isApprovalMemberEnable,
+  };
+}
+
+function mapEditFormToPayload(form: TripEditFormState): UpdateAdminTripPayload {
+  const parseOptionalNumber = (value: string) => {
+    if (!value.trim()) return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  return {
+    title: form.title.trim(),
+    description: form.description.trim(),
+    rule: form.rule,
+    itemRequired: form.itemRequired,
+    startTime: fromDateTimeLocalInput(form.startTime),
+    endTime: fromDateTimeLocalInput(form.endTime),
+    backTime: fromDateTimeLocalInput(form.backTime),
+    registrationDeadline: fromDateTimeLocalInput(form.registrationDeadline),
+    minParticipants: parseOptionalNumber(form.minParticipants),
+    maxParticipants: parseOptionalNumber(form.maxParticipants),
+    isApprovalMemberEnable: form.isApprovalMemberEnable,
+  };
+}
+
 interface ModerationDialogProps {
   open: boolean;
   decision: ModerationDecisionCode | null;
@@ -241,6 +318,124 @@ function ModerationDialog({ open, decision, onClose, onConfirm, loading }: Moder
   );
 }
 
+interface TripEditDialogProps {
+  open: boolean;
+  form: TripEditFormState;
+  loading: boolean;
+  onClose: () => void;
+  onChange: (next: TripEditFormState) => void;
+  onSubmit: () => Promise<void>;
+}
+
+function TripEditDialog({ open, form, loading, onClose, onChange, onSubmit }: TripEditDialogProps) {
+  const setField = <K extends keyof TripEditFormState>(key: K, value: TripEditFormState[K]) => {
+    onChange({ ...form, [key]: value });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-4 w-4" />
+            Chỉnh sửa chuyến đi
+          </DialogTitle>
+          <DialogDescription>Cập nhật các trường thông tin của chuyến đi.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 text-sm">
+          <section className="space-y-3 rounded-lg border p-3">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <NotebookPen className="h-3.5 w-3.5" />
+              Thông tin cơ bản
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-title" className="inline-flex items-center gap-1.5"><Type className="h-3.5 w-3.5" />Tiêu đề</Label>
+              <Input id="trip-title" value={form.title} maxLength={255} onChange={(event) => setField("title", event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-description" className="inline-flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />Mô tả</Label>
+              <Textarea id="trip-description" rows={4} value={form.description} onChange={(event) => setField("description", event.target.value)} />
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border p-3">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
+              Thời gian
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-registration-deadline">Hạn đăng ký</Label>
+                <Input id="trip-registration-deadline" type="datetime-local" value={form.registrationDeadline} onChange={(event) => setField("registrationDeadline", event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-start-time">Bắt đầu</Label>
+                <Input id="trip-start-time" type="datetime-local" value={form.startTime} onChange={(event) => setField("startTime", event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-end-time">Kết thúc</Label>
+                <Input id="trip-end-time" type="datetime-local" value={form.endTime} onChange={(event) => setField("endTime", event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-back-time">Quay về</Label>
+                <Input id="trip-back-time" type="datetime-local" value={form.backTime} onChange={(event) => setField("backTime", event.target.value)} />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border p-3">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <UserRoundCog className="h-3.5 w-3.5" />
+              Quy mô thành viên
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-min-participants">Số người tối thiểu</Label>
+                <Input id="trip-min-participants" type="number" min={1} value={form.minParticipants} onChange={(event) => setField("minParticipants", event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="trip-max-participants">Số người tối đa</Label>
+                <Input id="trip-max-participants" type="number" min={1} value={form.maxParticipants} onChange={(event) => setField("maxParticipants", event.target.value)} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
+              <div className="space-y-0.5">
+                <p className="inline-flex items-center gap-1.5 font-medium"><ShieldCheck className="h-3.5 w-3.5" />Duyệt thành viên</p>
+                <p className="text-xs text-muted-foreground">Bật để yêu cầu chủ trip duyệt yêu cầu tham gia.</p>
+              </div>
+              <Switch checked={form.isApprovalMemberEnable} onCheckedChange={(value) => setField("isApprovalMemberEnable", value)} />
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border p-3">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <PackageOpen className="h-3.5 w-3.5" />
+              Nội dung bổ sung
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-rule">Quy định</Label>
+              <Textarea id="trip-rule" rows={3} value={form.rule} onChange={(event) => setField("rule", event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-item-required">Vật dụng cần mang</Label>
+              <Textarea id="trip-item-required" rows={3} value={form.itemRequired} onChange={(event) => setField("itemRequired", event.target.value)} />
+            </div>
+          </section>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>Huỷ</Button>
+          <Button onClick={onSubmit} disabled={loading}>
+            {loading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+            Lưu thay đổi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface TripDetailClientProps {
   role: Role;
 }
@@ -256,12 +451,28 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<ModerationDecisionCode | null>(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState<TripEditFormState>({
+    title: "",
+    description: "",
+    rule: "",
+    itemRequired: "",
+    startTime: "",
+    endTime: "",
+    backTime: "",
+    registrationDeadline: "",
+    minParticipants: "",
+    maxParticipants: "",
+    isApprovalMemberEnable: false,
+  });
 
   const loadTrip = useCallback(async () => {
     try {
       setLoading(true);
       const result = await fetchTripById(tripId);
       setTrip(result.data);
+      setEditForm(buildTripEditFormState(result.data));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải chi tiết chuyến đi");
@@ -308,6 +519,21 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
       alert(err instanceof Error ? err.message : "Thao tác thất bại");
     } finally {
       setDecisionLoading(false);
+    }
+  }
+
+  async function handleSaveTripEdit() {
+    if (!trip) return;
+    try {
+      setEditLoading(true);
+      const payload = mapEditFormToPayload(editForm);
+      await updateTripByAdmin(trip.tripId, payload);
+      setEditOpen(false);
+      await loadTrip();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Cập nhật chuyến đi thất bại");
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -364,6 +590,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     (
       isWaitingManualModeration
     );
+  const canEditTrip = role === "ADMIN";
 
   return (
     <>
@@ -373,6 +600,14 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         onClose={() => setDecision(null)}
         onConfirm={handleDecisionConfirm}
         loading={decisionLoading}
+      />
+      <TripEditDialog
+        open={editOpen}
+        form={editForm}
+        loading={editLoading}
+        onClose={() => setEditOpen(false)}
+        onChange={setEditForm}
+        onSubmit={handleSaveTripEdit}
       />
 
       <div className="space-y-6">
@@ -403,16 +638,33 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
             </div>
           </div>
 
-          {canModerate && (
+          {(canModerate || canEditTrip) && (
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setDecision("Approve")}>
-                <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                Duyệt
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => setDecision("Reject")}>
-                <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                Từ chối
-              </Button>
+              {canEditTrip && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditForm(buildTripEditFormState(trip));
+                    setEditOpen(true);
+                  }}
+                >
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                  Chỉnh sửa
+                </Button>
+              )}
+              {canModerate && (
+                <>
+                  <Button size="sm" onClick={() => setDecision("Approve")}>
+                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                    Duyệt
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setDecision("Reject")}>
+                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                    Từ chối
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
@@ -805,3 +1057,4 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     </>
   );
 }
+

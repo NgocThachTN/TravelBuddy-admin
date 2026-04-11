@@ -79,6 +79,7 @@ export type {
   MediaAttachment,
   TripDetail,
   GetTripsParams,
+  UpdateAdminTripPayload,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
   GetTripModerationTasksParams,

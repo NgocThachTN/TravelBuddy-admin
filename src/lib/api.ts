@@ -22,6 +22,7 @@ import type {
   TripListItem,
   TripDetail,
   GetTripsParams,
+  UpdateAdminTripPayload,
   GetTripModerationTasksParams,
   TripModerationTaskListItem,
   TripModerationTaskDetail,
@@ -322,6 +323,17 @@ export async function fetchTripById(
 ): Promise<BeWrapper<TripDetail>> {
   const { data } = await api.get<BeWrapper<TripDetail>>(
     API_ROUTES.ADMIN_TRIPS_DETAIL(tripId),
+  );
+  return data;
+}
+
+export async function updateTripByAdmin(
+  tripId: string,
+  payload: UpdateAdminTripPayload,
+): Promise<BeWrapper<TripDetail>> {
+  const { data } = await api.patch<BeWrapper<TripDetail>>(
+    API_ROUTES.ADMIN_TRIPS_DETAIL(tripId),
+    payload,
   );
   return data;
 }

@@ -362,6 +362,20 @@ export interface GetTripsParams {
   sortDirection?: string;
 }
 
+export interface UpdateAdminTripPayload {
+  title?: string;
+  description?: string;
+  rule?: string;
+  itemRequired?: string;
+  startTime?: string;
+  endTime?: string;
+  backTime?: string;
+  registrationDeadline?: string;
+  minParticipants?: number;
+  maxParticipants?: number;
+  isApprovalMemberEnable?: boolean;
+}
+
 // ── Moderation ──
 
 export interface ReviewTripModerationPayload {
