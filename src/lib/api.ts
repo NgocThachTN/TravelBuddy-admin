@@ -338,6 +338,17 @@ export async function updateTripByAdmin(
   return data;
 }
 
+export async function overrideTripByAdmin(
+  tripId: string,
+  payload: UpdateAdminTripPayload,
+): Promise<BeWrapper<TripDetail>> {
+  const { data } = await api.patch<BeWrapper<TripDetail>>(
+    API_ROUTES.ADMIN_TRIPS_OVERRIDE(tripId),
+    payload,
+  );
+  return data;
+}
+
 export async function fetchTripModerationTasks(
   params: GetTripModerationTasksParams = {},
 ): Promise<BePagedWrapper<TripModerationTaskListItem>> {
