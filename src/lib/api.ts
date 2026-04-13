@@ -50,6 +50,7 @@ import type {
   AdminTransactionRecord,
   MyProfileData,
   DashboardOverviewData,
+  ModeratorDashboardOverviewData,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -162,6 +163,15 @@ export async function fetchAdminDashboardOverview(
   const { data } = await api.get<BeWrapper<DashboardOverviewData>>(
     API_ROUTES.ADMIN_DASHBOARD_OVERVIEW,
     { params: { windowDays } },
+  );
+  return data;
+}
+
+export async function fetchModeratorDashboardOverview(): Promise<
+  BeWrapper<ModeratorDashboardOverviewData>
+> {
+  const { data } = await api.get<BeWrapper<ModeratorDashboardOverviewData>>(
+    API_ROUTES.MODERATION_DASHBOARD_OVERVIEW,
   );
   return data;
 }
