@@ -28,10 +28,16 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
-import { fetchTripById, reviewTrip, updateTripByAdmin } from "@/lib/api";
+import { fetchTripById, overrideTripByAdmin, reviewTrip } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { ModerationDecisionCode, Role, TripDetail, UpdateAdminTripPayload } from "@/types";
+import type {
+  ModerationDecisionCode,
+  Role,
+  TripDetail,
+  TripStatusCode,
+  UpdateAdminTripPayload,
+} from "@/types";
 import {
   moderationStatusLabel,
   PARTICIPANT_STATUS_LABELS,
@@ -57,6 +63,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -210,11 +223,25 @@ function fromDateTimeLocalInput(value: string) {
   return date.toISOString();
 }
 
+function normalizeTripStatusCode(value: number | string | null | undefined): TripStatusCode {
+  if (typeof value === "number") {
+    return TRIP_STATUS_CODES[value] ?? "Draft";
+  }
+
+  if (typeof value === "string") {
+    const matchedStatus = TRIP_STATUS_CODES.find((status) => status === value);
+    if (matchedStatus) return matchedStatus;
+  }
+
+  return "Draft";
+}
+
 interface TripEditFormState {
   title: string;
   description: string;
   rule: string;
   itemRequired: string;
+  currentStatus: TripStatusCode;
   startTime: string;
   endTime: string;
   backTime: string;
@@ -230,6 +257,7 @@ function buildTripEditFormState(trip: TripDetail): TripEditFormState {
     description: trip.description ?? "",
     rule: trip.rule ?? "",
     itemRequired: trip.itemRequired ?? "",
+    currentStatus: normalizeTripStatusCode(trip.currentStatus),
     startTime: toDateTimeLocalInput(trip.startTime),
     endTime: toDateTimeLocalInput(trip.endTime),
     backTime: toDateTimeLocalInput(trip.backTime),
@@ -240,26 +268,44 @@ function buildTripEditFormState(trip: TripDetail): TripEditFormState {
   };
 }
 
-function mapEditFormToPayload(form: TripEditFormState): UpdateAdminTripPayload {
+function mapEditFormToPayload(
+  form: TripEditFormState,
+  baseline: TripEditFormState,
+): UpdateAdminTripPayload {
   const parseOptionalNumber = (value: string) => {
     if (!value.trim()) return undefined;
     const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   };
+  const payload: UpdateAdminTripPayload = {};
 
-  return {
-    title: form.title.trim(),
-    description: form.description.trim(),
-    rule: form.rule,
-    itemRequired: form.itemRequired,
-    startTime: fromDateTimeLocalInput(form.startTime),
-    endTime: fromDateTimeLocalInput(form.endTime),
-    backTime: fromDateTimeLocalInput(form.backTime),
-    registrationDeadline: fromDateTimeLocalInput(form.registrationDeadline),
-    minParticipants: parseOptionalNumber(form.minParticipants),
-    maxParticipants: parseOptionalNumber(form.maxParticipants),
-    isApprovalMemberEnable: form.isApprovalMemberEnable,
-  };
+  if (form.title !== baseline.title) payload.title = form.title.trim();
+  if (form.description !== baseline.description) payload.description = form.description.trim();
+  if (form.rule !== baseline.rule) payload.rule = form.rule;
+  if (form.itemRequired !== baseline.itemRequired) payload.itemRequired = form.itemRequired;
+  if (form.startTime !== baseline.startTime) payload.startTime = fromDateTimeLocalInput(form.startTime);
+  if (form.endTime !== baseline.endTime) payload.endTime = fromDateTimeLocalInput(form.endTime);
+  if (form.backTime !== baseline.backTime) payload.backTime = fromDateTimeLocalInput(form.backTime);
+  if (form.registrationDeadline !== baseline.registrationDeadline) {
+    payload.registrationDeadline = fromDateTimeLocalInput(form.registrationDeadline);
+  }
+  if (form.minParticipants !== baseline.minParticipants) {
+    payload.minParticipants = parseOptionalNumber(form.minParticipants);
+  }
+  if (form.maxParticipants !== baseline.maxParticipants) {
+    payload.maxParticipants = parseOptionalNumber(form.maxParticipants);
+  }
+  if (form.isApprovalMemberEnable !== baseline.isApprovalMemberEnable) {
+    payload.isApprovalMemberEnable = form.isApprovalMemberEnable;
+  }
+  if (form.currentStatus !== baseline.currentStatus) {
+    const currentStatusValue = TRIP_STATUS_CODES.indexOf(form.currentStatus);
+    if (currentStatusValue >= 0) {
+      payload.currentStatus = currentStatusValue;
+    }
+  }
+
+  return payload;
 }
 
 interface ModerationDialogProps {
@@ -356,6 +402,24 @@ function TripEditDialog({ open, form, loading, onClose, onChange, onSubmit }: Tr
             <div className="space-y-1.5">
               <Label htmlFor="trip-description" className="inline-flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />Mô tả</Label>
               <Textarea id="trip-description" rows={4} value={form.description} onChange={(event) => setField("description", event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-status" className="inline-flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" />
+                Trạng thái chuyến đi
+              </Label>
+              <Select value={form.currentStatus} onValueChange={(value) => setField("currentStatus", value as TripStatusCode)}>
+                <SelectTrigger id="trip-status">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIP_STATUS_CODES.map((statusCode) => (
+                    <SelectItem key={statusCode} value={statusCode}>
+                      {tripStatusLabel(statusCode)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </section>
 
@@ -458,6 +522,21 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     description: "",
     rule: "",
     itemRequired: "",
+    currentStatus: "Draft",
+    startTime: "",
+    endTime: "",
+    backTime: "",
+    registrationDeadline: "",
+    minParticipants: "",
+    maxParticipants: "",
+    isApprovalMemberEnable: false,
+  });
+  const [editBaseline, setEditBaseline] = useState<TripEditFormState>({
+    title: "",
+    description: "",
+    rule: "",
+    itemRequired: "",
+    currentStatus: "Draft",
     startTime: "",
     endTime: "",
     backTime: "",
@@ -472,7 +551,9 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
       setLoading(true);
       const result = await fetchTripById(tripId);
       setTrip(result.data);
-      setEditForm(buildTripEditFormState(result.data));
+      const initialForm = buildTripEditFormState(result.data);
+      setEditForm(initialForm);
+      setEditBaseline(initialForm);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải chi tiết chuyến đi");
@@ -526,8 +607,12 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     if (!trip) return;
     try {
       setEditLoading(true);
-      const payload = mapEditFormToPayload(editForm);
-      await updateTripByAdmin(trip.tripId, payload);
+      const payload = mapEditFormToPayload(editForm, editBaseline);
+      if (Object.keys(payload).length === 0) {
+        setEditOpen(false);
+        return;
+      }
+      await overrideTripByAdmin(trip.tripId, payload);
       setEditOpen(false);
       await loadTrip();
     } catch (err) {
@@ -645,7 +730,9 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    setEditForm(buildTripEditFormState(trip));
+                    const initialForm = buildTripEditFormState(trip);
+                    setEditForm(initialForm);
+                    setEditBaseline(initialForm);
                     setEditOpen(true);
                   }}
                 >
