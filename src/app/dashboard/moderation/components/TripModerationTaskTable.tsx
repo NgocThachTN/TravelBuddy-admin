@@ -277,46 +277,49 @@ const EXPERIENCE_LEVEL_LABELS: Record<string, string> = {
 const VEHICLE_LABELS: Record<string, string> = {
   "Motorbike": "Xe máy",
   "Car": "Ô tô",
-  "Suv": "SUV",
-  "Bus": "Xe buýt",
   "Bicycle": "Xe đạp",
-  "ElectricBike": "Xe đạp điện",
-  "Jeep": "Xe Jeep / off-road",
+  "ElectricBike": "Xe điện",
+  "Jeep": "Jeep",
   "PickupTruck": "Xe bán tải",
-  "Limousine": "Limousine",
-  "TukTuk": "TukTuk",
-  "Boat": "Thuyền đò",
   "Walking": "Đi bộ",
   "Scooter": "Xe tay ga",
   "UnderboneMotorbike": "Xe côn tay",
   "OffroadMotorbike": "Xe cào cào",
+  "Suv": "Ô tô 7 chỗ",
+  "Bus": "Xe buýt", // Kept from original to ensure backward compatibility
+  "Limousine": "Limousine", // Kept from original
+  "TukTuk": "TukTuk", // Kept from original
+  "Boat": "Thuyền đò", // Kept from original
   "Other": "Loại khác"
 };
 
 const TRIP_TYPE_LABELS: Record<string, string> = {
   "Adventure": "Mạo hiểm",
   "Relaxation": "Nghỉ dưỡng",
-  "Cultural": "Văn hoá",
-  "Touring": "Touring",
-  "Trekking": "Trekking / Leo núi",
+  "Cultural": "Văn hóa - lịch sử",
+  "Touring": "Xuyên Việt đường dài",
+  "Trekking": "Trekking leo núi",
   "Camping": "Cắm trại",
-  "Beach": "Biển đảo",
-  "Ecotourism": "Sinh thái",
-  "FoodTour": "Food Tour",
+  "Beach": "Đi biển",
+  "Ecotourism": "Du lịch sinh thái",
+  "FoodTour": "Ẩm thực",
   "ExtremeSport": "Thể thao mạo hiểm",
-  "Spiritual": "Tâm linh",
-  "Volunteer": "Thiện nguyện",
+  "Spiritual": "Tâm linh - hành hương",
+  "Volunteer": "Tình nguyện",
   "Photography": "Nhiếp ảnh",
-  "MotorbikeTour": "Phượt xe máy",
-  "NightTour": "Tour đêm",
-  "Teambuilding": "Team building",
-  "CityExploration": "Khám phá thành phố",
-  "RoadTrip": "Đi đường dài",
-  "Backpacking": "Du lịch bụi",
+  "NightTour": "Săn đêm - bình minh",
+  "Teambuilding": "Teambuilding",
+  "Backpacking": "Phượt tiết kiệm",
   "CloudHunting": "Săn mây",
-  "IslandHopping": "Du lịch đảo",
-  "SeasonalFlowerTrip": "Ngắm hoa theo mùa",
-  "Other": "Loại khác",
+  "MountainPassChallenge": "Chinh phục cung đèo",
+  "WeekendTrip": "Đi cuối tuần",
+  "BorderlandExploration": "Khám phá biên giới",
+  "SeasonalFlowerTrip": "Săn mùa hoa",
+  "MotorbikeTour": "Phượt xe máy", // Kept from original
+  "CityExploration": "Khám phá thành phố", // Kept from original
+  "RoadTrip": "Đi đường dài", // Kept from original
+  "IslandHopping": "Du lịch đảo", // Kept from original
+  "Other": "Khác",
 };
 
 function translateExperienceLevel(level: string | number | null | undefined): string {
@@ -342,24 +345,24 @@ const EXPENSE_TYPE_LABELS: Record<string, string> = {
   Equipment: "Đồ dùng - thiết bị",
   Toll: "Phí cầu đường",
   Parking: "Gửi xe",
-  Insurance: "Bảo hiểm",
-  Emergency: "Khẩn cấp",
+  Emergency: "Chi phí khẩn cấp",
   Shopping: "Mua sắm",
-  Other: "Chi phí khác",
   Transportation: "Di chuyển",
-  Activity: "Hoạt động",
-  GuideService: "Hướng dẫn viên",
-  Communication: "Liên lạc",
+  Activity: "Hoạt động trải nghiệm",
+  Communication: "Liên lạc (SIM/4G)",
   Healthcare: "Y tế",
-  TaxFee: "Thuế phí",
-  MotorbikeRental: "Thuê xe máy",
-  MotorbikeMaintenance: "Bảo dưỡng xe",
-  FerryBoatFee: "Phí phà/đò",
-  CoffeeBreak: "Cà phê/Giải",
+  MotorbikeRental: "Thuê xe",
+  MotorbikeMaintenance: "Sửa xe",
+  FerryBoatFee: "Vé tàu/phà",
+  CoffeeBreak: "Cà phê nghỉ chân",
   LocalSpecialty: "Đặc sản địa phương",
-  HomestayFee: "Phí homestay",
   CampingFee: "Phí cắm trại",
-  BorderPermitFee: "Phí biên giới"
+  BorderPermitFee: "Phí giấy phép biên giới",
+  Other: "Chi phí khác",
+  Insurance: "Bảo hiểm", // Kept from original
+  GuideService: "Hướng dẫn viên", // Kept from original
+  TaxFee: "Thuế phí", // Kept from original
+  HomestayFee: "Phí homestay" // Kept from original
 };
 
 function translateExpenseType(type: string | null | undefined): string {
@@ -551,6 +554,7 @@ export default function TripModerationTaskTable() {
   const [decisionError, setDecisionError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [pendingDecision, setPendingDecision] = useState<"Approve" | "Reject" | null>(null);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -1068,7 +1072,13 @@ export default function TripModerationTaskTable() {
                           <h3 className="font-semibold mb-4 text-base">Media đính kèm ({detailTrip.mediaAttachments.length})</h3>
                           <div className="flex flex-wrap gap-2">
                             {detailTrip.mediaAttachments.map((m: any) => (
-                              <img key={m.mediaAttachmentId} src={m.mediaUrl} className="w-32 h-32 object-cover rounded-lg border"/>
+                              <img 
+                                key={m.mediaAttachmentId} 
+                                src={m.mediaUrl} 
+                                alt="trip media"
+                                className="w-32 h-32 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition"
+                                onClick={() => setSelectedMediaUrl(m.mediaUrl)}
+                              />
                             ))}
                           </div>
                         </div>
@@ -1099,7 +1109,7 @@ export default function TripModerationTaskTable() {
                                   detailTrip.expenseCategories.filter((e: any) => e.tripCheckpointId == null).map((exp: any) => (
                                       <div key={exp.tripExpenseCategoryId} className="flex flex-col gap-1 text-sm border-l-2 pl-3 border-slate-200">
                                           <div className="flex justify-between items-center">
-                                            <span className="font-medium text-foreground">{exp.expenseType}</span>
+                                            <span className="font-medium text-foreground">{translateExpenseType(exp.expenseType)}</span>
                                             <span className="font-bold text-emerald-600">{formatVnd(exp.estimatedCost)}</span>
                                           </div>
                                           {exp.note && <span className="text-xs text-muted-foreground">{exp.note}</span>}
@@ -1428,6 +1438,21 @@ export default function TripModerationTaskTable() {
   </div>
 </DialogContent>
 
+      </Dialog>
+
+      {/* Media Zoom Dialog */}
+      <Dialog open={!!selectedMediaUrl} onOpenChange={(open) => !open && setSelectedMediaUrl(null)}>
+        <DialogContent className="max-w-[90vw] md:max-w-4xl p-1 bg-transparent border-none shadow-none flex justify-center items-center [&>button]:bg-white [&>button]:text-black [&>button]:opacity-100 [&>button]:hover:bg-slate-200 [&>button]:p-2 [&>button]:rounded-full [&>button]:shadow-xl sm:[&>button]:-right-4 sm:[&>button]:-top-4">
+          <DialogTitle className="sr-only">Hình ảnh phóng to</DialogTitle>
+          <DialogDescription className="sr-only">Chi tiết hình ảnh đính kèm của chuyến đi</DialogDescription>
+          {selectedMediaUrl && (
+            <img 
+              src={selectedMediaUrl} 
+              alt="zoomed media" 
+              className="max-w-full max-h-[90vh] object-contain rounded-md" 
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </>
   );

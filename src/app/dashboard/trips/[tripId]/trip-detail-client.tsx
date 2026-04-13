@@ -453,6 +453,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<TripEditFormState>({
     title: "",
     description: "",
@@ -1041,7 +1042,12 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                 {orderedMediaAttachments.map((media) => (
                   <div key={media.mediaAttachmentId} className="overflow-hidden rounded-lg border">
                     {media.mediaType === "Image" || media.mediaType === 0 ? (
-                      <img src={media.mediaUrl} alt="" className="aspect-video w-full object-cover" />
+                      <img 
+                        src={media.mediaUrl} 
+                        alt="" 
+                        className="aspect-video w-full object-cover cursor-pointer hover:opacity-90 transition"
+                        onClick={() => setSelectedMediaUrl(media.mediaUrl)} 
+                      />
                     ) : (
                       <div className="flex aspect-video items-center justify-center bg-muted">
                         <span className="text-xs text-muted-foreground">{mediaTypeLabelVi(media.mediaType)}</span>
@@ -1054,6 +1060,21 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
           </Card>
         )}
       </div>
+
+      {/* Media Zoom Dialog */}
+      <Dialog open={!!selectedMediaUrl} onOpenChange={(open) => !open && setSelectedMediaUrl(null)}>
+        <DialogContent className="max-w-[90vw] md:max-w-4xl p-1 bg-transparent border-none shadow-none flex justify-center items-center [&>button]:bg-white [&>button]:text-black [&>button]:opacity-100 [&>button]:hover:bg-slate-200 [&>button]:p-2 [&>button]:rounded-full [&>button]:shadow-xl sm:[&>button]:-right-4 sm:[&>button]:-top-4">
+          <DialogTitle className="sr-only">Hình ảnh phóng to</DialogTitle>
+          <DialogDescription className="sr-only">Chi tiết hình ảnh đính kèm của chuyến đi</DialogDescription>
+          {selectedMediaUrl && (
+            <img 
+              src={selectedMediaUrl} 
+              alt="zoomed media" 
+              className="max-w-full max-h-[90vh] object-contain rounded-md" 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
