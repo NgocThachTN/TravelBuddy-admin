@@ -158,3 +158,8 @@ export type {
   UpdateServicePartnerFeePayload,
   GetServicePartnerFeesParams,
 } from "./partner";
+export type {
+  RescuePricingRules,
+  UpdateAdminSystemRulePayload,
+  AdminSystemRule,
+} from "./system-rule";

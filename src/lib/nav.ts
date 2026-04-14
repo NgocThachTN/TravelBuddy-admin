@@ -60,19 +60,19 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
   },
   {
-    label: "Qu\u1ea3n l\u00fd g\u00f3i d\u1ecbch v\u1ee5",
+    label: "Qu\u1ea3n l\u00fd ch\u00ednh s\u00e1ch ph\u00ed",
     icon: Package,
     roles: ["ADMIN"],
     children: [
       {
-        label: "G\u00f3i \u0111\u1ed1i t\u00e1c",
-        href: ROUTES.SUBSCRIPTIONS_PARTNERS,
+        label: "G\u00f3i ng\u01b0\u1eddi d\u00f9ng",
+        href: ROUTES.SUBSCRIPTIONS_USERS,
         icon: Package,
         roles: ["ADMIN"],
       },
       {
-        label: "G\u00f3i ng\u01b0\u1eddi d\u00f9ng",
-        href: ROUTES.SUBSCRIPTIONS_USERS,
+        label: "Hoa h\u1ed3ng \u0111\u1ed1i t\u00e1c",
+        href: ROUTES.SUBSCRIPTIONS_PARTNER_COMMISSIONS,
         icon: Package,
         roles: ["ADMIN"],
       },
@@ -92,12 +92,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
       {
         label: "Mua g\u00f3i ng\u01b0\u1eddi d\u00f9ng",
         href: ROUTES.TRANSACTIONS_USER_SUBSCRIPTIONS,
-        icon: CreditCard,
-        roles: ["ADMIN"],
-      },
-      {
-        label: "Mua g\u00f3i \u0111\u1ed1i t\u00e1c",
-        href: ROUTES.TRANSACTIONS_PARTNER_SUBSCRIPTIONS,
         icon: CreditCard,
         roles: ["ADMIN"],
       },

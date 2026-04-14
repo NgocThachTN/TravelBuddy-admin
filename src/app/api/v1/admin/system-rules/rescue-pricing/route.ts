@@ -11,25 +11,24 @@ async function getToken(req: NextRequest): Promise<string | null> {
   return session ? token : null;
 }
 
-type Params = { params: Promise<{ id: string }> };
-
-export async function PATCH(req: NextRequest, context: Params) {
+export async function PUT(req: NextRequest) {
   const token = await getToken(req);
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await context.params;
+  const body = await req.json();
 
   try {
-    const { data } = await backendApi.patch(
-      `/api/v1/admin/service-partner-fees/${id}/deactivate`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
+    const { data } = await backendApi.put(
+      "/api/v1/admin/system-rules/rescue-pricing",
+      body,
+      { headers: { Authorization: `Bearer ${token}` } },
     );
+
     return NextResponse.json(data);
   } catch (err) {
-    const e = logAndExtract(err, "PATCH deactivate service-partner-fee");
+    const e = logAndExtract(err, "PUT rescue-pricing rule");
     return NextResponse.json({ error: e.message }, { status: e.status });
   }
 }

@@ -12,7 +12,6 @@ export const ROUTES = {
   PARTNER_REQUESTS_DETAIL: (id: string) => `/dashboard/partners/requests/${id}`,
   ACTIVE_PARTNERS: "/dashboard/partners/active",
   ACTIVE_PARTNERS_DETAIL: (id: string) => `/dashboard/partners/active/${id}`,
-  PARTNER_FEES: "/dashboard/partners/fees",
   MODERATION: "/dashboard/moderation",
   MODERATION_REPORTS: "/dashboard/moderation-reports",
   MODERATION_MY_REPORTS: "/dashboard/moderation-reports/my-reports",
@@ -24,11 +23,9 @@ export const ROUTES = {
   TRANSACTIONS: "/dashboard/transactions",
   TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
-  TRANSACTIONS_PARTNER_SUBSCRIPTIONS:
-    "/dashboard/transactions/partner-subscriptions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
-  SUBSCRIPTIONS_PARTNERS: "/dashboard/subscriptions/partners",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
+  SUBSCRIPTIONS_PARTNER_COMMISSIONS: "/dashboard/subscriptions/partner-commissions",
   CATEGORIES: "/dashboard/categories",
   SUPPORT: "/dashboard/support",
   AUDIT_LOGS: "/dashboard/audit-logs",
@@ -96,4 +93,6 @@ export const API_ROUTES = {
     `/api/v1/admin/service-partner-fees/${id}/activate`,
   ADMIN_SERVICE_PARTNER_FEES_DEACTIVATE: (id: string) =>
     `/api/v1/admin/service-partner-fees/${id}/deactivate`,
+  SYSTEM_RULES_RESCUE_PRICING: "/api/v1/system-rules/rescue-pricing",
+  ADMIN_SYSTEM_RULES_RESCUE_PRICING: "/api/v1/admin/system-rules/rescue-pricing",
 } as const;
