@@ -97,28 +97,28 @@ export default function ModeratorDashboardClient() {
   const cards: ModeratorKpiCard[] = overview
     ? [
         {
-          title: "Số trip cần duyệt",
+          title: "Số chuyến đi cần duyệt",
           value: overview.kpis.pendingTripApprovals,
           icon: ClipboardCheck,
           iconColor: "text-amber-600",
           iconBg: "bg-amber-50",
         },
         {
-          title: "Tổng số Trip",
+          title: "Tổng số chuyến đi",
           value: overview.kpis.totalTrips,
           icon: MapPinned,
           iconColor: "text-blue-600",
           iconBg: "bg-blue-50",
         },
         {
-          title: "Số Trip bị từ chối",
+          title: "Số chuyến đi bị từ chối",
           value: overview.kpis.rejectedTrips,
           icon: ShieldX,
           iconColor: "text-rose-600",
           iconBg: "bg-rose-50",
         },
         {
-          title: "Số Trip đã duyệt",
+          title: "Số chuyến đi đã duyệt",
           value: overview.kpis.approvedTrips,
           icon: BadgeCheck,
           iconColor: "text-emerald-600",
