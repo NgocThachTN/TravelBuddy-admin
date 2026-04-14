@@ -1,4 +1,4 @@
-export type PartnerDocumentKind = "image" | "pdf" | "unknown";
+export type PartnerDocumentKind = "image" | "unknown";
 
 const IMAGE_EXTENSIONS = new Set([
   "png",
@@ -62,9 +62,6 @@ export function detectPartnerDocumentKind(
   if (IMAGE_EXTENSIONS.has(extension)) {
     return "image";
   }
-  if (extension === "pdf") {
-    return "pdf";
-  }
 
   const normalizedMediaType = mediaType?.trim().toLowerCase() ?? "";
   if (
@@ -74,21 +71,5 @@ export function detectPartnerDocumentKind(
     return "image";
   }
 
-  if (
-    normalizedMediaType.includes("pdf") ||
-    normalizedMediaType.includes("application/pdf") ||
-    normalizedMediaType === "file"
-  ) {
-    return "pdf";
-  }
-
   return "unknown";
-}
-
-export function toPdfPreviewUrl(url: string): string {
-  if (/\.pdf(?:$|[?#])/i.test(url)) {
-    return url;
-  }
-
-  return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`;
 }

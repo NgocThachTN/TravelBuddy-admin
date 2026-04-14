@@ -61,15 +61,6 @@ function FilePreview({
             />
           </div>
         )}
-        {kind === "pdf" && (
-          <div className={previewFrameClass}>
-            <iframe
-              title={title}
-              src={proxiedUrl}
-              className="h-full w-full"
-            />
-          </div>
-        )}
         {kind === "unknown" && (
           <div className={`${previewFrameClass} flex items-center justify-center border-dashed p-3 text-sm text-muted-foreground`}>
             Tệp này không hỗ trợ xem nhanh trực tiếp.
