@@ -612,34 +612,12 @@ export async function fetchPartnerRequestById(
   return data;
 }
 
-export async function approvePartnerRequest(
+export async function reviewPartnerRequest(
   id: string,
   payload: ReviewPartnerRequestPayload,
 ): Promise<BeWrapper<PartnerRequestDetail>> {
   const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
-    API_ROUTES.ADMIN_PARTNER_REVIEWS_APPROVE(id),
-    payload,
-  );
-  return data;
-}
-
-export async function rejectPartnerRequest(
-  id: string,
-  payload: ReviewPartnerRequestPayload,
-): Promise<BeWrapper<PartnerRequestDetail>> {
-  const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
-    API_ROUTES.ADMIN_PARTNER_REVIEWS_REJECT(id),
-    payload,
-  );
-  return data;
-}
-
-export async function requestPartnerResubmission(
-  id: string,
-  payload: ReviewPartnerRequestPayload,
-): Promise<BeWrapper<PartnerRequestDetail>> {
-  const { data } = await api.post<BeWrapper<PartnerRequestDetail>>(
-    API_ROUTES.ADMIN_PARTNER_REVIEWS_RESUBMIT(id),
+    API_ROUTES.ADMIN_PARTNER_REVIEWS_DECISION(id),
     payload,
   );
   return data;

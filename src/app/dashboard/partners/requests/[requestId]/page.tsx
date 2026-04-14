@@ -1,26 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  approvePartnerRequest,
   fetchPartnerRequestById,
-  rejectPartnerRequest,
-  requestPartnerResubmission,
+  reviewPartnerRequest,
 } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import {
   formatFullAddress,
   formatWardLabel,
-  getMapEmbedUrl,
   getRegistrationStatusMeta,
   getServicePartnerStatusMeta,
   getVehicleServiceScopeLabel,
   renderStatusBadge,
 } from "@/lib/partner-display";
+import PartnerLocationMap from "@/app/dashboard/partners/components/PartnerLocationMap";
 import type { PartnerRequestDetail } from "@/types";
+import {
+  DocumentGroupPreview,
+  type PartnerDocumentItem,
+} from "@/components/partner-document-preview";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,6 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { normalizePartnerDocumentUrl } from "@/lib/partner-document";
 import { ArrowLeft, FileText, Loader2, MapPin, Store, User } from "lucide-react";
 
 type ReviewAction = "approve" | "reject" | "resubmit";
@@ -90,90 +92,18 @@ function readOnlyTextarea(label: string, value?: string | number | null) {
   );
 }
 
-function getFileType(url?: string | null) {
-  if (!url) return "unknown";
-  const normalized = url.split("?")[0].toLowerCase();
-
-  if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(normalized)) {
-    return "image";
-  }
-  if (/\.pdf$/.test(normalized)) {
-    return "pdf";
-  }
-  return "unknown";
-}
-
-function FilePreview({
-  title,
-  url,
-  emptyText,
-}: {
-  title: string;
-  url?: string | null;
-  emptyText: string;
-}) {
-  const fileType = getFileType(url);
-  const previewFrameClass =
-    "relative w-full overflow-hidden rounded-md border bg-muted/20 aspect-[16/9]";
-
-  return (
-    <div className="space-y-3">
-      <Label>{title}</Label>
-      {url ? (
-        <div className="space-y-3">
-          {fileType === "image" && (
-            <div className={previewFrameClass}>
-              <Image
-                src={url}
-                alt={title}
-                fill
-                unoptimized
-                className="object-contain p-2"
-              />
-            </div>
-          )}
-          {fileType === "pdf" && (
-            <div className={previewFrameClass}>
-              <iframe
-                title={title}
-                src={url}
-                className="h-full w-full"
-              />
-            </div>
-          )}
-          {fileType === "unknown" && (
-            <div className={`${previewFrameClass} flex items-center justify-center border-dashed p-3 text-sm text-muted-foreground`}>
-              Tệp này không hỗ trợ xem nhanh trực tiếp.
-            </div>
-          )}
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noreferrer">
-              Mở tệp trong tab mới
-            </a>
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-          {emptyText}
-        </div>
-      )}
-    </div>
-  );
-}
-
 type PartnerDocumentGroups = {
-  identityCards: string[];
-  businessLicenses: string[];
+  identityCards: PartnerDocumentItem[];
+  businessLicenses: PartnerDocumentItem[];
 };
 
 function normalizeMediaUrl(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
+  return normalizePartnerDocumentUrl(value);
 }
 
 function getPartnerDocumentGroups(detail: PartnerRequestDetail): PartnerDocumentGroups {
-  const identityCards: string[] = [];
-  const businessLicenses: string[] = [];
+  const identityCards: PartnerDocumentItem[] = [];
+  const businessLicenses: PartnerDocumentItem[] = [];
 
   for (const item of detail.mediaAttachments ?? []) {
     const mediaUrl = normalizeMediaUrl(item.mediaUrl);
@@ -181,19 +111,25 @@ function getPartnerDocumentGroups(detail: PartnerRequestDetail): PartnerDocument
 
     const targetType = item.targetType?.toLowerCase();
     if (targetType === "partneridentitycard") {
-      identityCards.push(mediaUrl);
+      identityCards.push({
+        url: mediaUrl,
+        mediaType: item.mediaType,
+      });
       continue;
     }
 
     if (targetType === "partnerbusinesslicense") {
-      businessLicenses.push(mediaUrl);
+      businessLicenses.push({
+        url: mediaUrl,
+        mediaType: item.mediaType,
+      });
     }
   }
 
   if (identityCards.length === 0) {
     const fallbackIdentity = normalizeMediaUrl(detail.identifyCardUrl);
     if (fallbackIdentity) {
-      identityCards.push(fallbackIdentity);
+      identityCards.push({ url: fallbackIdentity });
     }
   }
 
@@ -202,7 +138,7 @@ function getPartnerDocumentGroups(detail: PartnerRequestDetail): PartnerDocument
       normalizeMediaUrl(detail.licenseFileUrl) ??
       normalizeMediaUrl(detail.businessLicenseFileUrl);
     if (fallbackLicense) {
-      businessLicenses.push(fallbackLicense);
+      businessLicenses.push({ url: fallbackLicense });
     }
   }
 
@@ -298,41 +234,6 @@ function getReviewActionConfirmDescription(action: ReviewAction) {
   }
 }
 
-function DocumentGroupPreview({
-  title,
-  urls,
-  emptyText,
-}: {
-  title: string;
-  urls: string[];
-  emptyText: string;
-}) {
-  if (urls.length === 0) {
-    return (
-      <div className="space-y-3">
-        <Label>{title}</Label>
-        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-          {emptyText}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Label>{title}</Label>
-      {urls.map((url, index) => (
-        <FilePreview
-          key={`${title}-${index}-${url}`}
-          title={`${title} ${urls.length > 1 ? `#${index + 1}` : ""}`.trim()}
-          url={url}
-          emptyText={emptyText}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function PartnerRequestDetailPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = params.requestId;
@@ -372,14 +273,25 @@ export default function PartnerRequestDetailPage() {
       setError(null);
       setSuccess(null);
 
+      const decision =
+        type === "approve"
+          ? "Approve"
+          : type === "reject"
+            ? "Reject"
+            : "RequestResubmission";
+      const reviewPayload = {
+        decision,
+        reviewNote: reviewNote.trim() || undefined,
+      } as const;
+
       if (type === "approve") {
-        await approvePartnerRequest(requestId, { reviewNote });
+        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã phê duyệt hồ sơ đối tác.");
       } else if (type === "reject") {
-        await rejectPartnerRequest(requestId, { reviewNote });
+        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã từ chối hồ sơ đối tác.");
       } else {
-        await requestPartnerResubmission(requestId, { reviewNote });
+        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã yêu cầu đối tác bổ sung hồ sơ.");
       }
 
@@ -469,7 +381,6 @@ export default function PartnerRequestDetailPage() {
     return null;
   }
 
-  const mapEmbedUrl = getMapEmbedUrl(detail.addressLat, detail.addressLng);
   const documentGroups = getPartnerDocumentGroups(detail);
   const taxVerification = detail.taxVerification;
 
@@ -594,19 +505,11 @@ export default function PartnerRequestDetailPage() {
               <Separator />
               <div className="space-y-2">
                 <Label>Bản đồ</Label>
-                {mapEmbedUrl ? (
-                  <iframe
-                    title="Bản đồ vị trí đối tác"
-                    src={mapEmbedUrl}
-                    className="h-72 w-full rounded-md border"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                ) : (
-                  <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                    Chưa có vị trí để hiển thị bản đồ.
-                  </div>
-                )}
+                <PartnerLocationMap
+                  lat={detail.addressLat}
+                  lng={detail.addressLng}
+                  label={detail.servicePartnerName || detail.companyName || "Vi tri doi tac"}
+                />
               </div>
             </CardContent>
           </Card>
@@ -654,12 +557,12 @@ export default function PartnerRequestDetailPage() {
             <CardContent className="space-y-5">
               <DocumentGroupPreview
                 title="Ảnh CCCD/CMND"
-                urls={documentGroups.identityCards}
+                documents={documentGroups.identityCards}
                 emptyText="Chưa có ảnh CCCD/CMND."
               />
               <DocumentGroupPreview
                 title="Giấy phép kinh doanh"
-                urls={documentGroups.businessLicenses}
+                documents={documentGroups.businessLicenses}
                 emptyText="Chưa có giấy phép kinh doanh."
               />
             </CardContent>
@@ -809,3 +712,4 @@ export default function PartnerRequestDetailPage() {
     </div>
   );
 }
+

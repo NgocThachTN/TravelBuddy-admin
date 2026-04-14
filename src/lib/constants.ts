@@ -82,12 +82,8 @@ export const API_ROUTES = {
   ADMIN_PARTNER_REVIEWS: "/api/admin/partners/requests",
   ADMIN_PARTNER_REVIEWS_DETAIL: (id: string) =>
     `/api/admin/partners/requests/${id}`,
-  ADMIN_PARTNER_REVIEWS_APPROVE: (id: string) =>
-    `/api/admin/partners/requests/${id}/approve`,
-  ADMIN_PARTNER_REVIEWS_REJECT: (id: string) =>
-    `/api/admin/partners/requests/${id}/reject`,
-  ADMIN_PARTNER_REVIEWS_RESUBMIT: (id: string) =>
-    `/api/admin/partners/requests/${id}/request-resubmission`,
+  ADMIN_PARTNER_REVIEWS_DECISION: (id: string) =>
+    `/api/admin/partners/requests/${id}/decision`,
   ADMIN_SERVICE_PARTNERS: "/api/admin/partners/service-partners",
   ADMIN_SERVICE_PARTNERS_DETAIL: (id: string) =>
     `/api/admin/partners/service-partners/${id}`,

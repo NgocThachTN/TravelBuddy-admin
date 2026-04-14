@@ -25,13 +25,13 @@ export async function POST(
 
   try {
     const { data } = await backendApi.post(
-      `/api/v1/admin/partner-reviews/${requestId}/approve`,
+      `/api/v1/admin/partner-reviews/${requestId}/decision`,
       body,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     return NextResponse.json(data);
   } catch (err) {
-    const e = logAndExtract(err, `POST approve partner review ${requestId}`);
+    const e = logAndExtract(err, `POST partner review decision ${requestId}`);
     return NextResponse.json({ error: e.message }, { status: e.status });
   }
 }

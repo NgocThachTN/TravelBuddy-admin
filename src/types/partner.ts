@@ -82,6 +82,7 @@ export interface GetPartnerRequestsParams {
 }
 
 export interface ReviewPartnerRequestPayload {
+  decision: "Approve" | "Reject" | "RequestResubmission";
   reviewNote?: string;
 }
 
@@ -123,6 +124,9 @@ export interface ServicePartnerDetail {
   vehicleServiceScope?: string;
   identifyCardUrl?: string;
   businessLicenseUrl?: string;
+  licenseFileUrl?: string;
+  businessLicenseFileUrl?: string;
+  mediaAttachments?: PartnerDocumentMediaAttachment[];
   profileStatus?: string;
   verificationStatus?: string;
   verifiedAt?: string;
