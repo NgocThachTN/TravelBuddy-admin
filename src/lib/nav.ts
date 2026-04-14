@@ -90,6 +90,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
         roles: ["ADMIN"],
       },
       {
+        label: "R\u00fat ti\u1ec1n v\u00ed",
+        href: ROUTES.TRANSACTIONS_WALLET_WITHDRAWALS,
+        icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+      {
         label: "Mua g\u00f3i ng\u01b0\u1eddi d\u00f9ng",
         href: ROUTES.TRANSACTIONS_USER_SUBSCRIPTIONS,
         icon: CreditCard,

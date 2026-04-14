@@ -24,6 +24,15 @@ export type {
   AdminTransactionRecord,
   GetAdminTransactionsParams,
 } from "./transaction";
+export type {
+  AdminWalletWithdrawalStatus,
+  AdminWalletWithdrawalStatusFilter,
+  AdminWalletWithdrawalRecord,
+  GetAdminWalletWithdrawalsParams,
+  MarkWalletWithdrawalProcessingPayload,
+  ApproveWalletWithdrawalPayload,
+  RejectWalletWithdrawalPayload,
+} from "./wallet-withdrawal";
 export type { BePagedWrapper, BeWrapper } from "./api";
 export type { NavItem, NavGroup } from "./nav";
 export type {

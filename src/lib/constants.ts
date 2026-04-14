@@ -22,6 +22,7 @@ export const ROUTES = {
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
+  TRANSACTIONS_WALLET_WITHDRAWALS: "/dashboard/transactions/wallet-withdrawals",
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
@@ -49,6 +50,13 @@ export const API_ROUTES = {
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
+  ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE: "/api/admin/wallet-withdrawals/work-queue",
+  ADMIN_WALLET_WITHDRAWALS_PROCESSING: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/processing`,
+  ADMIN_WALLET_WITHDRAWALS_APPROVE: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/approve`,
+  ADMIN_WALLET_WITHDRAWALS_REJECT: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/reject`,
   ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS:
     "/api/admin/transactions/user-subscriptions",
   ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
