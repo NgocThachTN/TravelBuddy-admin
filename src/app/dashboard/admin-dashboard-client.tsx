@@ -1,0 +1,230 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+import type { DashboardOverviewData, TimeRange } from "@/types";
+import { fetchAdminDashboardOverview } from "@/lib/api";
+import { mapRangeToWindowDays } from "./overview/components/shared";
+
+function SectionSkeleton({
+  className,
+  heightClass = "h-64",
+}: {
+  className?: string;
+  heightClass?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border border-border/50 bg-card/70 p-6 shadow-none ${heightClass} ${className ?? ""}`}
+    >
+      <div className="animate-pulse space-y-4">
+        <div className="h-4 w-32 rounded bg-muted" />
+        <div className="h-3 w-48 rounded bg-muted/80" />
+        <div className="h-36 rounded-lg bg-muted/60" />
+      </div>
+    </div>
+  );
+}
+
+const DashboardHeader = dynamic(
+  () =>
+    import("./overview/components/dashboard-header").then(
+      (mod) => mod.DashboardHeader,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton heightClass="h-20" /> },
+);
+
+const StatCards = dynamic(
+  () =>
+    import("./overview/components/stat-cards").then((mod) => mod.StatCards),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <SectionSkeleton key={index} heightClass="h-40" />
+        ))}
+      </div>
+    ),
+  },
+);
+
+const RevenueOverview = dynamic(
+  () =>
+    import("./overview/components/revenue-overview").then(
+      (mod) => mod.RevenueOverview,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton heightClass="h-[420px]" /> },
+);
+
+const UserGrowthChart = dynamic(
+  () =>
+    import("./overview/components/user-growth-chart").then(
+      (mod) => mod.UserGrowthChart,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-4" /> },
+);
+
+const TripActivityChart = dynamic(
+  () =>
+    import("./overview/components/trip-activity-chart").then(
+      (mod) => mod.TripActivityChart,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+);
+
+const TripCategoriesChart = dynamic(
+  () =>
+    import("./overview/components/trip-categories-chart").then(
+      (mod) => mod.TripCategoriesChart,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+);
+
+const TopDestinations = dynamic(
+  () =>
+    import("./overview/components/top-destinations").then(
+      (mod) => mod.TopDestinations,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-5" /> },
+);
+
+const QuickActions = dynamic(
+  () =>
+    import("./overview/components/quick-actions").then(
+      (mod) => mod.QuickActions,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+);
+
+const SystemStatus = dynamic(
+  () =>
+    import("./overview/components/system-status").then(
+      (mod) => mod.SystemStatus,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-4" /> },
+);
+
+const RecentActivity = dynamic(
+  () =>
+    import("./overview/components/recent-activity").then(
+      (mod) => mod.RecentActivity,
+    ),
+  { ssr: false, loading: () => <SectionSkeleton heightClass="h-80" /> },
+);
+
+export default function DashboardPage() {
+  const [chartRange, setChartRange] = useState<TimeRange>("30d");
+  const [dashboardData, setDashboardData] = useState<DashboardOverviewData | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadDashboard = useCallback(
+    async (isManualRefresh = false) => {
+      if (isManualRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setErrorMessage(null);
+
+      try {
+        const windowDays = mapRangeToWindowDays(chartRange);
+        const response = await fetchAdminDashboardOverview(windowDays);
+        setDashboardData(response.data);
+      } catch {
+        setErrorMessage("Không thể tải dữ liệu dashboard. Vui lòng thử lại.");
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [chartRange],
+  );
+
+  useEffect(() => {
+    void loadDashboard(false);
+  }, [loadDashboard]);
+
+  if (isLoading && !dashboardData) {
+    return (
+      <div className="space-y-6">
+        <SectionSkeleton heightClass="h-20" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <SectionSkeleton key={index} heightClass="h-40" />
+          ))}
+        </div>
+        <SectionSkeleton heightClass="h-[420px]" />
+        <div className="grid gap-4 lg:grid-cols-10">
+          <SectionSkeleton className="lg:col-span-4" />
+          <SectionSkeleton className="lg:col-span-3" />
+          <SectionSkeleton className="lg:col-span-3" />
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage && !dashboardData) {
+    return (
+      <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive">
+        {errorMessage}
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card p-6 text-sm text-muted-foreground">
+        Chưa có dữ liệu để hiển thị tổng quan.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {errorMessage && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+          {errorMessage}
+        </div>
+      )}
+
+      <DashboardHeader
+        systemStatusLabel={dashboardData.systemStatus.overallStatus}
+        generatedAtUtc={dashboardData.generatedAtUtc}
+        onRefresh={() => void loadDashboard(true)}
+        isRefreshing={isRefreshing}
+      />
+
+      <StatCards kpis={dashboardData.kpis} />
+      <RevenueOverview
+        revenue={dashboardData.revenue}
+        windowDays={dashboardData.windowDays}
+      />
+
+      <div className="grid gap-4 lg:grid-cols-10">
+        <UserGrowthChart
+          chartRange={chartRange}
+          onRangeChange={setChartRange}
+          data={dashboardData.series.userGrowth}
+        />
+        <TripActivityChart data={dashboardData.series.tripCreation} />
+        <TripCategoriesChart data={dashboardData.tripCategoryDistribution} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-12">
+        <TopDestinations data={dashboardData.topDestinations} />
+        <QuickActions />
+        <SystemStatus
+          data={dashboardData.systemStatus}
+          generatedAtUtc={dashboardData.generatedAtUtc}
+        />
+      </div>
+
+      <RecentActivity data={dashboardData.recentActivities} />
+    </div>
+  );
+}

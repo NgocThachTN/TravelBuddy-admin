@@ -49,6 +49,7 @@ export const API_ROUTES = {
   ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
   ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
   ADMIN_DASHBOARD_OVERVIEW: "/api/admin/dashboard/overview",
+  MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
   ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS:
@@ -58,6 +59,7 @@ export const API_ROUTES = {
   ADMIN_EXPENSE_CATEGORIES: "/api/admin/trip-metadata/expense-categories",
   ADMIN_TRIPS: "/api/admin/trips",
   ADMIN_TRIPS_DETAIL: (tripId: string) => `/api/admin/trips/${tripId}`,
+  ADMIN_TRIPS_OVERRIDE: (tripId: string) => `/api/admin/trips/${tripId}/override`,
   ADMIN_TRIP_MODERATION_TASKS: "/api/admin/moderation/trips/tasks",
   ADMIN_TRIP_MODERATION_TASK_DETAIL: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}`,

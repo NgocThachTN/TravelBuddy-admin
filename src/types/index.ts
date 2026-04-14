@@ -38,6 +38,8 @@ export type {
   DashboardRecentActivityItem,
   DashboardSystemStatus,
   DashboardOverviewData,
+  ModeratorDashboardKpis,
+  ModeratorDashboardOverviewData,
 } from "./dashboard";
 export type {
   TripTypeCategoryTypeCode,

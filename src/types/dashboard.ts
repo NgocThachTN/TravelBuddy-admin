@@ -78,3 +78,15 @@ export interface DashboardOverviewData {
   recentActivities: DashboardRecentActivityItem[];
   systemStatus: DashboardSystemStatus;
 }
+
+export interface ModeratorDashboardKpis {
+  totalTrips: number;
+  pendingTripApprovals: number;
+  approvedTrips: number;
+  rejectedTrips: number;
+}
+
+export interface ModeratorDashboardOverviewData {
+  generatedAtUtc: string;
+  kpis: ModeratorDashboardKpis;
+}

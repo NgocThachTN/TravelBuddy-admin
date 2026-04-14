@@ -374,6 +374,7 @@ export interface UpdateAdminTripPayload {
   minParticipants?: number;
   maxParticipants?: number;
   isApprovalMemberEnable?: boolean;
+  currentStatus?: TripStatusCode | number;
 }
 
 // ── Moderation ──
