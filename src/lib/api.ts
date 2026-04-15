@@ -55,6 +55,7 @@ import type {
   RejectWalletWithdrawalPayload,
   MyProfileData,
   DashboardOverviewData,
+  RescueCommissionRevenueData,
   ModeratorDashboardOverviewData,
 } from "@/types";
 
@@ -173,6 +174,17 @@ export async function fetchAdminDashboardOverview(
   const { data } = await api.get<BeWrapper<DashboardOverviewData>>(
     API_ROUTES.ADMIN_DASHBOARD_OVERVIEW,
     { params: { windowDays } },
+  );
+  return data;
+}
+
+export async function fetchAdminRescueCommissionRevenue(params: {
+  fromUtc: string;
+  toUtc: string;
+}): Promise<BeWrapper<RescueCommissionRevenueData>> {
+  const { data } = await api.get<BeWrapper<RescueCommissionRevenueData>>(
+    API_ROUTES.ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE,
+    { params },
   );
   return data;
 }

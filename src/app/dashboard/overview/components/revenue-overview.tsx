@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DashboardRevenue } from "@/types";
+import type { DashboardRevenue, RescueCommissionRevenueData } from "@/types";
 import { ChartTooltipContent, formatDayLabel } from "./shared";
 
 function formatCurrency(value: number) {
@@ -25,15 +25,28 @@ function formatCurrency(value: number) {
 
 export function RevenueOverview({
   revenue,
+  rescueCommission,
   windowDays,
 }: {
   revenue: DashboardRevenue;
+  rescueCommission?: RescueCommissionRevenueData | null;
   windowDays: number;
 }) {
+  const rescueCommissionByDay = new Map(
+    (rescueCommission?.daily ?? []).map((item) => [
+      formatDayLabel(item.dateUtc),
+      item.commissionRevenueVnd,
+    ]),
+  );
+  const rescueCommissionRevenueVnd =
+    rescueCommission?.totalCommissionRevenueVnd ?? 0;
+  const totalAdminCommissionRevenueVnd =
+    revenue.servicePartnerCommissionRevenueVnd + rescueCommissionRevenueVnd;
   const chartData = revenue.daily.map((item) => ({
     label: formatDayLabel(item.date),
     subscription: item.subscriptionTravelerRevenueVnd,
     commission: item.servicePartnerCommissionRevenueVnd,
+    rescueCommission: rescueCommissionByDay.get(formatDayLabel(item.date)) ?? 0,
     total: item.totalRevenueVnd,
   }));
 
@@ -47,7 +60,7 @@ export function RevenueOverview({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-1">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-lg bg-blue-50 px-4 py-3">
             <p className="text-[12px] text-blue-700/80">
               Gói đăng kí người dùng
@@ -64,10 +77,30 @@ export function RevenueOverview({
               {formatCurrency(revenue.servicePartnerCommissionRevenueVnd)}
             </p>
           </div>
+          <div className="rounded-lg bg-cyan-50 px-4 py-3">
+            <p className="text-[12px] text-cyan-700/80">Hoa hồng cứu hộ</p>
+            <p className="mt-1 text-[18px] font-semibold text-cyan-900">
+              {formatCurrency(rescueCommissionRevenueVnd)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-cyan-700/70">
+              {(rescueCommission?.totalCommissionChargedRequests ?? 0).toLocaleString(
+                "vi-VN",
+              )}{" "}
+              yêu cầu
+            </p>
+          </div>
           <div className="rounded-lg bg-amber-50 px-4 py-3">
             <p className="text-[12px] text-amber-700/80">Tổng doanh thu</p>
             <p className="mt-1 text-[18px] font-semibold text-amber-900">
               {formatCurrency(revenue.totalRevenueVnd)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-rose-50 px-4 py-3">
+            <p className="text-[12px] text-rose-700/80">
+              Tổng hoa hồng admin
+            </p>
+            <p className="mt-1 text-[18px] font-semibold text-rose-900">
+              {formatCurrency(totalAdminCommissionRevenueVnd)}
             </p>
           </div>
         </div>
@@ -95,6 +128,10 @@ export function RevenueOverview({
                 <span className="h-2 w-5 rounded-full bg-amber-500" />
                 <span className="text-muted-foreground">Tổng doanh thu</span>
               </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-[12px]">
+              <span className="h-2 w-5 rounded-full bg-cyan-500" />
+              <span className="text-muted-foreground">Hoa hồng cứu hộ</span>
             </div>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -130,6 +167,13 @@ export function RevenueOverview({
                     type="monotone"
                     dataKey="commission"
                     stroke="#10b981"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="rescueCommission"
+                    stroke="#06b6d4"
                     strokeWidth={2}
                     dot={false}
                   />

@@ -24,6 +24,8 @@ export const ROUTES = {
   TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
   TRANSACTIONS_WALLET_WITHDRAWALS: "/dashboard/transactions/wallet-withdrawals",
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
+  TRANSACTIONS_RESCUE_COMMISSION_REVENUE:
+    "/dashboard/transactions/rescue-commission-revenue",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
   SUBSCRIPTIONS_PARTNER_COMMISSIONS: "/dashboard/subscriptions/partner-commissions",
@@ -47,6 +49,8 @@ export const API_ROUTES = {
   ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
   ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
   ADMIN_DASHBOARD_OVERVIEW: "/api/admin/dashboard/overview",
+  ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE:
+    "/api/admin/dashboard/rescue-commission-revenue",
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",

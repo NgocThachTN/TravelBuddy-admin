@@ -40,6 +40,8 @@ export type {
   DashboardKpis,
   DashboardRevenueDailyPoint,
   DashboardRevenue,
+  RescueCommissionRevenueDailyPoint,
+  RescueCommissionRevenueData,
   DashboardUserGrowthPoint,
   DashboardTripCreationPoint,
   DashboardCategoryDistributionItem,

@@ -27,6 +27,20 @@ export interface DashboardRevenue {
   daily: DashboardRevenueDailyPoint[];
 }
 
+export interface RescueCommissionRevenueDailyPoint {
+  dateUtc: string;
+  commissionRevenueVnd: number;
+}
+
+export interface RescueCommissionRevenueData {
+  fromDateUtc: string;
+  toDateUtc: string;
+  generatedAtUtc: string;
+  totalCommissionRevenueVnd: number;
+  totalCommissionChargedRequests: number;
+  daily: RescueCommissionRevenueDailyPoint[];
+}
+
 export interface DashboardUserGrowthPoint {
   date: string;
   currentCount: number;

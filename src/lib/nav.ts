@@ -1,5 +1,6 @@
 import {
   CreditCard,
+  HandCoins,
   Handshake,
   LayoutDashboard,
   Map,
@@ -99,6 +100,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
         label: "Mua g\u00f3i ng\u01b0\u1eddi d\u00f9ng",
         href: ROUTES.TRANSACTIONS_USER_SUBSCRIPTIONS,
         icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Hoa h\u1ed3ng c\u1ee9u h\u1ed9",
+        href: ROUTES.TRANSACTIONS_RESCUE_COMMISSION_REVENUE,
+        icon: HandCoins,
         roles: ["ADMIN"],
       },
     ],
