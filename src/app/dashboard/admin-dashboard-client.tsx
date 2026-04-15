@@ -2,8 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import type { DashboardOverviewData, TimeRange } from "@/types";
-import { fetchAdminDashboardOverview } from "@/lib/api";
+import type {
+  DashboardOverviewData,
+  RescueCommissionRevenueData,
+  TimeRange,
+} from "@/types";
+import {
+  fetchAdminDashboardOverview,
+  fetchAdminRescueCommissionRevenue,
+} from "@/lib/api";
 import { mapRangeToWindowDays } from "./overview/components/shared";
 
 function SectionSkeleton({
@@ -113,11 +120,24 @@ const RecentActivity = dynamic(
   { ssr: false, loading: () => <SectionSkeleton heightClass="h-80" /> },
 );
 
+function getCommissionRange(windowDays: number) {
+  const toUtc = new Date();
+  const fromUtc = new Date(toUtc);
+  fromUtc.setUTCDate(fromUtc.getUTCDate() - windowDays);
+
+  return {
+    fromUtc: fromUtc.toISOString(),
+    toUtc: toUtc.toISOString(),
+  };
+}
+
 export default function DashboardPage() {
   const [chartRange, setChartRange] = useState<TimeRange>("30d");
   const [dashboardData, setDashboardData] = useState<DashboardOverviewData | null>(
     null,
   );
+  const [rescueCommissionData, setRescueCommissionData] =
+    useState<RescueCommissionRevenueData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,8 +153,12 @@ export default function DashboardPage() {
 
       try {
         const windowDays = mapRangeToWindowDays(chartRange);
-        const response = await fetchAdminDashboardOverview(windowDays);
-        setDashboardData(response.data);
+        const [overviewResponse, rescueCommissionResponse] = await Promise.all([
+          fetchAdminDashboardOverview(windowDays),
+          fetchAdminRescueCommissionRevenue(getCommissionRange(windowDays)),
+        ]);
+        setDashboardData(overviewResponse.data);
+        setRescueCommissionData(rescueCommissionResponse.data);
       } catch {
         setErrorMessage("Không thể tải dữ liệu dashboard. Vui lòng thử lại.");
       } finally {
@@ -202,6 +226,7 @@ export default function DashboardPage() {
       <StatCards kpis={dashboardData.kpis} />
       <RevenueOverview
         revenue={dashboardData.revenue}
+        rescueCommission={rescueCommissionData}
         windowDays={dashboardData.windowDays}
       />
 

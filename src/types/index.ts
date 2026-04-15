@@ -24,6 +24,15 @@ export type {
   AdminTransactionRecord,
   GetAdminTransactionsParams,
 } from "./transaction";
+export type {
+  AdminWalletWithdrawalStatus,
+  AdminWalletWithdrawalStatusFilter,
+  AdminWalletWithdrawalRecord,
+  GetAdminWalletWithdrawalsParams,
+  MarkWalletWithdrawalProcessingPayload,
+  ApproveWalletWithdrawalPayload,
+  RejectWalletWithdrawalPayload,
+} from "./wallet-withdrawal";
 export type { BePagedWrapper, BeWrapper } from "./api";
 export type { NavItem, NavGroup } from "./nav";
 export type {
@@ -31,6 +40,8 @@ export type {
   DashboardKpis,
   DashboardRevenueDailyPoint,
   DashboardRevenue,
+  RescueCommissionRevenueDailyPoint,
+  RescueCommissionRevenueData,
   DashboardUserGrowthPoint,
   DashboardTripCreationPoint,
   DashboardCategoryDistributionItem,
@@ -163,3 +174,17 @@ export type {
   UpdateAdminSystemRulePayload,
   AdminSystemRule,
 } from "./system-rule";
+export type {
+  RescueRequestStatus,
+  GetRescueRequestsParams,
+  RescueRequestListItem,
+  RescueRequestServiceItem,
+  RescueRequestDetail,
+} from "./rescue-request";
+export {
+  RESCUE_REQUEST_STATUSES,
+  RESCUE_REQUEST_STATUS_LABELS,
+  RESCUE_REQUEST_CANCEL_REASON_LABELS,
+  RESCUE_REQUEST_REJECT_REASON_LABELS,
+  rescueRequestStatusLabel,
+} from "./rescue-request";

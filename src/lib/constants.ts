@@ -13,6 +13,8 @@ export const ROUTES = {
   ACTIVE_PARTNERS: "/dashboard/partners/active",
   ACTIVE_PARTNERS_DETAIL: (id: string) => `/dashboard/partners/active/${id}`,
   MODERATION: "/dashboard/moderation",
+  RESCUE_REQUESTS: "/dashboard/rescue-requests",
+  RESCUE_REQUESTS_DETAIL: (id: string) => `/dashboard/rescue-requests/${id}`,
   MODERATION_REPORTS: "/dashboard/moderation-reports",
   MODERATION_MY_REPORTS: "/dashboard/moderation-reports/my-reports",
   MODERATION_REPORTS_BY_TYPE: (targetType?: string) =>
@@ -22,7 +24,10 @@ export const ROUTES = {
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
   TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
+  TRANSACTIONS_WALLET_WITHDRAWALS: "/dashboard/transactions/wallet-withdrawals",
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
+  TRANSACTIONS_RESCUE_COMMISSION_REVENUE:
+    "/dashboard/transactions/rescue-commission-revenue",
   SUBSCRIPTIONS: "/dashboard/subscriptions",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
   SUBSCRIPTIONS_PARTNER_COMMISSIONS: "/dashboard/subscriptions/partner-commissions",
@@ -46,9 +51,18 @@ export const API_ROUTES = {
   ADMIN_USERS_UNLOCK: (userId: string) => `/api/admin/users/${userId}/unlock`,
   ADMIN_USERS_MODERATORS: "/api/admin/users/moderators",
   ADMIN_DASHBOARD_OVERVIEW: "/api/admin/dashboard/overview",
+  ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE:
+    "/api/admin/dashboard/rescue-commission-revenue",
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
+  ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE: "/api/admin/wallet-withdrawals/work-queue",
+  ADMIN_WALLET_WITHDRAWALS_PROCESSING: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/processing`,
+  ADMIN_WALLET_WITHDRAWALS_APPROVE: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/approve`,
+  ADMIN_WALLET_WITHDRAWALS_REJECT: (withdrawalId: string) =>
+    `/api/admin/wallet-withdrawals/${withdrawalId}/reject`,
   ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS:
     "/api/admin/transactions/user-subscriptions",
   ADMIN_TRIP_TYPE_CATEGORIES: "/api/admin/trip-metadata/trip-type-categories",
@@ -62,6 +76,8 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  RESCUE_REQUESTS: "/api/rescue-requests",
+  RESCUE_REQUESTS_DETAIL: (id: string) => `/api/rescue-requests/${id}`,
   ADMIN_REPORTS: "/api/admin/reports",
   ADMIN_REPORTS_DETAIL: (reportId: string) => `/api/admin/reports/${reportId}`,
   ADMIN_REPORTS_PROCESS: (reportId: string) =>

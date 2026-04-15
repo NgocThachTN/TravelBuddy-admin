@@ -48,9 +48,18 @@ import type {
   GetServicePartnerFeesParams,
   GetAdminTransactionsParams,
   AdminTransactionRecord,
+  AdminWalletWithdrawalRecord,
+  GetAdminWalletWithdrawalsParams,
+  MarkWalletWithdrawalProcessingPayload,
+  ApproveWalletWithdrawalPayload,
+  RejectWalletWithdrawalPayload,
   MyProfileData,
   DashboardOverviewData,
+  RescueCommissionRevenueData,
   ModeratorDashboardOverviewData,
+  GetRescueRequestsParams,
+  RescueRequestListItem,
+  RescueRequestDetail,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -66,6 +75,11 @@ export type {
   UpdateSubscriptionPackagePayload,
   GetAdminTransactionsParams,
   AdminTransactionRecord,
+  AdminWalletWithdrawalRecord,
+  GetAdminWalletWithdrawalsParams,
+  MarkWalletWithdrawalProcessingPayload,
+  ApproveWalletWithdrawalPayload,
+  RejectWalletWithdrawalPayload,
 } from "@/types";
 // Backward-compat alias
 export type { UserListItem as User } from "@/types";
@@ -167,6 +181,17 @@ export async function fetchAdminDashboardOverview(
   return data;
 }
 
+export async function fetchAdminRescueCommissionRevenue(params: {
+  fromUtc: string;
+  toUtc: string;
+}): Promise<BeWrapper<RescueCommissionRevenueData>> {
+  const { data } = await api.get<BeWrapper<RescueCommissionRevenueData>>(
+    API_ROUTES.ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE,
+    { params },
+  );
+  return data;
+}
+
 export async function fetchModeratorDashboardOverview(): Promise<
   BeWrapper<ModeratorDashboardOverviewData>
 > {
@@ -231,6 +256,49 @@ export async function fetchAdminUserSubscriptionTransactions(
   const { data } = await api.get<BePagedWrapper<AdminTransactionRecord>>(
     API_ROUTES.ADMIN_TRANSACTIONS_USER_SUBSCRIPTIONS,
     { params },
+  );
+  return data;
+}
+
+export async function fetchAdminWalletWithdrawalWorkQueue(
+  params: GetAdminWalletWithdrawalsParams = {},
+): Promise<BePagedWrapper<AdminWalletWithdrawalRecord>> {
+  const { data } = await api.get<BePagedWrapper<AdminWalletWithdrawalRecord>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE,
+    { params },
+  );
+  return data;
+}
+
+export async function markAdminWalletWithdrawalProcessing(
+  withdrawalId: string,
+  payload: MarkWalletWithdrawalProcessingPayload = {},
+): Promise<BeWrapper<AdminWalletWithdrawalRecord>> {
+  const { data } = await api.post<BeWrapper<AdminWalletWithdrawalRecord>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_PROCESSING(withdrawalId),
+    payload,
+  );
+  return data;
+}
+
+export async function approveAdminWalletWithdrawal(
+  withdrawalId: string,
+  payload: ApproveWalletWithdrawalPayload,
+): Promise<BeWrapper<AdminWalletWithdrawalRecord>> {
+  const { data } = await api.post<BeWrapper<AdminWalletWithdrawalRecord>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_APPROVE(withdrawalId),
+    payload,
+  );
+  return data;
+}
+
+export async function rejectAdminWalletWithdrawal(
+  withdrawalId: string,
+  payload: RejectWalletWithdrawalPayload,
+): Promise<BeWrapper<AdminWalletWithdrawalRecord>> {
+  const { data } = await api.post<BeWrapper<AdminWalletWithdrawalRecord>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_REJECT(withdrawalId),
+    payload,
   );
   return data;
 }
@@ -391,6 +459,29 @@ export async function reviewTrip(
 
 export async function deleteTrip(tripId: string): Promise<void> {
   await api.delete(API_ROUTES.ADMIN_TRIPS_DETAIL(tripId));
+}
+
+export async function fetchRescueRequests(
+  params: GetRescueRequestsParams = {},
+): Promise<BePagedWrapper<RescueRequestListItem>> {
+  const normalizedParams = {
+    ...params,
+    status: params.status === "all" ? undefined : params.status,
+  };
+  const { data } = await api.get<BePagedWrapper<RescueRequestListItem>>(
+    API_ROUTES.RESCUE_REQUESTS,
+    { params: normalizedParams },
+  );
+  return data;
+}
+
+export async function fetchRescueRequestById(
+  id: string,
+): Promise<BeWrapper<RescueRequestDetail>> {
+  const { data } = await api.get<BeWrapper<RescueRequestDetail>>(
+    API_ROUTES.RESCUE_REQUESTS_DETAIL(id),
+  );
+  return data;
 }
 
 function normalizeReportListItem(report: ReportListItem): ReportListItem {
