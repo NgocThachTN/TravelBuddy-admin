@@ -693,15 +693,56 @@ export default function TripModerationTaskTable() {
     [detailTrip],
   );
 
-  const tripLevelExpenses = useMemo(
-    () => (detailTrip?.expenseCategories ?? []).filter((expense) => !expense.tripCheckpointId),
-    [detailTrip],
-  );
+  const groupedExpenseItems = useMemo(() => {
+    const fromBe = detailTrip?.estimatedCostBreakdowns ?? [];
+    if (fromBe.length > 0) {
+      return fromBe;
+    }
 
-  const totalEstimatedCost = useMemo(
-    () => (detailTrip?.expenseCategories ?? []).reduce((sum, expense) => sum + (expense.estimatedCost ?? 0), 0),
-    [detailTrip],
-  );
+    const rawExpenses = [
+      ...(detailTrip?.expenseCategories ?? []),
+      ...((detailTrip?.checkpoints ?? []).flatMap((checkpoint) => checkpoint.costs ?? [])),
+    ];
+
+    const seenExpenseKeys = new Set<string>();
+    const groupedMap = new Map<string, number>();
+
+    for (const expense of rawExpenses) {
+      const dedupeKey = expense.tripExpenseCategoryId
+        ? `id:${expense.tripExpenseCategoryId}`
+        : `fallback:${expense.expenseType ?? "Other"}:${expense.tripCheckpointId ?? "trip"}:${expense.estimatedCost ?? 0}:${expense.note ?? ""}:${expense.isRequired}`;
+      if (seenExpenseKeys.has(dedupeKey)) {
+        continue;
+      }
+
+      seenExpenseKeys.add(dedupeKey);
+
+      const expenseType = expense.expenseType?.trim() || "Other";
+      const estimatedCost = Number.isFinite(expense.estimatedCost ?? NaN) ? (expense.estimatedCost ?? 0) : 0;
+      const currentTotal = groupedMap.get(expenseType) ?? 0;
+      groupedMap.set(expenseType, currentTotal + estimatedCost);
+    }
+
+    return Array.from(groupedMap.entries())
+      .map(([expenseType, totalAmount]) => ({ expenseType, totalAmount }))
+      .sort((left, right) => {
+        if (right.totalAmount !== left.totalAmount) {
+          return right.totalAmount - left.totalAmount;
+        }
+        return left.expenseType.localeCompare(right.expenseType);
+      });
+  }, [detailTrip?.checkpoints, detailTrip?.estimatedCostBreakdowns, detailTrip?.expenseCategories]);
+
+  const totalEstimatedCost = useMemo(() => {
+    if (
+      typeof detailTrip?.totalEstimatedCost === "number"
+      && Number.isFinite(detailTrip.totalEstimatedCost)
+    ) {
+      return detailTrip.totalEstimatedCost;
+    }
+
+    return groupedExpenseItems.reduce((sum, item) => sum + item.totalAmount, 0);
+  }, [detailTrip?.totalEstimatedCost, groupedExpenseItems]);
 
   const canReviewInPopup = useMemo(
     () => Boolean(selectedTask && detailTrip && isTaskActionable(selectedTask.status)),
@@ -1051,7 +1092,7 @@ export default function TripModerationTaskTable() {
                         <div className="flex justify-between"><span>Số người tham gia</span><span className="text-foreground font-medium">{detailTrip?.participantCount || 0}</span></div>
                         <div className="flex justify-between"><span>Tối thiểu</span><span className="text-foreground font-medium">{detailTrip?.minParticipants || 0}</span></div>
                         <div className="flex justify-between"><span>Tối đa</span><span className="text-foreground font-medium">{detailTrip?.maxParticipants || 0}</span></div>
-<div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center">
                           <span>Trạng thái quét</span>
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-xs font-bold border", 
@@ -1103,18 +1144,21 @@ export default function TripModerationTaskTable() {
                               </div>
                           </div>
                           <div>
-                              <h4 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">Chi phí cấp chuyến</h4>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">Tổng chi phí dự kiến</h4>
                               <div className="space-y-3">
-                                  {(detailTrip.expenseCategories && detailTrip.expenseCategories.filter((e: any) => e.tripCheckpointId == null).length > 0) ? 
-                                  detailTrip.expenseCategories.filter((e: any) => e.tripCheckpointId == null).map((exp: any) => (
-                                      <div key={exp.tripExpenseCategoryId} className="flex flex-col gap-1 text-sm border-l-2 pl-3 border-slate-200">
+                                  <div className="flex justify-between items-center text-sm border-l-2 pl-3 border-slate-300">
+                                    <span className="font-semibold text-foreground">Tổng cộng</span>
+                                    <span className="font-bold text-emerald-600">{formatVnd(totalEstimatedCost)}</span>
+                                  </div>
+                                  {groupedExpenseItems.length > 0 ? 
+                                  groupedExpenseItems.map((item) => (
+                                      <div key={item.expenseType} className="flex flex-col gap-1 text-sm border-l-2 pl-3 border-slate-200">
                                           <div className="flex justify-between items-center">
-                                            <span className="font-medium text-foreground">{translateExpenseType(exp.expenseType)}</span>
-                                            <span className="font-bold text-emerald-600">{formatVnd(exp.estimatedCost)}</span>
+                                            <span className="font-medium text-foreground">{translateExpenseType(item.expenseType)}</span>
+                                            <span className="font-bold text-emerald-600">{formatVnd(item.totalAmount)}</span>
                                           </div>
-                                          {exp.note && <span className="text-xs text-muted-foreground">{exp.note}</span>}
                                       </div>
-                                  )) : <span className="text-sm text-muted-foreground italic">Không có phí</span>}
+                                  )) : <span className="text-sm text-muted-foreground italic">Không có chi phí dự kiến.</span>}
                               </div>
                           </div>
                       </div>

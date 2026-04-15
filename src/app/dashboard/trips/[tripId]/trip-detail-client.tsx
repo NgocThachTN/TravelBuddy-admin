@@ -577,15 +577,56 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
     [trip?.mediaAttachments],
   );
 
-  const tripLevelExpenses = useMemo(
-    () => (trip?.expenseCategories ?? []).filter((expense) => !expense.tripCheckpointId),
-    [trip?.expenseCategories],
-  );
+  const groupedExpenseItems = useMemo(() => {
+    const fromBe = trip?.estimatedCostBreakdowns ?? [];
+    if (fromBe.length > 0) {
+      return fromBe;
+    }
 
-  const totalEstimatedCost = useMemo(
-    () => (trip?.expenseCategories ?? []).reduce((sum, expense) => sum + (expense.estimatedCost ?? 0), 0),
-    [trip?.expenseCategories],
-  );
+    const rawExpenses = [
+      ...(trip?.expenseCategories ?? []),
+      ...((trip?.checkpoints ?? []).flatMap((checkpoint) => checkpoint.costs ?? [])),
+    ];
+
+    const seenExpenseKeys = new Set<string>();
+    const groupedMap = new globalThis.Map<string, number>();
+
+    for (const expense of rawExpenses) {
+      const dedupeKey = expense.tripExpenseCategoryId
+        ? `id:${expense.tripExpenseCategoryId}`
+        : `fallback:${expense.expenseType ?? "Other"}:${expense.tripCheckpointId ?? "trip"}:${expense.estimatedCost ?? 0}:${expense.note ?? ""}:${expense.isRequired}`;
+      if (seenExpenseKeys.has(dedupeKey)) {
+        continue;
+      }
+
+      seenExpenseKeys.add(dedupeKey);
+
+      const expenseType = expense.expenseType?.trim() || "Other";
+      const estimatedCost = Number.isFinite(expense.estimatedCost ?? NaN) ? (expense.estimatedCost ?? 0) : 0;
+      const currentTotal = groupedMap.get(expenseType) ?? 0;
+      groupedMap.set(expenseType, currentTotal + estimatedCost);
+    }
+
+    return Array.from(groupedMap.entries())
+      .map(([expenseType, totalAmount]) => ({ expenseType, totalAmount }))
+      .sort((left, right) => {
+        if (right.totalAmount !== left.totalAmount) {
+          return right.totalAmount - left.totalAmount;
+        }
+        return left.expenseType.localeCompare(right.expenseType);
+      });
+  }, [trip?.checkpoints, trip?.estimatedCostBreakdowns, trip?.expenseCategories]);
+
+  const totalEstimatedCost = useMemo(() => {
+    if (
+      typeof trip?.totalEstimatedCost === "number"
+      && Number.isFinite(trip.totalEstimatedCost)
+    ) {
+      return trip.totalEstimatedCost;
+    }
+
+    return groupedExpenseItems.reduce((sum, item) => sum + item.totalAmount, 0);
+  }, [groupedExpenseItems, trip?.totalEstimatedCost]);
 
   async function handleDecisionConfirm(note: string) {
     if (!decision || !trip || !taskId) return;
@@ -928,18 +969,18 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
               <div className="mb-2 flex items-center justify-between">
                 <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <Wallet className="h-3.5 w-3.5" />
-                  Chi phí dự kiến
+                  Tổng chi phí dự kiến
                 </p>
                 <span className="text-sm font-semibold">{formatVnd(totalEstimatedCost)}</span>
               </div>
-              {tripLevelExpenses.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Không có chi phí cấp chuyến.</p>
+              {groupedExpenseItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Không có chi phí dự kiến.</p>
               ) : (
                 <div className="space-y-1.5">
-                  {tripLevelExpenses.map((expense) => (
-                    <div key={expense.tripExpenseCategoryId} className="flex items-center justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">{expenseTypeLabelVi(expense.expenseType)}</span>
-                      <span className="font-medium">{formatVnd(expense.estimatedCost)}</span>
+                  {groupedExpenseItems.map((item) => (
+                    <div key={item.expenseType} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">{expenseTypeLabelVi(item.expenseType)}</span>
+                      <span className="font-medium">{formatVnd(item.totalAmount)}</span>
                     </div>
                   ))}
                 </div>

@@ -279,6 +279,11 @@ export interface TripExpenseCategory {
   isRequired: boolean;
 }
 
+export interface TripEstimatedCostBreakdown {
+  expenseType: string;
+  totalAmount: number;
+}
+
 export interface TripCheckpoint {
   tripCheckpointId: string;
   lat: number;
@@ -340,6 +345,8 @@ export interface TripDetail {
   scanStatus: number | ContentScanStatusCode | null;
   publishedAt: string | null;
   qualityScore: number | null;
+  totalEstimatedCost?: number | null;
+  estimatedCostBreakdowns?: TripEstimatedCostBreakdown[];
   createdAt: string;
   participantCount: number;
   owner: TripOwner | null;
