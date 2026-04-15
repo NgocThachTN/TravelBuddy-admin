@@ -196,7 +196,7 @@ export default function RescueCommissionRevenuePage() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Chi tiết hoa hồng partner cứu hộ
+            Chi tiết hoa hồng bên dịch vụ cứu hộ
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Theo dõi doanh thu hoa hồng từ các yêu cầu cứu hộ đã hoàn tất
@@ -297,9 +297,6 @@ export default function RescueCommissionRevenuePage() {
           <CardTitle className="text-sm font-medium">
             Biểu đồ hoa hồng theo ngày
           </CardTitle>
-          <CardDescription className="text-[13px]">
-            Nguồn dữ liệu từ /api/v1/admin/dashboard/rescue-commission-revenue
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (

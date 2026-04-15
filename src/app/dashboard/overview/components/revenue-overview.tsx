@@ -45,9 +45,7 @@ export function RevenueOverview({
   const chartData = revenue.daily.map((item) => ({
     label: formatDayLabel(item.date),
     subscription: item.subscriptionTravelerRevenueVnd,
-    commission: item.servicePartnerCommissionRevenueVnd,
     rescueCommission: rescueCommissionByDay.get(formatDayLabel(item.date)) ?? 0,
-    total: item.totalRevenueVnd,
   }));
 
   return (
@@ -55,26 +53,17 @@ export function RevenueOverview({
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">Doanh thu</CardTitle>
         <CardDescription className="text-[13px]">
-          Gói đăng kí người dùng và Hoa hồng đối tác trong {windowDays}{" "}
-          ngày
+          Gói đăng kí người dùng và Hoa hồng cứu hộ trong {windowDays} ngày
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-1">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-lg bg-blue-50 px-4 py-3">
             <p className="text-[12px] text-blue-700/80">
               Gói đăng kí người dùng
             </p>
             <p className="mt-1 text-[18px] font-semibold text-blue-900">
               {formatCurrency(revenue.subscriptionTravelerRevenueVnd)}
-            </p>
-          </div>
-          <div className="rounded-lg bg-emerald-50 px-4 py-3">
-            <p className="text-[12px] text-emerald-700/80">
-              Hoa hồng đối tác
-            </p>
-            <p className="mt-1 text-[18px] font-semibold text-emerald-900">
-              {formatCurrency(revenue.servicePartnerCommissionRevenueVnd)}
             </p>
           </div>
           <div className="rounded-lg bg-cyan-50 px-4 py-3">
@@ -87,12 +76,6 @@ export function RevenueOverview({
                 "vi-VN",
               )}{" "}
               yêu cầu
-            </p>
-          </div>
-          <div className="rounded-lg bg-amber-50 px-4 py-3">
-            <p className="text-[12px] text-amber-700/80">Tổng doanh thu</p>
-            <p className="mt-1 text-[18px] font-semibold text-amber-900">
-              {formatCurrency(revenue.totalRevenueVnd)}
             </p>
           </div>
           <div className="rounded-lg bg-rose-50 px-4 py-3">
@@ -119,19 +102,9 @@ export function RevenueOverview({
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="h-2 w-5 rounded-full bg-emerald-500" />
-                <span className="text-muted-foreground">
-                  Hoa hồng đối tác
-                </span>
+                <span className="h-2 w-5 rounded-full bg-cyan-500" />
+                <span className="text-muted-foreground">Hoa hồng cứu hộ</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-5 rounded-full bg-amber-500" />
-                <span className="text-muted-foreground">Tổng doanh thu</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <span className="h-2 w-5 rounded-full bg-cyan-500" />
-              <span className="text-muted-foreground">Hoa hồng cứu hộ</span>
             </div>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -165,23 +138,9 @@ export function RevenueOverview({
                   />
                   <Line
                     type="monotone"
-                    dataKey="commission"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
                     dataKey="rescueCommission"
                     stroke="#06b6d4"
                     strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#f59e0b"
-                    strokeWidth={2.2}
                     dot={false}
                   />
                 </LineChart>

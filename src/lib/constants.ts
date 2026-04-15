@@ -13,6 +13,8 @@ export const ROUTES = {
   ACTIVE_PARTNERS: "/dashboard/partners/active",
   ACTIVE_PARTNERS_DETAIL: (id: string) => `/dashboard/partners/active/${id}`,
   MODERATION: "/dashboard/moderation",
+  RESCUE_REQUESTS: "/dashboard/rescue-requests",
+  RESCUE_REQUESTS_DETAIL: (id: string) => `/dashboard/rescue-requests/${id}`,
   MODERATION_REPORTS: "/dashboard/moderation-reports",
   MODERATION_MY_REPORTS: "/dashboard/moderation-reports/my-reports",
   MODERATION_REPORTS_BY_TYPE: (targetType?: string) =>
@@ -74,6 +76,8 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  RESCUE_REQUESTS: "/api/rescue-requests",
+  RESCUE_REQUESTS_DETAIL: (id: string) => `/api/rescue-requests/${id}`,
   ADMIN_REPORTS: "/api/admin/reports",
   ADMIN_REPORTS_DETAIL: (reportId: string) => `/api/admin/reports/${reportId}`,
   ADMIN_REPORTS_PROCESS: (reportId: string) =>

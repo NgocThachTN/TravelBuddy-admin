@@ -174,3 +174,17 @@ export type {
   UpdateAdminSystemRulePayload,
   AdminSystemRule,
 } from "./system-rule";
+export type {
+  RescueRequestStatus,
+  GetRescueRequestsParams,
+  RescueRequestListItem,
+  RescueRequestServiceItem,
+  RescueRequestDetail,
+} from "./rescue-request";
+export {
+  RESCUE_REQUEST_STATUSES,
+  RESCUE_REQUEST_STATUS_LABELS,
+  RESCUE_REQUEST_CANCEL_REASON_LABELS,
+  RESCUE_REQUEST_REJECT_REASON_LABELS,
+  rescueRequestStatusLabel,
+} from "./rescue-request";

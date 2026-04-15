@@ -57,6 +57,9 @@ import type {
   DashboardOverviewData,
   RescueCommissionRevenueData,
   ModeratorDashboardOverviewData,
+  GetRescueRequestsParams,
+  RescueRequestListItem,
+  RescueRequestDetail,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -456,6 +459,29 @@ export async function reviewTrip(
 
 export async function deleteTrip(tripId: string): Promise<void> {
   await api.delete(API_ROUTES.ADMIN_TRIPS_DETAIL(tripId));
+}
+
+export async function fetchRescueRequests(
+  params: GetRescueRequestsParams = {},
+): Promise<BePagedWrapper<RescueRequestListItem>> {
+  const normalizedParams = {
+    ...params,
+    status: params.status === "all" ? undefined : params.status,
+  };
+  const { data } = await api.get<BePagedWrapper<RescueRequestListItem>>(
+    API_ROUTES.RESCUE_REQUESTS,
+    { params: normalizedParams },
+  );
+  return data;
+}
+
+export async function fetchRescueRequestById(
+  id: string,
+): Promise<BeWrapper<RescueRequestDetail>> {
+  const { data } = await api.get<BeWrapper<RescueRequestDetail>>(
+    API_ROUTES.RESCUE_REQUESTS_DETAIL(id),
+  );
+  return data;
 }
 
 function normalizeReportListItem(report: ReportListItem): ReportListItem {

@@ -6,6 +6,7 @@ import {
   Map,
   Megaphone,
   Package,
+  Siren,
   ScrollText,
   Settings,
   Shield,
@@ -103,7 +104,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
         roles: ["ADMIN"],
       },
       {
-        label: "Hoa h\u1ed3ng c\u1ee9u h\u1ed9",
+        label: "Chi ti\u1ebft hoa h\u1ed3ng",
         href: ROUTES.TRANSACTIONS_RESCUE_COMMISSION_REVENUE,
         icon: HandCoins,
         roles: ["ADMIN"],
@@ -135,6 +136,12 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
     label: "Ki\u1ec3m duy\u1ec7t",
     href: ROUTES.MODERATION,
     icon: Shield,
+    roles: ["MODERATOR"],
+  },
+  {
+    label: "\u0110\u01a1n c\u1ee9u h\u1ed9",
+    href: ROUTES.RESCUE_REQUESTS,
+    icon: Siren,
     roles: ["MODERATOR"],
   },
   {
