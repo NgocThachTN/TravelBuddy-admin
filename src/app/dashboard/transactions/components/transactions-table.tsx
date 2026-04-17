@@ -16,6 +16,12 @@ import PaginationControl from "@/components/pagination-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -53,9 +59,13 @@ interface ParsedPagedResponse {
 interface NormalizedTransaction {
   key: string;
   transactionCode: string;
+  walletId: string;
+  userId: string;
   userName: string;
   userContact: string;
   amount: number | null;
+  balanceBefore: number | null;
+  balanceAfter: number | null;
   currency: string;
   status: string;
   paymentSource: string;
@@ -218,6 +228,7 @@ function normalizeTransaction(
 ): NormalizedTransaction {
   const order = readRecord(item, ["billingOrder", "order"]);
   const user = readRecord(item, ["user", "payer", "owner", "customer", "account"]);
+  const wallet = readRecord(item, ["wallet", "walletInfo", "userWallet"]);
 
   const firstName =
     readString(user, ["firstName", "givenName"])
@@ -250,12 +261,42 @@ function normalizeTransaction(
     ?? readString(item, ["userEmail", "payerEmail", "email", "userPhone", "phoneNumber"])
     ?? "-";
 
+  const userId =
+    readString(item, ["userId", "userID", "user_id"])
+    ?? readString(user, ["userId", "id"])
+    ?? "-";
+
+  const walletId =
+    readString(item, ["walletId", "walletID", "wallet_id"])
+    ?? readString(wallet, ["walletId", "id"])
+    ?? "-";
+
   const amount =
     readNumber(item, ["amount", "totalAmount", "amountPaid", "grossAmount", "price"])
-    ?? readNumber(order, ["amount", "totalAmount", "amountPaid", "price"]);
+    ?? readNumber(order, ["amount", "totalAmount", "amountPaid", "price"])
+    ?? readNumber(wallet, ["deltaAvailable", "amount"]);
+  const balanceBefore =
+    readNumber(item, [
+      "balanceBefore",
+      "oldBalance",
+      "previousBalance",
+      "availableBalanceBefore",
+      "beforeBalance",
+    ])
+    ?? readNumber(wallet, ["balanceBefore", "oldBalance", "balanceAvailableBefore"]);
+  const balanceAfter =
+    readNumber(item, [
+      "balanceAfter",
+      "newBalance",
+      "currentBalance",
+      "availableBalanceAfter",
+      "afterBalance",
+    ])
+    ?? readNumber(wallet, ["balanceAfter", "newBalance", "balanceAvailableAfter", "balanceAvailable"]);
   const currency =
     readString(item, ["currency", "amountCurrency", "paymentCurrency"])
     ?? readString(order, ["currency", "amountCurrency"])
+    ?? readString(wallet, ["currency"])
     ?? "VND";
 
   const status =
@@ -286,9 +327,13 @@ function normalizeTransaction(
   return {
     key: `${transactionCode}-${createdAt}-${index}`,
     transactionCode,
+    walletId,
+    userId,
     userName,
     userContact,
     amount,
+    balanceBefore,
+    balanceAfter,
     currency,
     status,
     paymentSource,
@@ -310,6 +355,8 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [packageFilter, setPackageFilter] = useState("");
+  const [selectedDepositTransaction, setSelectedDepositTransaction] =
+    useState<NormalizedTransaction | null>(null);
   const requestIdRef = useRef(0);
 
   const headerTitle =
@@ -328,6 +375,12 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
     const timer = setTimeout(() => setDebouncedSearchText(searchText.trim()), 350);
     return () => clearTimeout(timer);
   }, [searchText]);
+
+  useEffect(() => {
+    if (mode !== "deposits") {
+      setSelectedDepositTransaction(null);
+    }
+  }, [mode]);
 
   useEffect(() => {
     setPage(1);
@@ -387,6 +440,15 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
     void loadTransactions(page, debouncedSearchText, statusFilter, packageFilter);
   }, [page, debouncedSearchText, statusFilter, packageFilter, loadTransactions]);
 
+  useEffect(() => {
+    if (!selectedDepositTransaction) return;
+
+    const existed = rows.some((row) => row.key === selectedDepositTransaction.key);
+    if (!existed) {
+      setSelectedDepositTransaction(null);
+    }
+  }, [rows, selectedDepositTransaction]);
+
   if (isInitialLoading) {
     return (
       <Card className="overflow-hidden py-0">
@@ -425,9 +487,97 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
     );
   }
 
+  const selectedStatusMeta = selectedDepositTransaction
+    ? normalizeStatus(selectedDepositTransaction.status)
+    : null;
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <>
+      <Dialog
+        open={mode === "deposits" && Boolean(selectedDepositTransaction)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedDepositTransaction(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Chi tiết giao dịch nạp tiền</DialogTitle>
+          </DialogHeader>
+
+          {selectedDepositTransaction && selectedStatusMeta && (
+            <div className="space-y-4 text-sm">
+              <div className="space-y-1 rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Mã giao dịch</p>
+                <p className="break-all font-medium">{selectedDepositTransaction.transactionCode}</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1 rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Ví của User nào</p>
+                  <p className="font-medium">{selectedDepositTransaction.userName}</p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    {selectedDepositTransaction.userContact}
+                  </p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    User ID: {selectedDepositTransaction.userId}
+                  </p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    Wallet ID: {selectedDepositTransaction.walletId}
+                  </p>
+                </div>
+
+                <div className="space-y-2 rounded-lg border p-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Trạng thái</p>
+                    <Badge className={cn("mt-1 rounded-full px-2.5 text-[11px]", selectedStatusMeta.className)}>
+                      {selectedStatusMeta.label}
+                    </Badge>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ngày giờ giao dịch</p>
+                    <p className="font-medium">{formatDateTime(selectedDepositTransaction.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Số dư cũ</p>
+                  <p className="mt-1 font-semibold">
+                    {formatMoney(
+                      selectedDepositTransaction.balanceBefore,
+                      selectedDepositTransaction.currency,
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Số tiền nạp</p>
+                  <p className="mt-1 font-semibold text-emerald-700">
+                    {formatMoney(selectedDepositTransaction.amount, selectedDepositTransaction.currency)}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Số dư mới</p>
+                  <p className="mt-1 font-semibold">
+                    {formatMoney(
+                      selectedDepositTransaction.balanceAfter,
+                      selectedDepositTransaction.currency,
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="border border-border/50 shadow-none py-0">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Tổng giao dịch</p>
@@ -535,7 +685,8 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                     <TableHead className="text-right">Số tiền</TableHead>
                     <TableHead className="text-center">Trạng thái</TableHead>
                     <TableHead>Nguồn thanh toán</TableHead>
-                    <TableHead className="pr-5">Thời gian</TableHead>
+                    <TableHead className={mode === "deposits" ? "" : "pr-5"}>Thời gian</TableHead>
+                    {mode === "deposits" && <TableHead className="pr-5 text-right">Thao tác</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -576,9 +727,21 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                           <p className="truncate text-sm">{row.paymentSource}</p>
                         </TableCell>
 
-                        <TableCell className="pr-5 text-sm text-muted-foreground">
+                        <TableCell className={cn("text-sm text-muted-foreground", mode !== "deposits" && "pr-5")}>
                           {formatDateTime(row.createdAt)}
                         </TableCell>
+
+                        {mode === "deposits" && (
+                          <TableCell className="pr-5 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedDepositTransaction(row)}
+                            >
+                              Xem chi tiết
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -594,8 +757,9 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
             />
           </>
         )}
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </>
   );
 }
 
