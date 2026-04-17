@@ -20,6 +20,7 @@ import {
   MapPin,
   Users,
   Sparkles,
+  Images,
   DollarSign,
   Calendar,
   FileText,
@@ -42,7 +43,11 @@ const defaultForm: CreateSubscriptionPackagePayload = {
   tripCreateLimit: 0,
   tripParticipantLimit: 0,
   aiUsageLimit: 0,
+  memoryPhotoUploadLimit: 1000,
 };
+
+const FREE_MEMORY_PHOTO_LIMIT = 100;
+const PAID_MEMORY_PHOTO_LIMIT = 1000;
 
 function toSafeNumber(raw: string) {
   const num = Number(raw);
@@ -74,6 +79,7 @@ export default function SubscriptionForm({
         tripCreateLimit: editingPackage.tripCreateLimit,
         tripParticipantLimit: editingPackage.tripParticipantLimit,
         aiUsageLimit: editingPackage.aiUsageLimit,
+        memoryPhotoUploadLimit: editingPackage.memoryPhotoUploadLimit,
       });
     } else {
       setForm(defaultForm);
@@ -100,6 +106,9 @@ export default function SubscriptionForm({
       isDefaultFree: checked,
       price: checked ? 0 : prev.price,
       isEnabled: checked ? true : prev.isEnabled,
+      memoryPhotoUploadLimit: checked
+        ? FREE_MEMORY_PHOTO_LIMIT
+        : Math.max(prev.memoryPhotoUploadLimit, PAID_MEMORY_PHOTO_LIMIT),
     }));
   }
 
@@ -119,6 +128,11 @@ export default function SubscriptionForm({
 
     if (form.tripCreateLimit < 0 || form.tripParticipantLimit < 0 || form.aiUsageLimit < 0) {
       setError("Các giới hạn không được âm.");
+      return;
+    }
+
+    if (form.memoryPhotoUploadLimit <= 0) {
+      setError("Giới hạn ảnh kỷ niệm phải lớn hơn 0.");
       return;
     }
 
@@ -259,9 +273,11 @@ export default function SubscriptionForm({
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Giới hạn sử dụng
             </p>
-            <p className="text-[11px] text-muted-foreground/70 -mt-2">Nhập 0 để không giới hạn</p>
+            <p className="text-[11px] text-muted-foreground/70 -mt-2">
+              Nhập 0 cho tạo trip, người tham gia và AI để không giới hạn. Ảnh kỷ niệm phải lớn hơn 0.
+            </p>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="tripCreateLimit" className="text-xs flex items-center gap-1.5">
                   <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -303,6 +319,21 @@ export default function SubscriptionForm({
                   min={0}
                   value={form.aiUsageLimit}
                   onChange={(e) => setField("aiUsageLimit", toSafeNumber(e.target.value))}
+                  className="h-9"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="memoryPhotoUploadLimit" className="text-xs flex items-center gap-1.5">
+                  <Images className="h-3 w-3 text-muted-foreground" />
+                  Ảnh kỷ niệm
+                </Label>
+                <Input
+                  id="memoryPhotoUploadLimit"
+                  type="number"
+                  min={1}
+                  value={form.memoryPhotoUploadLimit}
+                  onChange={(e) => setField("memoryPhotoUploadLimit", toSafeNumber(e.target.value))}
                   className="h-9"
                 />
               </div>

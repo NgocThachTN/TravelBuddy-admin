@@ -40,6 +40,7 @@ import {
   MapPin,
   Users,
   Sparkles,
+  Images,
   Calendar,
   TrendingUp,
   Zap,
@@ -213,6 +214,11 @@ function PackageCard({
       label: "AI Usage",
       value:
         pkg.aiUsageLimit === 0 ? "Không giới hạn" : `${pkg.aiUsageLimit} lượt`,
+    },
+    {
+      icon: Images,
+      label: "Ảnh kỷ niệm",
+      value: `${pkg.memoryPhotoUploadLimit ?? (pkg.isDefaultFree ? 100 : 1000)} ảnh`,
     },
   ];
 
@@ -659,6 +665,7 @@ export default function SubscriptionTable() {
                   <TableHead className="text-center">Tạo trip</TableHead>
                   <TableHead className="text-center">Người tham gia</TableHead>
                   <TableHead className="text-center">AI</TableHead>
+                  <TableHead className="text-center">Ảnh kỷ niệm</TableHead>
                   <TableHead className="text-center">Trạng thái</TableHead>
                   <TableHead className="text-center">Ngày tạo</TableHead>
                   <TableHead className="text-right w-[100px] pr-5">
@@ -729,6 +736,9 @@ export default function SubscriptionTable() {
                         ) : (
                           pkg.aiUsageLimit
                         )}
+                      </TableCell>
+                      <TableCell className="text-center text-sm">
+                        {pkg.memoryPhotoUploadLimit ?? (pkg.isDefaultFree ? 100 : 1000)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge

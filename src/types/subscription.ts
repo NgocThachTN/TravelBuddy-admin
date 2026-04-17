@@ -9,6 +9,7 @@ export interface SubscriptionPackage {
   tripCreateLimit: number;
   tripParticipantLimit: number;
   aiUsageLimit: number;
+  memoryPhotoUploadLimit: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -30,6 +31,7 @@ export interface CreateSubscriptionPackagePayload {
   tripCreateLimit: number;
   tripParticipantLimit: number;
   aiUsageLimit: number;
+  memoryPhotoUploadLimit: number;
 }
 
 export type UpdateSubscriptionPackagePayload = Partial<CreateSubscriptionPackagePayload>;

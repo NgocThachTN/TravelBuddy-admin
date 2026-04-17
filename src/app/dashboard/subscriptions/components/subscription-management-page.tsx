@@ -52,7 +52,8 @@ export default function SubscriptionManagementPage({
         </TabsList>
       </Tabs>
 
-      {currentTab === "users" ? <SubscriptionTable /> : <PartnerCommissionSettings />}
+      {currentTab === "users" && <SubscriptionTable />}
+      {currentTab === "partner-commissions" && <PartnerCommissionSettings />}
     </div>
   );
 }
