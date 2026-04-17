@@ -53,6 +53,8 @@ export const API_ROUTES = {
   ADMIN_DASHBOARD_OVERVIEW: "/api/admin/dashboard/overview",
   ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE:
     "/api/admin/dashboard/rescue-commission-revenue",
+  ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE_PARTNERS:
+    "/api/admin/dashboard/rescue-commission-revenue/partners",
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",

@@ -42,6 +42,8 @@ export type {
   DashboardRevenue,
   RescueCommissionRevenueDailyPoint,
   RescueCommissionRevenueData,
+  RescueCommissionPartnerSummaryItem,
+  GetRescueCommissionPartnerSummaryParams,
   DashboardUserGrowthPoint,
   DashboardTripCreationPoint,
   DashboardCategoryDistributionItem,

@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   CalendarDays,
   HandCoins,
   Loader2,
-  RefreshCw,
   ReceiptText,
+  RefreshCw,
+  Search,
+  Users,
 } from "lucide-react";
 import {
   Bar,
@@ -17,6 +22,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import PaginationControl from "@/components/pagination-control";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,12 +41,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchAdminRescueCommissionRevenue } from "@/lib/api";
+import {
+  fetchAdminRescueCommissionRevenue,
+  fetchAdminRescueCommissionRevenuePartners,
+} from "@/lib/api";
+import { extractApiError } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
-import type { RescueCommissionRevenueData } from "@/types";
-import { ChartTooltipContent, formatDayLabel } from "../../overview/components/shared";
+import type {
+  GetRescueCommissionPartnerSummaryParams,
+  RescueCommissionPartnerSummaryItem,
+  RescueCommissionRevenueData,
+} from "@/types";
+import {
+  ChartTooltipContent,
+  formatDayLabel,
+} from "../../overview/components/shared";
 
 const PRESET_DAYS = [7, 30, 90] as const;
+const PAGE_SIZE = 10;
+
+type PartnerSortBy = NonNullable<
+  GetRescueCommissionPartnerSummaryParams["sortBy"]
+>;
+type PartnerSortDirection = NonNullable<
+  GetRescueCommissionPartnerSummaryParams["sortDirection"]
+>;
+
+const SORTABLE_COLUMNS: Array<{
+  key: PartnerSortBy;
+  label: string;
+  className?: string;
+}> = [
+  { key: "partnerName", label: "Partner" },
+  { key: "completedRequestCount", label: "Số đơn hoàn thành", className: "text-right" },
+  { key: "grossRevenueVnd", label: "Doanh thu", className: "text-right" },
+  { key: "commissionRevenueVnd", label: "Hoa hồng", className: "text-right" },
+];
 
 function formatCurrency(value: number) {
   return `${value.toLocaleString("vi-VN")} ₫`;
@@ -79,6 +116,17 @@ function formatDateRange(data: RescueCommissionRevenueData | null) {
   return `${from} - ${to}`;
 }
 
+function getPartnerInitials(name: string) {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (parts.length === 0) return "DT";
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
+}
+
 function SummaryCard({
   title,
   value,
@@ -108,7 +156,12 @@ function SummaryCard({
               {value}
             </p>
           </div>
-          <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", toneClass)}>
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              toneClass,
+            )}
+          >
             <Icon className="h-5 w-5" />
           </div>
         </div>
@@ -118,65 +171,181 @@ function SummaryCard({
   );
 }
 
+function SortIcon({
+  active,
+  direction,
+}: {
+  active: boolean;
+  direction: PartnerSortDirection;
+}) {
+  if (!active) {
+    return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />;
+  }
+
+  return direction === "asc" ? (
+    <ArrowUp className="h-3.5 w-3.5" />
+  ) : (
+    <ArrowDown className="h-3.5 w-3.5" />
+  );
+}
+
 export default function RescueCommissionRevenuePage() {
   const initialRange = getPresetRange(30);
   const [fromDate, setFromDate] = useState(initialRange.fromDate);
   const [toDate, setToDate] = useState(initialRange.toDate);
   const [activePreset, setActivePreset] = useState<number>(30);
-  const [data, setData] = useState<RescueCommissionRevenueData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [chartDataSource, setChartDataSource] =
+    useState<RescueCommissionRevenueData | null>(null);
+  const [isChartLoading, setIsChartLoading] = useState(true);
+  const [chartErrorMessage, setChartErrorMessage] = useState<string | null>(null);
+
+  const [partnerItems, setPartnerItems] = useState<
+    RescueCommissionPartnerSummaryItem[]
+  >([]);
+  const [partnerTotalCount, setPartnerTotalCount] = useState(0);
+  const [partnerTotalPages, setPartnerTotalPages] = useState(1);
+  const [partnerPage, setPartnerPage] = useState(1);
+  const [partnerSearch, setPartnerSearch] = useState("");
+  const [debouncedPartnerSearch, setDebouncedPartnerSearch] = useState("");
+  const [partnerSortBy, setPartnerSortBy] =
+    useState<PartnerSortBy>("commissionRevenueVnd");
+  const [partnerSortDirection, setPartnerSortDirection] =
+    useState<PartnerSortDirection>("desc");
+  const [isPartnerLoading, setIsPartnerLoading] = useState(true);
+  const [partnerErrorMessage, setPartnerErrorMessage] = useState<string | null>(null);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const chartData = useMemo(
     () =>
-      (data?.daily ?? []).map((item) => ({
+      (chartDataSource?.daily ?? []).map((item) => ({
         label: formatDayLabel(item.dateUtc),
         commission: item.commissionRevenueVnd,
       })),
-    [data],
+    [chartDataSource],
   );
 
   const peakDay = useMemo(() => {
-    if (!data?.daily.length) return null;
-    return data.daily.reduce((max, item) =>
+    if (!chartDataSource?.daily.length) return null;
+    return chartDataSource.daily.reduce((max, item) =>
       item.commissionRevenueVnd > max.commissionRevenueVnd ? item : max,
     );
-  }, [data]);
+  }, [chartDataSource]);
 
-  const loadData = useCallback(
-    async (manualRefresh = false) => {
-      if (new Date(toDate) < new Date(fromDate)) {
-        setErrorMessage("Khoảng ngày không hợp lệ. Ngày kết thúc phải sau ngày bắt đầu.");
-        return;
-      }
-
-      if (manualRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      setErrorMessage(null);
-
-      try {
-        const response = await fetchAdminRescueCommissionRevenue({
-          fromUtc: dateInputToUtcStart(fromDate),
-          toUtc: dateInputToUtcEndExclusive(toDate),
-        });
-        setData(response.data);
-      } catch {
-        setErrorMessage("Không thể tải dữ liệu hoa hồng cứu hộ. Vui lòng thử lại.");
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
+  const hasInvalidRange = useMemo(
+    () => new Date(toDate) < new Date(fromDate),
     [fromDate, toDate],
   );
 
+  const rangeErrorMessage = hasInvalidRange
+    ? "Khoảng ngày không hợp lệ. Ngày kết thúc phải sau ngày bắt đầu."
+    : null;
+
+  const loadChartData = useCallback(async () => {
+    if (hasInvalidRange) {
+      setChartErrorMessage(rangeErrorMessage);
+      return;
+    }
+
+    setIsChartLoading(true);
+    setChartErrorMessage(null);
+
+    try {
+      const response = await fetchAdminRescueCommissionRevenue({
+        fromUtc: dateInputToUtcStart(fromDate),
+        toUtc: dateInputToUtcEndExclusive(toDate),
+      });
+      setChartDataSource(response.data);
+    } catch (err) {
+      const apiError = extractApiError(
+        err,
+        "Không thể tải dữ liệu hoa hồng cứu hộ.",
+      );
+      setChartErrorMessage(apiError.message);
+    } finally {
+      setIsChartLoading(false);
+    }
+  }, [fromDate, hasInvalidRange, rangeErrorMessage, toDate]);
+
+  const loadPartnerData = useCallback(async () => {
+    if (hasInvalidRange) {
+      setPartnerErrorMessage(rangeErrorMessage);
+      return;
+    }
+
+    setIsPartnerLoading(true);
+    setPartnerErrorMessage(null);
+
+    try {
+      const response = await fetchAdminRescueCommissionRevenuePartners({
+        pageNumber: partnerPage,
+        pageSize: PAGE_SIZE,
+        search: debouncedPartnerSearch || undefined,
+        sortBy: partnerSortBy,
+        sortDirection: partnerSortDirection,
+        fromUtc: dateInputToUtcStart(fromDate),
+        toUtc: dateInputToUtcEndExclusive(toDate),
+      });
+
+      setPartnerItems(response.data.items);
+      setPartnerTotalCount(response.data.totalCount ?? 0);
+      setPartnerTotalPages(Math.max(response.data.totalPages ?? 1, 1));
+    } catch (err) {
+      const apiError = extractApiError(
+        err,
+        "Không thể tải bảng tổng hợp theo đối tác.",
+      );
+      setPartnerErrorMessage(apiError.message);
+    } finally {
+      setIsPartnerLoading(false);
+    }
+  }, [
+    debouncedPartnerSearch,
+    fromDate,
+    hasInvalidRange,
+    partnerPage,
+    partnerSortBy,
+    partnerSortDirection,
+    rangeErrorMessage,
+    toDate,
+  ]);
+
+  const handleRefresh = useCallback(async () => {
+    if (hasInvalidRange) {
+      setChartErrorMessage(rangeErrorMessage);
+      setPartnerErrorMessage(rangeErrorMessage);
+      return;
+    }
+
+    setIsRefreshing(true);
+    await Promise.all([loadChartData(), loadPartnerData()]);
+    setIsRefreshing(false);
+  }, [hasInvalidRange, loadChartData, loadPartnerData, rangeErrorMessage]);
+
   useEffect(() => {
-    void loadData(false);
-  }, [loadData]);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedPartnerSearch(partnerSearch.trim());
+    }, 400);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [partnerSearch]);
+
+  useEffect(() => {
+    setPartnerPage(1);
+  }, [debouncedPartnerSearch, partnerSortBy, partnerSortDirection, fromDate, toDate]);
+
+  useEffect(() => {
+    void loadChartData();
+  }, [loadChartData]);
+
+  useEffect(() => {
+    void loadPartnerData();
+  }, [loadPartnerData]);
 
   function applyPreset(days: number) {
     const range = getPresetRange(days);
@@ -189,6 +358,16 @@ export default function RescueCommissionRevenuePage() {
     setActivePreset(0);
     if (next.fromDate !== undefined) setFromDate(next.fromDate);
     if (next.toDate !== undefined) setToDate(next.toDate);
+  }
+
+  function handleSort(column: PartnerSortBy) {
+    if (partnerSortBy === column) {
+      setPartnerSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setPartnerSortBy(column);
+    setPartnerSortDirection(column === "partnerName" ? "asc" : "desc");
   }
 
   return (
@@ -244,8 +423,8 @@ export default function RescueCommissionRevenuePage() {
             </div>
             <Button
               type="button"
-              onClick={() => void loadData(true)}
-              disabled={isLoading || isRefreshing}
+              onClick={() => void handleRefresh()}
+              disabled={isRefreshing || hasInvalidRange}
             >
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -258,23 +437,27 @@ export default function RescueCommissionRevenuePage() {
         </CardContent>
       </Card>
 
-      {errorMessage && (
+      {rangeErrorMessage && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          {errorMessage}
+          {rangeErrorMessage}
         </div>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <SummaryCard
           title="Tổng hoa hồng"
-          value={formatCurrency(data?.totalCommissionRevenueVnd ?? 0)}
-          description={data ? formatDateRange(data) : "Đang tải khoảng dữ liệu"}
+          value={formatCurrency(chartDataSource?.totalCommissionRevenueVnd ?? 0)}
+          description={
+            chartDataSource ? formatDateRange(chartDataSource) : "Đang tải khoảng dữ liệu"
+          }
           tone="emerald"
           icon={HandCoins}
         />
         <SummaryCard
           title="Yêu cầu đã tính hoa hồng"
-          value={(data?.totalCommissionChargedRequests ?? 0).toLocaleString("vi-VN")}
+          value={(chartDataSource?.totalCommissionChargedRequests ?? 0).toLocaleString(
+            "vi-VN",
+          )}
           description="Các rescue request hoàn tất và có commission"
           tone="cyan"
           icon={ReceiptText}
@@ -294,15 +477,17 @@ export default function RescueCommissionRevenuePage() {
 
       <Card className="border border-border/50 shadow-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">
-            Biểu đồ hoa hồng theo ngày
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Biểu đồ hoa hồng theo ngày</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isChartLoading ? (
             <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Đang tải dữ liệu
+            </div>
+          ) : chartErrorMessage ? (
+            <div className="flex h-[320px] items-center justify-center text-sm text-destructive">
+              {chartErrorMessage}
             </div>
           ) : chartData.length === 0 ? (
             <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">
@@ -332,11 +517,7 @@ export default function RescueCommissionRevenuePage() {
                     tickFormatter={(value) => Number(value).toLocaleString("vi-VN")}
                   />
                   <RechartsTooltip content={<ChartTooltipContent unit="₫" />} />
-                  <Bar
-                    dataKey="commission"
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
-                  />
+                  <Bar dataKey="commission" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -346,53 +527,125 @@ export default function RescueCommissionRevenuePage() {
 
       <Card className="border border-border/50 shadow-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">
-            Bảng chi tiết theo ngày
-          </CardTitle>
-          <CardDescription className="text-[13px]">
-            Endpoint hiện trả aggregate theo ngày, chưa có breakdown từng partner
-          </CardDescription>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle className="text-sm font-medium">
+                Bảng tổng hợp theo partner
+              </CardTitle>
+              <CardDescription className="text-[13px]">
+                Tổng hợp số đơn hoàn thành, doanh thu và hoa hồng của từng đối tác
+              </CardDescription>
+            </div>
+            <div className="relative w-full lg:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={partnerSearch}
+                onChange={(event) => setPartnerSearch(event.target.value)}
+                placeholder="Tìm theo tên partner..."
+                className="pl-9"
+              />
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="h-4 w-4" />
+            <span>
+              Tổng cộng <span className="font-semibold text-foreground">{partnerTotalCount}</span>{" "}
+              đối tác phù hợp
+            </span>
+          </div>
+
+          {partnerErrorMessage && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {partnerErrorMessage}
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ngày</TableHead>
-                <TableHead className="text-right">Hoa hồng partner</TableHead>
+                {SORTABLE_COLUMNS.map((column) => {
+                  const active = partnerSortBy === column.key;
+
+                  return (
+                    <TableHead key={column.key} className={column.className}>
+                      <button
+                        type="button"
+                        onClick={() => handleSort(column.key)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 text-left",
+                          column.className === "text-right" && "ml-auto",
+                        )}
+                      >
+                        <span>{column.label}</span>
+                        <SortIcon active={active} direction={partnerSortDirection} />
+                      </button>
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isPartnerLoading ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
-                    Đang tải dữ liệu
+                  <TableCell
+                    colSpan={SORTABLE_COLUMNS.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    <Loader2 className="mx-auto mb-2 h-4 w-4 animate-spin" />
+                    Đang tải bảng partner
                   </TableCell>
                 </TableRow>
-              ) : data?.daily.length ? (
-                data.daily.map((item) => (
-                  <TableRow key={item.dateUtc}>
+              ) : partnerItems.length > 0 ? (
+                partnerItems.map((item) => (
+                  <TableRow key={item.partnerId}>
                     <TableCell>
-                      {new Date(item.dateUtc).toLocaleDateString("vi-VN", {
-                        weekday: "short",
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
+                      <div className="flex items-center gap-3">
+                        <Avatar size="default">
+                          <AvatarImage src={item.partnerAvatarUrl ?? undefined} alt={item.partnerName} />
+                          <AvatarFallback>{getPartnerInitials(item.partnerName)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{item.partnerName}</p>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-medium">
+                      {item.completedRequestCount.toLocaleString("vi-VN")}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(item.grossRevenueVnd)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-emerald-700">
                       {formatCurrency(item.commissionRevenueVnd)}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
-                    Không có hoa hồng trong khoảng này.
+                  <TableCell
+                    colSpan={SORTABLE_COLUMNS.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    Không có partner nào trong khoảng này.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Trang {partnerPage} / {partnerTotalPages}
+            </p>
+            <PaginationControl
+              currentPage={partnerPage}
+              totalPages={partnerTotalPages}
+              onPageChange={setPartnerPage}
+              className="mx-0 w-auto justify-end"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

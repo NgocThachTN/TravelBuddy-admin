@@ -41,6 +41,30 @@ export interface RescueCommissionRevenueData {
   daily: RescueCommissionRevenueDailyPoint[];
 }
 
+export interface RescueCommissionPartnerSummaryItem {
+  partnerId: string;
+  partnerName: string;
+  partnerAvatarUrl: string | null;
+  completedRequestCount: number;
+  grossRevenueVnd: number;
+  commissionRevenueVnd: number;
+}
+
+export interface GetRescueCommissionPartnerSummaryParams {
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?:
+    | "partnerName"
+    | "completedRequestCount"
+    | "grossRevenueVnd"
+    | "commissionRevenueVnd";
+  sortDirection?: "asc" | "desc";
+  windowDays?: 7 | 30 | 90;
+  fromUtc?: string;
+  toUtc?: string;
+}
+
 export interface DashboardUserGrowthPoint {
   date: string;
   currentCount: number;
