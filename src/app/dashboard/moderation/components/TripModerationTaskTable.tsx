@@ -91,6 +91,17 @@ const PAGE_SIZE = 15;
 type TaskStatusFilter = "openQueue" | "all" | "Open" | "Assigned" | "InReview" | "Resolved" | "Dismissed" | "Failed";
 type ScanFilter = "all" | "Clean" | "Flagged" | "Error";
 
+const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
+  openQueue: "Hàng chờ mở",
+  all: "Tất cả",
+  Open: "Mới tạo",
+  Assigned: "Đã giao",
+  InReview: "Đang duyệt",
+  Resolved: "Đã xử lý",
+  Dismissed: "Đã đóng",
+  Failed: "Lỗi",
+};
+
 const TASK_STATUS_STYLES: Record<string, string> = {
   Open: "bg-transparent text-foreground border-border",
   Assigned: "bg-transparent text-foreground border-border",
@@ -825,23 +836,23 @@ export default function TripModerationTaskTable() {
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatusFilter)}>
               <SelectTrigger className="h-9 w-[180px] bg-background shadow-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="openQueue">Queue mở (Open, etc)</SelectItem>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="Assigned">Assigned</SelectItem>
-                <SelectItem value="InReview">InReview</SelectItem>
-                <SelectItem value="Resolved">Resolved</SelectItem>
-                <SelectItem value="Dismissed">Dismissed</SelectItem>
-                <SelectItem value="Failed">Failed</SelectItem>
+                <SelectItem value="openQueue">{TASK_STATUS_FILTER_LABELS.openQueue}</SelectItem>
+                <SelectItem value="all">{TASK_STATUS_FILTER_LABELS.all}</SelectItem>
+                <SelectItem value="Open">{TASK_STATUS_FILTER_LABELS.Open}</SelectItem>
+                <SelectItem value="Assigned">{TASK_STATUS_FILTER_LABELS.Assigned}</SelectItem>
+                <SelectItem value="InReview">{TASK_STATUS_FILTER_LABELS.InReview}</SelectItem>
+                <SelectItem value="Resolved">{TASK_STATUS_FILTER_LABELS.Resolved}</SelectItem>
+                <SelectItem value="Dismissed">{TASK_STATUS_FILTER_LABELS.Dismissed}</SelectItem>
+                <SelectItem value="Failed">{TASK_STATUS_FILTER_LABELS.Failed}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={scanFilter} onValueChange={(value) => setScanFilter(value as ScanFilter)}>
-              <SelectTrigger className="h-9 w-[150px] bg-background shadow-sm"><SelectValue placeholder="AI Scan" /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[150px] bg-background shadow-sm"><SelectValue placeholder="Kết quả quét AI" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="Clean">Mức Clean</SelectItem>
-                <SelectItem value="Flagged">Mức Flagged</SelectItem>
+                <SelectItem value="Clean">Mức sạch</SelectItem>
+                <SelectItem value="Flagged">Mức cảnh báo</SelectItem>
                 <SelectItem value="Error">Lỗi quét</SelectItem>
               </SelectContent>
             </Select>
