@@ -1427,13 +1427,19 @@ export default function TripModerationTaskTable() {
 
     <div className="p-5 border-t border-border bg-white mt-auto space-y-4 shadow-[0_-5px_15px_rgba(0,0,0,0.03)] z-10 transition-all">
       <div>
-        <Label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Lời phê (Bắt buộc nếu Từ chối)</Label>
+        <Label className={cn("text-xs font-semibold uppercase mb-2 block tracking-wider", decisionError ? "text-destructive" : "text-muted-foreground")}>
+          Lời phê (Bắt buộc nếu Từ chối)
+        </Label>
         <Textarea 
-          className="min-h-24 resize-none bg-slate-50 focus:bg-white text-sm" 
+          className={cn("min-h-24 resize-none bg-slate-50 focus:bg-white text-sm", decisionError && "border-destructive focus-visible:ring-destructive")} 
           placeholder="Nhập lý do chi tiết để gửi cho người dùng..."
           value={rejectReason}
-          onChange={e => setRejectReason(e.target.value)}
+          onChange={e => {
+            setRejectReason(e.target.value);
+            if (decisionError) setDecisionError(null);
+          }}
         />
+        {decisionError && <p className="text-destructive text-sm mt-2">{decisionError}</p>}
       </div>
       <div className="grid flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
@@ -1441,18 +1447,7 @@ export default function TripModerationTaskTable() {
             variant="outline" 
             className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive h-11 transition-all" 
             disabled={decisionLoading || pendingDecision === "Approve"} 
-            onClick={() => {
-              if(!selectedTask?.taskId) return;
-              setPendingDecision("Reject");
-              reviewTrip(selectedTask.taskId, { decision: "Reject", decisionNote: rejectReason }).then(() => {
-                  setPendingDecision(null);
-                  setDetailOpen(false);
-                  setRejectReason('');
-                  loadTasks(page);
-              }).catch(e => {
-                  setPendingDecision(null);
-              });
-            }}
+            onClick={() => submitDecision("Reject")}
           >
             {decisionLoading && pendingDecision === "Reject" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : null}
             Từ chối
@@ -1460,18 +1455,7 @@ export default function TripModerationTaskTable() {
           <Button 
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 h-11 transition-all" 
             disabled={decisionLoading || pendingDecision === "Reject"} 
-            onClick={() => {
-              if(!selectedTask?.taskId) return;
-              setPendingDecision("Approve");
-              reviewTrip(selectedTask.taskId, { decision: "Approve", decisionNote: rejectReason }).then(() => {
-                  setPendingDecision(null);
-                  setDetailOpen(false);
-                  setRejectReason('');
-                  loadTasks(page);
-              }).catch(e => {
-                  setPendingDecision(null);
-              });
-            }}
+            onClick={() => submitDecision("Approve")}
           >
             {decisionLoading && pendingDecision === "Approve" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : null}
             Duyệt Trip
