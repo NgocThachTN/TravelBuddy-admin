@@ -43,7 +43,6 @@ function formatRelativeTime(value: string) {
 type RequestStatusFilter =
   | "all"
   | "InReview"
-  | "Pending"
   | "Approved"
   | "Rejected"
   | "RequestResubmission";
@@ -54,7 +53,6 @@ const REQUEST_STATUS_OPTIONS: Array<{
 }> = [
   { value: "all", label: "Tất cả" },
   { value: "InReview", label: "Chờ duyệt" },
-  { value: "Pending", label: "Pending" },
   { value: "Approved", label: "Đã duyệt" },
   { value: "Rejected", label: "Từ chối" },
   { value: "RequestResubmission", label: "Bổ sung hồ sơ" },
