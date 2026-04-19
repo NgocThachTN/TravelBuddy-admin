@@ -137,7 +137,7 @@ function getInitials(item: ReportListItem) {
 
 function resolveReporterName(item: ReportListItem) {
   const baseName = getReporterName(item);
-  return item.reporterName || item.reporterEmail || (baseName === "(áº¨n danh)" ? "(Ẩn danh)" : baseName);
+  return item.reporterName || item.reporterEmail || (baseName === "(Ẩn danh)" ? "(Ẩn danh)" : baseName);
 }
 
 function resolveReporterInitials(item: ReportListItem) {
