@@ -15,6 +15,213 @@ interface DirectionsRoute {
   durationMinutes: number | null;
 }
 
+interface CheckpointMarkerLayout {
+  key: string;
+  coordinate: [number, number];
+  offset: [number, number];
+  primaryCheckpoint: TripCheckpoint;
+  secondaryCheckpoint?: TripCheckpoint;
+}
+
+const OVERLAP_THRESHOLD_METERS = 2.5;
+const FAN_OUT_RADIUS_PIXELS = 18;
+
+function checkpointDistanceMeters(left: TripCheckpoint, right: TripCheckpoint) {
+  const earthRadiusMeters = 6371000;
+  const latitudeDeltaRadians = degreesToRadians(right.lat - left.lat);
+  const longitudeDeltaRadians = degreesToRadians(right.lng - left.lng);
+  const startLatitudeRadians = degreesToRadians(left.lat);
+  const endLatitudeRadians = degreesToRadians(right.lat);
+
+  const haversine = (Math.sin(latitudeDeltaRadians / 2) ** 2)
+    + (Math.cos(startLatitudeRadians)
+      * Math.cos(endLatitudeRadians)
+      * (Math.sin(longitudeDeltaRadians / 2) ** 2));
+  const angularDistance = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  return earthRadiusMeters * angularDistance;
+}
+
+function degreesToRadians(value: number) {
+  return value * (Math.PI / 180);
+}
+
+function buildCheckpointMarkerLayouts(checkpoints: TripCheckpoint[]): CheckpointMarkerLayout[] {
+  const groups: TripCheckpoint[][] = [];
+  checkpoints.forEach((checkpoint) => {
+    const matchedGroup = groups.find((group) => checkpointDistanceMeters(checkpoint, group[0]) <= OVERLAP_THRESHOLD_METERS);
+    if (matchedGroup) {
+      matchedGroup.push(checkpoint);
+      return;
+    }
+    groups.push([checkpoint]);
+  });
+
+  return groups.flatMap((group) => {
+    const orderedGroup = [...group].sort((left, right) => {
+      const bySequence = left.sequenceNo - right.sequenceNo;
+      if (bySequence !== 0) return bySequence;
+      return left.tripCheckpointId.localeCompare(right.tripCheckpointId);
+    });
+
+    if (orderedGroup.length === 1) {
+      const checkpoint = orderedGroup[0];
+      return [{
+        key: checkpoint.tripCheckpointId,
+        coordinate: [checkpoint.lng, checkpoint.lat] as [number, number],
+        offset: [0, 0] as [number, number],
+        primaryCheckpoint: checkpoint,
+      }];
+    }
+
+    if (orderedGroup.length === 2) {
+      const [primaryCheckpoint, secondaryCheckpoint] = orderedGroup;
+      return [{
+        key: `${primaryCheckpoint.tripCheckpointId}:${secondaryCheckpoint.tripCheckpointId}`,
+        coordinate: [primaryCheckpoint.lng, primaryCheckpoint.lat] as [number, number],
+        offset: [0, 0] as [number, number],
+        primaryCheckpoint,
+        secondaryCheckpoint,
+      }];
+    }
+
+    const angleStep = (Math.PI * 2) / orderedGroup.length;
+    const radiusPixels = FAN_OUT_RADIUS_PIXELS + Math.max(0, orderedGroup.length - 2) * 2;
+
+    return orderedGroup.map((checkpoint, index) => {
+      const angle = (-Math.PI / 2) + (angleStep * index);
+      return {
+        key: checkpoint.tripCheckpointId,
+        coordinate: [checkpoint.lng, checkpoint.lat] as [number, number],
+        offset: [
+          Math.cos(angle) * radiusPixels,
+          Math.sin(angle) * radiusPixels,
+        ] as [number, number],
+        primaryCheckpoint: checkpoint,
+      };
+    });
+  });
+}
+
+function checkpointMarkerTitle(checkpoint: TripCheckpoint) {
+  return checkpoint.locationName || checkpoint.displayAddress || "Checkpoint";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildCheckpointPopupHtml(layout: CheckpointMarkerLayout) {
+  const checkpoints = layout.secondaryCheckpoint
+    ? [layout.primaryCheckpoint, layout.secondaryCheckpoint]
+    : [layout.primaryCheckpoint];
+
+  return checkpoints.map((checkpoint, index) => {
+    const divider = index === 0 || checkpoints.length === 1
+      ? ""
+      : '<div style="margin:6px 0;border-top:1px solid rgba(148,163,184,0.35)"></div>';
+    return `${divider}<div style="font-size:12px;line-height:1.4">
+      <strong>${escapeHtml(checkpointMarkerTitle(checkpoint))}</strong><br/>
+      <span>#${checkpoint.sequenceNo} - ${escapeHtml(checkpointLabelVi(checkpoint.tripCheckpointType))}</span>
+    </div>`;
+  }).join("");
+}
+
+function buildCheckpointMarkerElement(layout: CheckpointMarkerLayout) {
+  const primaryMeta = checkpointMetaByType(layout.primaryCheckpoint.tripCheckpointType);
+  const secondaryMeta = layout.secondaryCheckpoint
+    ? checkpointMetaByType(layout.secondaryCheckpoint.tripCheckpointType)
+    : null;
+
+  const element = document.createElement("div");
+  Object.assign(element.style, {
+    position: "relative",
+    display: "flex",
+    width: "32px",
+    height: "32px",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderRadius: "999px",
+    border: "2px solid #ffffff",
+    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.28)",
+    cursor: "pointer",
+    color: "#ffffff",
+    fontSize: "10px",
+    fontWeight: "700",
+    lineHeight: "1",
+    userSelect: "none",
+  });
+  element.dataset.markerKey = layout.key;
+
+  if (secondaryMeta) {
+    element.style.background = `linear-gradient(90deg, ${primaryMeta.color} 0 50%, ${secondaryMeta.color} 50% 100%)`;
+
+    const leftGlyph = document.createElement("span");
+    leftGlyph.textContent = primaryMeta.markerGlyph;
+    Object.assign(leftGlyph.style, {
+      position: "absolute",
+      left: "6px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      pointerEvents: "none",
+    });
+    element.appendChild(leftGlyph);
+
+    const divider = document.createElement("span");
+    Object.assign(divider.style, {
+      position: "absolute",
+      left: "50%",
+      top: "6px",
+      width: "1.5px",
+      height: "14px",
+      backgroundColor: "rgba(255,255,255,0.82)",
+      transform: "translateX(-50%)",
+      pointerEvents: "none",
+    });
+    element.appendChild(divider);
+
+    const rightGlyph = document.createElement("span");
+    rightGlyph.textContent = secondaryMeta.markerGlyph;
+    Object.assign(rightGlyph.style, {
+      position: "absolute",
+      right: "6px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      pointerEvents: "none",
+    });
+    element.appendChild(rightGlyph);
+  } else {
+    element.style.backgroundColor = primaryMeta.color;
+    element.textContent = primaryMeta.markerGlyph;
+  }
+
+  const indexTag = document.createElement("span");
+  indexTag.textContent = layout.secondaryCheckpoint
+    ? `${layout.primaryCheckpoint.sequenceNo}/${layout.secondaryCheckpoint.sequenceNo}`
+    : String(layout.primaryCheckpoint.sequenceNo);
+  Object.assign(indexTag.style, {
+    position: "absolute",
+    bottom: "-8px",
+    padding: "0 4px",
+    borderRadius: "999px",
+    backgroundColor: "rgba(15,23,42,0.78)",
+    color: "#ffffff",
+    fontSize: "9px",
+    fontWeight: "700",
+    lineHeight: "14px",
+    pointerEvents: "none",
+    whiteSpace: "nowrap",
+  });
+  element.appendChild(indexTag);
+
+  return element;
+}
+
 function canUseMap(checkpoints: TripCheckpoint[], token: string | undefined) {
   return Boolean(token) && checkpoints.length > 0;
 }
@@ -94,6 +301,10 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
   const geoCheckpoints = useMemo(
     () => sortedCheckpoints.filter((cp) => Number.isFinite(cp.lat) && Number.isFinite(cp.lng)),
     [sortedCheckpoints],
+  );
+  const markerLayouts = useMemo(
+    () => buildCheckpointMarkerLayouts(geoCheckpoints),
+    [geoCheckpoints],
   );
   const straightLine = useMemo(
     () => geoCheckpoints.map((cp) => [cp.lng, cp.lat] as [number, number]),
@@ -224,28 +435,23 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
         });
 
         markersRef.current.forEach((marker) => marker.remove());
-        markersRef.current = geoCheckpoints.map((cp, index) => {
-          const meta = checkpointMetaByType(cp.tripCheckpointType);
-
-          const el = document.createElement("div");
-          el.className = "relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold text-white shadow";
-          el.style.backgroundColor = meta.color;
-          el.textContent = meta.markerGlyph;
-
-          const indexTag = document.createElement("span");
-          indexTag.className = "absolute -bottom-2 rounded-full bg-black/75 px-1 text-[9px] leading-3";
-          indexTag.textContent = String(index + 1);
-          el.appendChild(indexTag);
-
+        markersRef.current = markerLayouts.map((layout) => {
           const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(
+            buildCheckpointPopupHtml(layout),
+          );
+
+          /*
             `<div style="font-size:12px;line-height:1.4">
               <strong>${cp.locationName || cp.displayAddress || "Điểm dừng"}</strong><br/>
               <span>${checkpointLabelVi(cp.tripCheckpointType)}</span>
             </div>`,
-          );
+          */
 
-          return new mapboxgl.Marker({ element: el })
-            .setLngLat([cp.lng, cp.lat])
+          return new mapboxgl.Marker({
+            element: buildCheckpointMarkerElement(layout),
+            offset: layout.offset,
+          })
+            .setLngLat(layout.coordinate)
             .setPopup(popup)
             .addTo(map);
         });
@@ -278,7 +484,7 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
         resizeObserver = null;
       }
     };
-  }, [geoCheckpoints, routeCoordinates, token]);
+  }, [geoCheckpoints, markerLayouts, routeCoordinates, token]);
 
   if (!geoCheckpoints.length) {
     return (
