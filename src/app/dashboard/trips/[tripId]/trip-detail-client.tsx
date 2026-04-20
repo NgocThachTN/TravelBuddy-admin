@@ -81,11 +81,12 @@ import TripCheckpointMap from "@/app/dashboard/moderation/components/TripCheckpo
 import { checkpointLabelVi, checkpointMetaByType } from "@/app/dashboard/moderation/components/checkpoint-meta";
 import {
   expenseTypeLabelVi,
-  memberLevelLabelVi,
+  memberLevelLabelViWithCatalog,
   travelModeLabelVi,
   tripTypeLabelVi,
   vehicleTypeLabelVi,
 } from "@/app/dashboard/moderation/components/trip-enum-labels";
+import { useMemberLevelCatalog } from "@/hooks/use-member-level-catalog";
 
 const STATUS_STYLES: Record<string, string> = {
   Draft: "bg-gray-100 text-gray-700",
@@ -515,6 +516,7 @@ interface TripDetailClientProps {
 }
 
 export default function TripDetailClient({ role }: TripDetailClientProps) {
+  const memberLevelCatalog = useMemberLevelCatalog();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -886,7 +888,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                         {[trip.owner.firstName, trip.owner.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)"}
                       </p>
                       {trip.owner.experienceLevel !== null && (
-                        <p className="text-xs text-muted-foreground">Level: {memberLevelLabelVi(trip.owner.experienceLevel)}</p>
+                        <p className="text-xs text-muted-foreground">Level: {memberLevelLabelViWithCatalog(trip.owner.experienceLevel, memberLevelCatalog?.levels)}</p>
                       )}
                     </div>
                   </div>

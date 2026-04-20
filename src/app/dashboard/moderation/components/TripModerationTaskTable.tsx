@@ -79,11 +79,12 @@ import TripCheckpointMap from "./TripCheckpointMap";
 import { checkpointLabelVi, checkpointMetaByType } from "./checkpoint-meta";
 import {
   expenseTypeLabelVi,
-  memberLevelLabelVi,
+  memberLevelLabelViWithCatalog,
   travelModeLabelVi,
   tripTypeLabelVi,
   vehicleTypeLabelVi,
 } from "./trip-enum-labels";
+import { useMemberLevelCatalog } from "@/hooks/use-member-level-catalog";
 
 const PAGE_SIZE = 15;
 
@@ -532,6 +533,7 @@ function normalizeModerationResult(task: TripModerationTaskDetail | null): Norma
 }
 
 export default function TripModerationTaskTable() {
+  const memberLevelCatalog = useMemberLevelCatalog();
   const [items, setItems] = useState<TripModerationTaskListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -1089,7 +1091,7 @@ export default function TripModerationTaskTable() {
                           <p className="font-medium text-foreground">
                             {detailTrip.owner?.firstName} {detailTrip.owner?.lastName}
                           </p>
-                          <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelVi(detailTrip.owner?.experienceLevel)}</p>
+                          <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelViWithCatalog(detailTrip.owner?.experienceLevel, memberLevelCatalog?.levels)}</p>
                         </div>
                       </div>
                       <div className="space-y-3 text-sm text-muted-foreground border-t pt-4">
