@@ -278,23 +278,6 @@ function getCheckpointTypeLabel(type: string | number | null | undefined): strin
   return CHECKPOINT_TYPE_LABELS[String(type)] || "Điểm dừng";
 }
 
-const EXPERIENCE_LEVEL_LABELS: Record<string, string> = {
-  "0": "Mới toanh",
-  "1": "Nhập môn",
-  "2": "Tập sự",
-  "3": "Đi ổn",
-  "4": "Cứng cáp",
-  "5": "Lão làng",
-  "6": "Kỳ cựu",
-  "Newbie": "Mới toanh",
-  "Fresher": "Nhập môn",
-  "Junior": "Tập sự",
-  "Regular": "Đi ổn",
-  "Experienced": "Cứng cáp",
-  "Veteran": "Lão làng",
-  "Hardcore": "Kỳ cựu"
-};
-
 const VEHICLE_LABELS: Record<string, string> = {
   "Motorbike": "Xe máy",
   "Car": "Ô tô",
@@ -342,11 +325,6 @@ const TRIP_TYPE_LABELS: Record<string, string> = {
   "IslandHopping": "Du lịch đảo", // Kept from original
   "Other": "Khác",
 };
-
-function translateExperienceLevel(level: string | number | null | undefined): string {
-  if (level == null) return "Chưa xác định";
-  return EXPERIENCE_LEVEL_LABELS[String(level)] || String(level);
-}
 
 function translateVehicle(type: string | null | undefined): string {
   if (!type) return "Chưa xác định";
@@ -903,7 +881,6 @@ export default function TripModerationTaskTable() {
               <TableHead className="w-[30%] min-w-[280px]">Thông tin Chuyến đi</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="hidden md:table-cell">AI Nhận định</TableHead>
-              <TableHead className="hidden lg:table-cell">Phân công</TableHead>
               <TableHead className="w-[100px] text-center">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
@@ -928,6 +905,7 @@ export default function TripModerationTaskTable() {
                     <p className="max-w-[300px] truncate text-sm font-bold text-primary hover:underline cursor-pointer" onClick={() => openTaskDetail(task.taskId)}>{task.tripTitle || "(Không có tiêu đề)"}</p>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5 bg-muted">
+                        <AvatarImage src={task.tripOwnerAvatarUrl || undefined} alt={task.tripOwnerName || "Trip owner"} />
                         <AvatarFallback className={cn("text-[8px]", getAvatarColor(task.tripOwnerName || "U"))}>
                           {(task.tripOwnerName || "U").substring(0, 2).toUpperCase()}
                         </AvatarFallback>
@@ -971,16 +949,6 @@ export default function TripModerationTaskTable() {
                         {task.aiLabels}
                       </p>
                     )}
-                  </div>
-                </TableCell>
-
-                <TableCell className="hidden lg:table-cell">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">{task.assignedToName || "Chưa gán"}</p>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                      <Clock3 className="h-3 w-3" />
-                      {formatDateTime(task.createdAt)}
-                    </p>
                   </div>
                 </TableCell>
 
@@ -1121,7 +1089,7 @@ export default function TripModerationTaskTable() {
                           <p className="font-medium text-foreground">
                             {detailTrip.owner?.firstName} {detailTrip.owner?.lastName}
                           </p>
-                          <p className="text-xs text-muted-foreground">Cấp độ: {translateExperienceLevel(detailTrip.owner?.experienceLevel)}</p>
+                          <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelVi(detailTrip.owner?.experienceLevel)}</p>
                         </div>
                       </div>
                       <div className="space-y-3 text-sm text-muted-foreground border-t pt-4">

@@ -819,12 +819,6 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
             </div>
           )}
 
-          {!taskId && isWaitingManualModeration && (
-            <p className="text-xs text-muted-foreground">
-              Thiếu <code className="rounded bg-muted px-1">taskId</code>. Vui lòng mở chi tiết từ trang{" "}
-              <code className="rounded bg-muted px-1">/dashboard/moderation</code> để duyệt đúng task.
-            </p>
-          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
