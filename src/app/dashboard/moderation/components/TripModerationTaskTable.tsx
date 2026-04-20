@@ -40,7 +40,6 @@ import {
   moderationStatusLabel,
   PARTICIPANT_STATUS_LABELS,
   SCAN_STATUS_LABELS,
-  tripRoleLabel,
   tripStatusLabel,
   TRIP_STATUS_CODES,
   MODERATION_STATUS_CODES,
@@ -248,6 +247,17 @@ function getParticipantStatusLabel(status: string | number | null | undefined): 
   if (strStatus === "2" || strStatus === "removed") return "Bị mời ra";
   if (strStatus === "3" || strStatus === "banned") return "Bị chặn";
   return String(status);
+}
+
+function getParticipantRoleLabel(
+  participant: TripDetail["participants"][number],
+  ownerUserId: string | null | undefined,
+): string {
+  if (participant.userId && ownerUserId && participant.userId === ownerUserId) {
+    return "Chủ nhóm";
+  }
+
+  return "Thành viên";
 }
 
 const CHECKPOINT_TYPE_LABELS: Record<string, string> = {
@@ -566,6 +576,10 @@ export default function TripModerationTaskTable() {
   const [rejectReason, setRejectReason] = useState("");
   const [pendingDecision, setPendingDecision] = useState<"Approve" | "Reject" | null>(null);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [routeStats, setRouteStats] = useState<{ distanceKm: number | null; durationMinutes: number | null }>({
+    distanceKm: null,
+    durationMinutes: null,
+  });
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -703,6 +717,17 @@ export default function TripModerationTaskTable() {
       : [],
     [detailTrip],
   );
+
+  useEffect(() => {
+    setRouteStats({
+      distanceKm: typeof detailTrip?.itinerary?.distanceM === "number"
+        ? Number((detailTrip.itinerary.distanceM / 1000).toFixed(1))
+        : null,
+      durationMinutes: typeof detailTrip?.itinerary?.durationS === "number"
+        ? Math.round(detailTrip.itinerary.durationS / 60)
+        : null,
+    });
+  }, [detailTrip]);
 
   const groupedExpenseItems = useMemo(() => {
     const fromBe = detailTrip?.estimatedCostBreakdowns ?? [];
@@ -1192,8 +1217,8 @@ export default function TripModerationTaskTable() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 p-4 rounded-lg border">
                         <h3 className="font-bold text-foreground">Lộ trình ({sortedCheckpoints.length} điểm)</h3>
                         <div className="flex items-center gap-6 mt-2 sm:mt-0 text-sm text-muted-foreground font-medium">
-                          <span>Quãng đường: {(detailTrip.itinerary as any)?.distance ? `${(detailTrip.itinerary as any).distance} km` : '—'}</span>
-                          <span>Thời gian: {(detailTrip.itinerary as any)?.duration ? formatDuration((detailTrip.itinerary as any).duration) : '—'}</span>
+                          <span>Quãng đường: {routeStats.distanceKm !== null ? `${routeStats.distanceKm.toFixed(1)} km` : "—"}</span>
+                          <span>Thời gian: {routeStats.durationMinutes !== null ? formatDuration(routeStats.durationMinutes * 60) : "—"}</span>
                         </div>
                       </div>
 
@@ -1270,7 +1295,11 @@ export default function TripModerationTaskTable() {
                       
                       {/* Right: Map */}
                       <div className="h-[600px] border rounded-lg overflow-hidden sticky top-0">
-                        <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={detailTrip?.itinerary || null} />
+                        <TripCheckpointMap
+                          checkpoints={sortedCheckpoints}
+                          itinerary={detailTrip?.itinerary || null}
+                          onRouteStatsChange={setRouteStats}
+                        />
                       </div>
                     </div>
                     </div>
@@ -1290,7 +1319,7 @@ export default function TripModerationTaskTable() {
                               {member.firstName} {member.lastName}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              Vai trò: {tripRoleLabel(member.roleInTrip)}
+                              Vai trò: {getParticipantRoleLabel(member, detailTrip.owner?.userId)}
                             </p>
                           </div>
                           <Badge variant="outline" className={cn(

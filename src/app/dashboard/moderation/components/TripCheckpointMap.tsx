@@ -7,6 +7,7 @@ import { checkpointLabelVi, checkpointMetaByType } from "./checkpoint-meta";
 interface TripCheckpointMapProps {
   checkpoints: TripCheckpoint[];
   itinerary?: TripItinerary | null;
+  onRouteStatsChange?: (stats: { distanceKm: number | null; durationMinutes: number | null }) => void;
 }
 
 interface DirectionsRoute {
@@ -285,7 +286,11 @@ async function fetchDirections(
   };
 }
 
-export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckpointMapProps) {
+export default function TripCheckpointMap({
+  checkpoints,
+  itinerary,
+  onRouteStatsChange,
+}: TripCheckpointMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("mapbox-gl").Map | null>(null);
   const markersRef = useRef<import("mapbox-gl").Marker[]>([]);
@@ -325,6 +330,13 @@ export default function TripCheckpointMap({ checkpoints, itinerary }: TripCheckp
       durationMinutes,
     };
   }, [directionsRoute, geoCheckpoints.length, itinerary]);
+
+  useEffect(() => {
+    onRouteStatsChange?.({
+      distanceKm: mapStats.distanceKm,
+      durationMinutes: mapStats.durationMinutes,
+    });
+  }, [mapStats.distanceKm, mapStats.durationMinutes, onRouteStatsChange]);
 
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
   const routeKey = useMemo(

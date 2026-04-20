@@ -42,7 +42,6 @@ import {
   moderationStatusLabel,
   PARTICIPANT_STATUS_LABELS,
   SCAN_STATUS_LABELS,
-  tripRoleLabel,
   tripStatusLabel,
   TRIP_STATUS_CODES,
 } from "@/types";
@@ -170,6 +169,17 @@ function participantStatusLabel(value: number | string | null | undefined) {
     banned: "Bị cấm",
   };
   return labels[normalized] ?? String(value);
+}
+
+function participantRoleLabel(
+  participant: TripDetail["participants"][number],
+  ownerUserId: string | null | undefined,
+) {
+  if (participant.userId && ownerUserId && participant.userId === ownerUserId) {
+    return "Chủ nhóm";
+  }
+
+  return "Thành viên";
 }
 
 function scanStatusLabelVi(value: number | string | null | undefined) {
@@ -518,6 +528,10 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [routeStats, setRouteStats] = useState<{ distanceKm: number | null; durationMinutes: number | null }>({
+    distanceKm: null,
+    durationMinutes: null,
+  });
   const [editForm, setEditForm] = useState<TripEditFormState>({
     title: "",
     description: "",
@@ -552,6 +566,14 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
       setLoading(true);
       const result = await fetchTripById(tripId);
       setTrip(result.data);
+      setRouteStats({
+        distanceKm: typeof result.data.itinerary?.distanceM === "number"
+          ? Number((result.data.itinerary.distanceM / 1000).toFixed(1))
+          : null,
+        durationMinutes: typeof result.data.itinerary?.durationS === "number"
+          ? Math.round(result.data.itinerary.durationS / 60)
+          : null,
+      });
       const initialForm = buildTripEditFormState(result.data);
       setEditForm(initialForm);
       setEditBaseline(initialForm);
@@ -1016,8 +1038,12 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-2.5">
                 <Badge variant="outline" className="text-[11px]">{sortedCheckpoints.length} điểm</Badge>
-                <Badge variant="outline" className="text-[11px]">Quãng đường: {formatDistance(trip.itinerary?.distanceM)}</Badge>
-                <Badge variant="outline" className="text-[11px]">Thời gian: {formatDuration(trip.itinerary?.durationS)}</Badge>
+                <Badge variant="outline" className="text-[11px]">
+                  Quãng đường: {routeStats.distanceKm !== null ? `${routeStats.distanceKm.toFixed(1)} km` : formatDistance(trip.itinerary?.distanceM)}
+                </Badge>
+                <Badge variant="outline" className="text-[11px]">
+                  Thời gian: {routeStats.durationMinutes !== null ? formatDuration(routeStats.durationMinutes * 60) : formatDuration(trip.itinerary?.durationS)}
+                </Badge>
                 {trip.itinerary?.travelMode && (
                   <Badge variant="outline" className="text-[11px]">
                     Kiểu di chuyển: {travelModeLabelVi(trip.itinerary.travelMode)}
@@ -1090,7 +1116,11 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                     );
                   })}
                 </div>
-                <TripCheckpointMap checkpoints={sortedCheckpoints} itinerary={trip.itinerary} />
+                <TripCheckpointMap
+                  checkpoints={sortedCheckpoints}
+                  itinerary={trip.itinerary}
+                  onRouteStatsChange={setRouteStats}
+                />
               </div>
             </CardContent>
           </Card>
@@ -1142,7 +1172,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-[11px]">
-                            {tripRoleLabel(participant.roleInTrip)}
+                            {participantRoleLabel(participant, trip.owner?.userId)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
