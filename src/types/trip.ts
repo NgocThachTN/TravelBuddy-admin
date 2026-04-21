@@ -417,6 +417,7 @@ export interface TripModerationTaskListItem {
   tripId: string;
   tripTitle: string | null;
   tripOwnerName: string | null;
+  tripOwnerAvatarUrl?: string | null;
   aiScore: number | null;
   aiLabels: string | null;
   aiStatus: number | ContentScanStatusCode | string | null;

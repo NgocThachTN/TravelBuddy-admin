@@ -25,6 +25,7 @@ import {
 import PaginationControl from "@/components/pagination-control";
 import { fetchRescueRequests } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
+import { getVehicleServiceScopeLabel } from "@/lib/partner-display";
 import { cn } from "@/lib/utils";
 import type {
   RescueRequestListItem,
@@ -246,7 +247,9 @@ export default function RescueRequestTable() {
                           #{item.rescueRequestId.slice(0, 8)}
                         </p>
                         <p className="text-[12px] text-muted-foreground">
-                          {item.vehicleType ?? "Chưa rõ loại xe"}
+                          {item.vehicleType
+                            ? getVehicleServiceScopeLabel(item.vehicleType)
+                            : "Chưa rõ loại xe"}
                         </p>
                       </div>
                     </TableCell>

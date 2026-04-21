@@ -18,3 +18,17 @@ export interface AdminSystemRule {
   valueType: string;
   cacheRefreshed: boolean;
 }
+
+export interface MemberLevelCatalogLevel {
+  code: number;
+  apiName: string;
+  displayNameVi: string;
+  minCompletedTrips: number;
+  maxCompletedTrips: number | null;
+  tripRangeLabelVi: string;
+}
+
+export interface MemberLevelCatalogData {
+  versionTag: string;
+  levels: MemberLevelCatalogLevel[];
+}

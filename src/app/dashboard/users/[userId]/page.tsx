@@ -19,7 +19,7 @@ import { ROUTES, COOKIE_NAME } from "@/lib/constants";
 import { backendApi } from "@/lib/axios";
 import { verifyAdminToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import type { BePagedWrapper, TripListItem, UserDetail } from "@/types";
+import type { BePagedWrapper, MemberLevelCatalogData, TripListItem, UserDetail } from "@/types";
 import {
   ArrowLeft,
   Mail,
@@ -33,7 +33,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import UserTripsTabs from "@/app/dashboard/users/components/UserTripsTabs";
-import { memberLevelLabelVi } from "@/app/dashboard/moderation/components/trip-enum-labels";
+import { memberLevelLabelViWithCatalog } from "@/app/dashboard/moderation/components/trip-enum-labels";
 
 /* ── Avatar / name helpers ── */
 const avatarColors = [
@@ -163,11 +163,21 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   let joinedTrips: TripListItem[] = [];
   let ownedTrips: TripListItem[] = [];
+  let memberLevelCatalog: MemberLevelCatalogData | null = null;
 
   if (session.role === "ADMIN") {
     const userTrips = await buildAdminUserTrips(userId, token);
     joinedTrips = userTrips.joinedTrips;
     ownedTrips = userTrips.ownedTrips;
+  }
+
+  try {
+    const { data } = await backendApi.get<{ success: boolean; data: MemberLevelCatalogData }>(
+      "/api/v1/system-rules/member-levels",
+    );
+    memberLevelCatalog = data.data;
+  } catch {
+    memberLevelCatalog = null;
   }
 
   const displayName = getDisplayName(user);
@@ -342,7 +352,10 @@ export default async function UserDetailPage({ params }: PageProps) {
                 <DetailRow
                   icon={Shield}
                   label="Mức kinh nghiệm"
-                  value={memberLevelLabelVi(user.experienceLevel)}
+                  value={memberLevelLabelViWithCatalog(
+                    user.experienceLevel,
+                    memberLevelCatalog?.levels,
+                  )}
                 />
               )}
               {user.bio && (

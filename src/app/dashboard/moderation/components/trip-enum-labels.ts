@@ -1,3 +1,5 @@
+import type { MemberLevelCatalogLevel } from "@/types";
+
 const TRIP_TYPE_LABELS_VI: Record<string, string> = {
   Adventure: "Phiêu lưu",
   Relaxation: "Nghỉ dưỡng",
@@ -133,5 +135,28 @@ export function memberLevelLabelVi(value: number | string | null | undefined) {
 
 export function travelModeLabelVi(value: string | null | undefined) {
   return mapEnumLabel(value, TRAVEL_MODE_LABELS_VI);
+}
+
+export function memberLevelLabelViWithCatalog(
+  value: number | string | null | undefined,
+  levels?: MemberLevelCatalogLevel[] | null,
+) {
+  if (value === null || value === undefined) return "KhÃ´ng rÃµ";
+
+  const raw = String(value).trim();
+  if (raw && levels?.length) {
+    const lower = raw.toLowerCase();
+    const matchedLevel = levels.find((level) => (
+      String(level.code) === raw ||
+      level.apiName.toLowerCase() === lower ||
+      level.displayNameVi.toLowerCase() === lower
+    ));
+
+    if (matchedLevel) {
+      return matchedLevel.displayNameVi;
+    }
+  }
+
+  return memberLevelLabelVi(value);
 }
 
