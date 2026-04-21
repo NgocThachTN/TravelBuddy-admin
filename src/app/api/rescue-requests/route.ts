@@ -19,20 +19,25 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const params: Record<string, string> = {};
+  const search = searchParams.get("search")?.trim();
+
   if (searchParams.has("pageNumber")) {
-    params.PageNumber = searchParams.get("pageNumber")!;
+    params.pageNumber = searchParams.get("pageNumber")!;
   }
   if (searchParams.has("pageSize")) {
-    params.PageSize = searchParams.get("pageSize")!;
+    params.pageSize = searchParams.get("pageSize")!;
+  }
+  if (search) {
+    params.search = search;
   }
   if (searchParams.has("status")) {
-    params.Status = searchParams.get("status")!;
+    params.status = searchParams.get("status")!;
   }
   if (searchParams.has("sortBy")) {
-    params.SortBy = searchParams.get("sortBy")!;
+    params.sortBy = searchParams.get("sortBy")!;
   }
   if (searchParams.has("sortDirection")) {
-    params.SortDirection = searchParams.get("sortDirection")!;
+    params.sortDirection = searchParams.get("sortDirection")!;
   }
 
   try {

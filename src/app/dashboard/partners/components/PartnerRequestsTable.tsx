@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { Eye, FileText, Filter, Loader2, RefreshCw, Search } from "lucide-react";
-import { fetchPartnerRequests } from "@/lib/api";
+import {
+  fetchCacheInvalidationConnectionInfo,
+  fetchPartnerRequests,
+} from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import {
-  getRegistrationStatusMeta,
-  renderStatusBadge,
-} from "@/lib/partner-display";
+import { getRegistrationStatusMeta, renderStatusBadge } from "@/lib/partner-display";
 import type { PartnerRequestListItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +59,10 @@ const REQUEST_STATUS_OPTIONS: Array<{
   { value: "RequestResubmission", label: "Bổ sung hồ sơ" },
 ];
 
+type PartnerRegistrationRealtimeEvent = {
+  partnerRegistrationId?: string;
+};
+
 interface PartnerRequestsTableProps {
   compact?: boolean;
 }
@@ -79,11 +84,47 @@ export default function PartnerRequestsTable({
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageSize = compact ? 5 : 10;
 
+  const loadRequests = useCallback(
+    async (targetPage = page) => {
+      try {
+        setLoading(true);
+        const result = await fetchPartnerRequests({
+          pageNumber: targetPage,
+          pageSize,
+          registrationStatus: statusFilter === "all" ? undefined : statusFilter,
+          search: debouncedSearch || undefined,
+        });
+
+        setItems(result.data.items);
+        setTotalCount(result.data.totalCount ?? result.data.items.length);
+        setTotalPages(Math.max(result.data.totalPages || 1, 1));
+        setError(null);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không thể tải hồ sơ đăng ký đối tác.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [debouncedSearch, page, pageSize, statusFilter],
+  );
+
   useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 400);
+
     return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
     };
   }, [search]);
 
@@ -92,42 +133,61 @@ export default function PartnerRequestsTable({
   }, [debouncedSearch, statusFilter]);
 
   useEffect(() => {
-    let ignore = false;
+    void loadRequests(page);
+  }, [loadRequests, page]);
 
-    async function load() {
+  useEffect(() => {
+    let isDisposed = false;
+    let realtimeConnection: HubConnection | null = null;
+
+    async function startRealtime() {
       try {
-        setLoading(true);
-        const result = await fetchPartnerRequests({
-          pageNumber: page,
-          pageSize,
-          registrationStatus: statusFilter === "all" ? undefined : statusFilter,
-          search: debouncedSearch || undefined,
-        });
-
-        if (ignore) return;
-        setItems(result.data.items);
-        setTotalCount(result.data.totalCount ?? result.data.items.length);
-        setTotalPages(Math.max(result.data.totalPages || 1, 1));
-        setError(null);
-      } catch (err) {
-        if (ignore) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Không thể tải hồ sơ đăng ký đối tác.",
-        );
-      } finally {
-        if (!ignore) {
-          setLoading(false);
+        const connectionInfo = await fetchCacheInvalidationConnectionInfo();
+        if (isDisposed) {
+          return;
         }
+
+        realtimeConnection = new HubConnectionBuilder()
+          .withUrl(connectionInfo.hubUrl, {
+            accessTokenFactory: async () => {
+              const latestConnectionInfo = await fetchCacheInvalidationConnectionInfo();
+              return latestConnectionInfo.accessToken;
+            },
+          })
+          .withAutomaticReconnect()
+          .configureLogging(LogLevel.Warning)
+          .build();
+
+        realtimeConnection.on(
+          "partner_registration_status_changed",
+          (payload: PartnerRegistrationRealtimeEvent) => {
+            if (!payload?.partnerRegistrationId) {
+              return;
+            }
+
+            setPage(1);
+            void loadRequests(1);
+          },
+        );
+
+        await realtimeConnection.start();
+
+        if (isDisposed) {
+          await realtimeConnection.stop();
+        }
+      } catch (realtimeError) {
+        console.error("Không thể khởi tạo realtime hồ sơ đối tác.", realtimeError);
       }
     }
 
-    load();
+    void startRealtime();
+
     return () => {
-      ignore = true;
+      isDisposed = true;
+      realtimeConnection?.off("partner_registration_status_changed");
+      void realtimeConnection?.stop();
     };
-  }, [debouncedSearch, page, pageSize, statusFilter]);
+  }, [loadRequests]);
 
   if (loading && items.length === 0) {
     return (
@@ -162,7 +222,7 @@ export default function PartnerRequestsTable({
             <FileText className="h-6 w-6 text-destructive" />
           </div>
           <p className="text-sm font-medium text-destructive">{error}</p>
-          <Button variant="outline" size="sm" className="mt-4" onClick={() => setPage(1)}>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => void loadRequests(1)}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Thử lại
           </Button>
@@ -205,7 +265,7 @@ export default function PartnerRequestsTable({
           variant="outline"
           size="icon"
           className="h-9 w-9 shrink-0"
-          onClick={() => setPage(1)}
+          onClick={() => void loadRequests(page)}
           disabled={loading}
         >
           {loading ? (

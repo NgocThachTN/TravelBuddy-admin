@@ -62,6 +62,7 @@ import type {
   GetRescueRequestsParams,
   RescueRequestListItem,
   RescueRequestDetail,
+  UpdateModeratorRescueRequestStatusPayload,
 } from "@/types";
 
 // Re-export types so existing consumers that import from "@/lib/api" still work
@@ -478,6 +479,7 @@ export async function fetchRescueRequests(
 ): Promise<BePagedWrapper<RescueRequestListItem>> {
   const normalizedParams = {
     ...params,
+    search: params.search?.trim() || undefined,
     status: params.status === "all" ? undefined : params.status,
   };
   const { data } = await api.get<BePagedWrapper<RescueRequestListItem>>(
@@ -492,6 +494,17 @@ export async function fetchRescueRequestById(
 ): Promise<BeWrapper<RescueRequestDetail>> {
   const { data } = await api.get<BeWrapper<RescueRequestDetail>>(
     API_ROUTES.RESCUE_REQUESTS_DETAIL(id),
+  );
+  return data;
+}
+
+export async function updateRescueRequestStatusByModerator(
+  id: string,
+  payload: UpdateModeratorRescueRequestStatusPayload,
+): Promise<BeWrapper<RescueRequestDetail>> {
+  const { data } = await api.patch<BeWrapper<RescueRequestDetail>>(
+    API_ROUTES.RESCUE_REQUESTS_MODERATOR_STATUS(id),
+    payload,
   );
   return data;
 }
@@ -748,6 +761,16 @@ export async function reviewPartnerRequest(
 }
 
 // ── Service Partner API ───────────────────────────────────────────────
+
+export async function fetchCacheInvalidationConnectionInfo(): Promise<{
+  accessToken: string;
+  hubUrl: string;
+}> {
+  const { data } = await api.get<{ accessToken: string; hubUrl: string }>(
+    API_ROUTES.REALTIME_CACHE_INVALIDATION,
+  );
+  return data;
+}
 
 export async function fetchServicePartners(
   params: GetServicePartnersParams = {},

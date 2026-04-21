@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import PaginationControl from "@/components/pagination-control";
 
-type ServicePartnerStatusFilter = "all" | "Active" | "Inactive" | "Suspended";
+type ServicePartnerStatusFilter = "all" | "Active" | "Suspended";
 
 const STATUS_OPTIONS: Array<{
   value: ServicePartnerStatusFilter;
@@ -32,7 +32,6 @@ const STATUS_OPTIONS: Array<{
 }> = [
   { value: "all", label: "Tất cả" },
   { value: "Active", label: "Đang hoạt động" },
-  { value: "Inactive", label: "Chưa kích hoạt" },
   { value: "Suspended", label: "Tạm khóa" },
 ];
 

@@ -1,4 +1,4 @@
-import { requireRole } from "@/server/auth/dal";
+import { requireAnyRole } from "@/server/auth/dal";
 import RescueRequestDetailClient from "./rescue-request-detail-client";
 
 export default async function RescueRequestDetailPage({
@@ -6,7 +6,7 @@ export default async function RescueRequestDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRole("MODERATOR");
+  await requireAnyRole(["ADMIN", "MODERATOR"]);
   const { id } = await params;
 
   return <RescueRequestDetailClient rescueRequestId={id} />;

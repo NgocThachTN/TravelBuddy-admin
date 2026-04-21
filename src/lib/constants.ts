@@ -80,6 +80,8 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}/decision`,
   RESCUE_REQUESTS: "/api/rescue-requests",
   RESCUE_REQUESTS_DETAIL: (id: string) => `/api/rescue-requests/${id}`,
+  RESCUE_REQUESTS_MODERATOR_STATUS: (id: string) =>
+    `/api/rescue-requests/${id}/status`,
   ADMIN_REPORTS: "/api/admin/reports",
   ADMIN_REPORTS_DETAIL: (reportId: string) => `/api/admin/reports/${reportId}`,
   ADMIN_REPORTS_PROCESS: (reportId: string) =>
@@ -101,6 +103,7 @@ export const API_ROUTES = {
     `/api/admin/partners/requests/${id}`,
   ADMIN_PARTNER_REVIEWS_DECISION: (id: string) =>
     `/api/admin/partners/requests/${id}/decision`,
+  REALTIME_CACHE_INVALIDATION: "/api/realtime/cache-invalidation",
   ADMIN_SERVICE_PARTNERS: "/api/admin/partners/service-partners",
   ADMIN_SERVICE_PARTNERS_DETAIL: (id: string) =>
     `/api/admin/partners/service-partners/${id}`,

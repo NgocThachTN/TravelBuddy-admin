@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  fetchPartnerRequestById,
-  reviewPartnerRequest,
-} from "@/lib/api";
+import { fetchPartnerRequestById, reviewPartnerRequest } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import {
   formatFullAddress,
@@ -23,24 +20,13 @@ import {
   type PartnerDocumentItem,
 } from "@/components/partner-document-preview";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +38,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { normalizePartnerDocumentUrl } from "@/lib/partner-document";
-import { ArrowLeft, FileText, Loader2, MapPin, Store, User } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  Loader2,
+  MapPin,
+  ShieldCheck,
+  Store,
+  User,
+} from "lucide-react";
 
 type ReviewAction = "approve" | "reject" | "resubmit";
 
@@ -164,14 +158,19 @@ function getTaxVerificationStatusLabel(rawStatus?: string) {
 }
 
 function hasVietnameseText(value: string) {
-  return /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(value);
+  return /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(
+    value,
+  );
 }
 
 function toVietnameseProviderDesc(raw?: string) {
   const value = raw?.trim();
   if (!value) return null;
 
-  const parts = value.split(" - ").map((part) => part.trim()).filter(Boolean);
+  const parts = value
+    .split(" - ")
+    .map((part) => part.trim())
+    .filter(Boolean);
   const vietnamesePart = parts.find(hasVietnameseText);
   if (vietnamesePart) return vietnamesePart;
 
@@ -199,6 +198,54 @@ function toVietnameseProviderDesc(raw?: string) {
   if (normalized.includes("bad request")) return "Yêu cầu không hợp lệ";
 
   return "Không có mô tả chi tiết từ nhà cung cấp";
+}
+
+function normalizeTaxCode(value?: string | null) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function shouldShowVerifiedBusinessStatus(
+  detail: PartnerRequestDetail,
+  verification?: PartnerRequestDetail["taxVerification"],
+) {
+  if (!verification) {
+    return false;
+  }
+
+  const providerCode = verification.providerCode?.trim();
+  const responseTaxCode = normalizeTaxCode(verification.taxCode);
+  const submittedTaxCode = normalizeTaxCode(detail.taxId);
+
+  if (providerCode !== "00") {
+    return false;
+  }
+
+  if (!responseTaxCode || !submittedTaxCode || responseTaxCode !== submittedTaxCode) {
+    return false;
+  }
+
+  return (
+    Boolean(verification.providerBusinessStatus?.trim()) ||
+    verification.isBusinessActive != null
+  );
+}
+
+function getBusinessStatusValue(
+  detail: PartnerRequestDetail,
+  verification?: PartnerRequestDetail["taxVerification"],
+) {
+  if (!shouldShowVerifiedBusinessStatus(detail, verification)) {
+    return null;
+  }
+
+  return (
+    verification?.providerBusinessStatus ??
+    (verification?.isBusinessActive === true
+      ? "Đang hoạt động"
+      : verification?.isBusinessActive === false
+        ? "Ngừng hoạt động"
+        : null)
+  );
 }
 
 function getReviewActionLabel(action: ReviewAction) {
@@ -245,8 +292,8 @@ export default function PartnerRequestDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const [reviewNoteError, setReviewNoteError] = useState<string | null>(null);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<ReviewAction | null>(null);
+  const [selectedQuickReason, setSelectedQuickReason] = useState("");
 
   const loadDetail = useCallback(async () => {
     try {
@@ -264,7 +311,7 @@ export default function PartnerRequestDetailPage() {
   }, [requestId]);
 
   useEffect(() => {
-    loadDetail();
+    void loadDetail();
   }, [loadDetail]);
 
   async function executeAction(type: ReviewAction) {
@@ -279,26 +326,26 @@ export default function PartnerRequestDetailPage() {
           : type === "reject"
             ? "Reject"
             : "RequestResubmission";
+
       const reviewPayload = {
         decision,
         reviewNote: reviewNote.trim() || undefined,
       } as const;
 
+      await reviewPartnerRequest(requestId, reviewPayload);
+
       if (type === "approve") {
-        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã phê duyệt hồ sơ đối tác.");
       } else if (type === "reject") {
-        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã từ chối hồ sơ đối tác.");
       } else {
-        await reviewPartnerRequest(requestId, reviewPayload);
         setSuccess("Đã yêu cầu đối tác bổ sung hồ sơ.");
       }
 
       await loadDetail();
-      setReviewDialogOpen(false);
       setReviewNote("");
       setReviewNoteError(null);
+      setSelectedQuickReason("");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Không thể xử lý thao tác duyệt",
@@ -322,6 +369,7 @@ export default function PartnerRequestDetailPage() {
     if (!validateReviewNoteForAction(action)) {
       return;
     }
+
     setPendingAction(action);
   }
 
@@ -383,38 +431,26 @@ export default function PartnerRequestDetailPage() {
 
   const documentGroups = getPartnerDocumentGroups(detail);
   const taxVerification = detail.taxVerification;
+  const businessStatusValue = getBusinessStatusValue(detail, taxVerification);
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <div className="space-y-2 w-full">
-          <Button asChild variant="ghost" className="px-0">
-            <Link href={ROUTES.PARTNER_REQUESTS}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lại danh sách
-            </Link>
-          </Button>
-          <div className="flex w-full flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">
-                {detail.requestCode}
-              </h1>
-              {renderStatusBadge(detail.registrationStatus, getRegistrationStatusMeta)}
-            </div>
-            <Button
-              type="button"
-              className="ml-auto"
-              onClick={() => setReviewDialogOpen(true)}
-              disabled={!canReview || saving}
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Xử lý hồ sơ
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Đã xét duyệt lúc: {formatDateTime(detail.reviewedAt)}
-          </p>
+        <Button asChild variant="ghost" className="px-0">
+          <Link href={ROUTES.PARTNER_REQUESTS}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Quay lại danh sách
+          </Link>
+        </Button>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">{detail.requestCode}</h1>
+          {renderStatusBadge(detail.registrationStatus, getRegistrationStatusMeta)}
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Đã xét duyệt lúc: {formatDateTime(detail.reviewedAt)}
+        </p>
       </div>
 
       {error && (
@@ -429,97 +465,149 @@ export default function PartnerRequestDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
-                Thông tin người đại diện
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {readOnlyField(
-                "Họ và tên",
-                [detail.partnerFirstName, detail.partnerLastName]
-                  .filter(Boolean)
-                  .join(" "),
-              )}
-              {readOnlyField("Số điện thoại", detail.partnerPhone)}
-              {readOnlyField("Email", detail.partnerEmail)}
-            </CardContent>
-          </Card>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_380px]">
+        <div className="min-w-0 space-y-6">
+          <Tabs defaultValue="representative" className="w-full">
+            <div className="sticky top-0 z-10 rounded-xl border border-border bg-background/95 p-2 backdrop-blur">
+              <TabsList className="h-auto w-full bg-slate-100 p-1">
+                <TabsTrigger value="representative" className="flex-1 rounded-md py-2">
+                  Thông tin người đại diện
+                </TabsTrigger>
+                <TabsTrigger value="store" className="flex-1 rounded-md py-2">
+                  Thông tin cửa hàng & địa chỉ
+                </TabsTrigger>
+                <TabsTrigger value="attachments" className="flex-1 rounded-md py-2">
+                  File đính kèm
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Store className="h-4 w-4 text-primary" />
-                Thông tin cửa hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {readOnlyField("Tên cửa hàng", detail.servicePartnerName)}
-                {readOnlyField("Công ty", detail.companyName)}
-                {readOnlyField("Mã số thuế", detail.taxId)}
-                {readOnlyField("Phạm vi dịch vụ", getVehicleServiceScopeLabel(detail.vehicleServiceScope))}
-                {readOnlyField("Trạng thái", getServicePartnerStatusMeta(detail.servicePartnerStatus).label)}
-              </div>
-              <div className="space-y-2">
-                <Label>Mô tả dịch vụ</Label>
-                <Textarea
-                  value={detail.servicePartnerDescription || "-"}
-                  readOnly
-                  className="min-h-24"
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <TabsContent value="representative" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-primary" />
+                    Thông tin người đại diện
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  {readOnlyField(
+                    "Họ và tên",
+                    [detail.partnerFirstName, detail.partnerLastName].filter(Boolean).join(" "),
+                  )}
+                  {readOnlyField("Số điện thoại", detail.partnerPhone)}
+                  {readOnlyField("Email", detail.partnerEmail)}
+                  {readOnlyField("Người liên hệ", detail.contactName)}
+                  {readOnlyField("Số điện thoại liên hệ", detail.contactPhone)}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                Địa chỉ cửa hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {readOnlyField("Địa chỉ dòng 1", detail.addressLine1)}
-                {readOnlyField("Địa chỉ dòng 2", detail.addressLine2)}
-                {readOnlyField("Phường/Xã", formatWardLabel(detail.wardName, detail.wardCode))}
-                {readOnlyField("Quận/Huyện", detail.districtName)}
-                {readOnlyField("Tỉnh/Thành phố", detail.provinceName)}
-                {readOnlyField("Mã bưu chính", detail.postalCode)}
-                {readOnlyTextarea(
-                  "Địa chỉ đầy đủ",
-                  formatFullAddress([
-                    detail.addressLine1,
-                    detail.addressLine2,
-                    detail.wardName,
-                    detail.districtName,
-                    detail.provinceName,
-                  ]),
-                )}
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Bản đồ</Label>
-                <PartnerLocationMap
-                  lat={detail.addressLat}
-                  lng={detail.addressLng}
-                  label={detail.servicePartnerName || detail.companyName || "Vi tri doi tac"}
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <TabsContent value="store" className="mt-4 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Store className="h-4 w-4 text-primary" />
+                    Thông tin cửa hàng
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {readOnlyField("Tên cửa hàng", detail.servicePartnerName)}
+                    {readOnlyField("Công ty", detail.companyName)}
+                    {readOnlyField("Mã số thuế đã đăng ký", detail.taxId)}
+                    {readOnlyField(
+                      "Phạm vi dịch vụ",
+                      getVehicleServiceScopeLabel(detail.vehicleServiceScope),
+                    )}
+                    {readOnlyField(
+                      "Trạng thái đối tác",
+                      getServicePartnerStatusMeta(detail.servicePartnerStatus).label,
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Mô tả dịch vụ</Label>
+                    <Textarea
+                      value={detail.servicePartnerDescription || "-"}
+                      readOnly
+                      className="min-h-28 resize-none"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Địa chỉ cửa hàng
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {readOnlyField("Địa chỉ dòng 1", detail.addressLine1)}
+                    {readOnlyField("Địa chỉ dòng 2", detail.addressLine2)}
+                    {readOnlyField("Phường/Xã", formatWardLabel(detail.wardName, detail.wardCode))}
+                    {readOnlyField("Quận/Huyện", detail.districtName)}
+                    {readOnlyField("Tỉnh/Thành phố", detail.provinceName)}
+                    {readOnlyField("Mã bưu chính", detail.postalCode)}
+                    {readOnlyTextarea(
+                      "Địa chỉ đầy đủ",
+                      formatFullAddress([
+                        detail.addressLine1,
+                        detail.addressLine2,
+                        detail.wardName,
+                        detail.districtName,
+                        detail.provinceName,
+                      ]),
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label>Bản đồ</Label>
+                    <PartnerLocationMap
+                      lat={detail.addressLat}
+                      lng={detail.addressLng}
+                      label={detail.servicePartnerName || detail.companyName || "Vi tri doi tac"}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="attachments" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    File đính kèm
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <DocumentGroupPreview
+                    title="Ảnh CCCD/CMND"
+                    documents={documentGroups.identityCards}
+                    emptyText="Chưa có ảnh CCCD/CMND."
+                  />
+                  <DocumentGroupPreview
+                    title="Giấy phép kinh doanh"
+                    documents={documentGroups.businessLicenses}
+                    emptyText="Chưa có giấy phép kinh doanh."
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 Xác minh mã số thuế
               </CardTitle>
             </CardHeader>
@@ -528,21 +616,14 @@ export default function PartnerRequestDetailPage() {
                 "Trạng thái xác minh",
                 getTaxVerificationStatusLabel(taxVerification?.verificationStatus),
               )}
-              {readOnlyField(
-                "Mã số thuế",
-                taxVerification?.taxCode ?? detail.taxId,
-              )}
-              {readOnlyField(
-                "Trạng thái doanh nghiệp",
-                taxVerification?.providerBusinessStatus ??
-                  (taxVerification?.isBusinessActive === true
-                    ? "Đang hoạt động"
-                    : taxVerification?.isBusinessActive === false
-                      ? "Không hoạt động"
-                      : null),
-              )}
+              {readOnlyField("Mã số thuế phản hồi", taxVerification?.taxCode ?? detail.taxId)}
+              {businessStatusValue != null &&
+                readOnlyField("Trạng thái doanh nghiệp", businessStatusValue)}
               {readOnlyField("Thời điểm xác minh", formatDateTime(taxVerification?.verifiedAt))}
-              {readOnlyField("Mô tả phản hồi", toVietnameseProviderDesc(taxVerification?.providerDesc))}
+              {readOnlyField(
+                "Mô tả phản hồi",
+                toVietnameseProviderDesc(taxVerification?.providerDesc),
+              )}
               {readOnlyField("Lỗi xác minh", taxVerification?.errorMessage)}
             </CardContent>
           </Card>
@@ -551,112 +632,98 @@ export default function PartnerRequestDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Hồ sơ và giấy tờ
+                Xử lý hồ sơ
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
-              <DocumentGroupPreview
-                title="Ảnh CCCD/CMND"
-                documents={documentGroups.identityCards}
-                emptyText="Chưa có ảnh CCCD/CMND."
-              />
-              <DocumentGroupPreview
-                title="Giấy phép kinh doanh"
-                documents={documentGroups.businessLicenses}
-                emptyText="Chưa có giấy phép kinh doanh."
-              />
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <p>
+                  <span className="font-medium">Mã hồ sơ:</span> {detail.requestCode}
+                </p>
+                <p>
+                  <span className="font-medium">Trạng thái hiện tại:</span>{" "}
+                  {getRegistrationStatusMeta(detail.registrationStatus).label}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reviewNote">Ghi chú duyệt</Label>
+                <Textarea
+                  id="reviewNote"
+                  value={reviewNote}
+                  onChange={(event) => {
+                    setReviewNote(event.target.value);
+                    if (reviewNoteError) {
+                      setReviewNoteError(null);
+                    }
+                  }}
+                  placeholder="Nhập ghi chú cho quản trị viên..."
+                  className="min-h-32"
+                />
+                {reviewNoteError && <p className="text-sm text-destructive">{reviewNoteError}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lý do nhanh</Label>
+                <Select
+                  value={selectedQuickReason || undefined}
+                  onValueChange={(value) => {
+                    setSelectedQuickReason(value);
+                    appendQuickReason(value);
+                    setSelectedQuickReason("");
+                  }}
+                  disabled={!canReview || saving}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn lý do để thêm nhanh vào ghi chú" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUICK_REASONS.map((reason) => (
+                      <SelectItem key={reason} value={reason}>
+                        {reason}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!canReview && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Hồ sơ này không còn ở trạng thái chờ duyệt để xử lý tiếp.
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                <Button
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  onClick={() => requestReviewAction("approve")}
+                  disabled={!canReview || saving}
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Phê duyệt
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => requestReviewAction("reject")}
+                  disabled={!canReview || saving}
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Từ chối
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200 hover:text-amber-950"
+                  onClick={() => requestReviewAction("resubmit")}
+                  disabled={!canReview || saving}
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Yêu cầu bổ sung
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      <Dialog
-        open={reviewDialogOpen}
-        onOpenChange={(open) => {
-          if (!saving) {
-            setReviewDialogOpen(open);
-            if (!open) {
-              setReviewNoteError(null);
-            }
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Thao tác duyệt hồ sơ</DialogTitle>
-            <DialogDescription>
-              Chọn hành động phù hợp và ghi chú rõ ràng trước khi xác nhận.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="reviewNote">Ghi chú duyệt</Label>
-              <Textarea
-                id="reviewNote"
-                value={reviewNote}
-                onChange={(event) => {
-                  setReviewNote(event.target.value);
-                  if (reviewNoteError) {
-                    setReviewNoteError(null);
-                  }
-                }}
-                placeholder="Nhập ghi chú cho quản trị viên..."
-                className="min-h-32"
-              />
-              {reviewNoteError && (
-                <p className="text-sm text-destructive">{reviewNoteError}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Lý do nhanh</Label>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_REASONS.map((reason) => (
-                  <Button
-                    key={reason}
-                    type="button"
-                    variant="outline"
-                    className="h-8 text-xs"
-                    onClick={() => appendQuickReason(reason)}
-                    disabled={!canReview || saving}
-                  >
-                    {reason}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:justify-normal">
-            <Button
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
-              onClick={() => requestReviewAction("approve")}
-              disabled={!canReview || saving}
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Phê duyệt
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => requestReviewAction("reject")}
-              disabled={!canReview || saving}
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Từ chối
-            </Button>
-            <Button
-              variant="outline"
-              className="border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200 hover:text-amber-950"
-              onClick={() => requestReviewAction("resubmit")}
-              disabled={!canReview || saving}
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Yêu cầu bổ sung
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog
         open={pendingAction !== null}
@@ -681,8 +748,7 @@ export default function PartnerRequestDetailPage() {
           </AlertDialogHeader>
           <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
             <p>
-              <span className="font-medium">Mã hồ sơ:</span>{" "}
-              {detail.requestCode}
+              <span className="font-medium">Mã hồ sơ:</span> {detail.requestCode}
             </p>
             <p>
               <span className="font-medium">Hành động:</span>{" "}
@@ -712,4 +778,3 @@ export default function PartnerRequestDetailPage() {
     </div>
   );
 }
-

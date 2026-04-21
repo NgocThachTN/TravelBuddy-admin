@@ -1,9 +1,9 @@
 import { Siren } from "lucide-react";
-import { requireRole } from "@/server/auth/dal";
+import { requireAnyRole } from "@/server/auth/dal";
 import RescueRequestTable from "./rescue-request-table";
 
 export default async function RescueRequestsPage() {
-  await requireRole("MODERATOR");
+  await requireAnyRole(["ADMIN", "MODERATOR"]);
 
   return (
     <div className="space-y-6">

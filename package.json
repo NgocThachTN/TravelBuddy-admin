@@ -13,6 +13,7 @@
     "clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path '.next') { Remove-Item '.next' -Recurse -Force -ErrorAction SilentlyContinue }; if (Test-Path 'node_modules/.cache') { Remove-Item 'node_modules/.cache' -Recurse -Force -ErrorAction SilentlyContinue }\""
   },
   "dependencies": {
+    "@microsoft/signalr": "^8.0.17",
     "axios": "^1.13.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

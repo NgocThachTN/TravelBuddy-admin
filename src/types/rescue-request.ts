@@ -10,6 +10,7 @@ export type RescueRequestStatus =
 export interface GetRescueRequestsParams {
   pageNumber?: number;
   pageSize?: number;
+  search?: string;
   status?: RescueRequestStatus | "all";
   sortBy?: "createdAt" | "receivedAt" | "status";
   sortDirection?: "asc" | "desc";
@@ -63,6 +64,17 @@ export interface RescueRequestDetail extends RescueRequestListItem {
   serviceItems: RescueRequestServiceItem[];
 }
 
+export interface UpdateModeratorRescueRequestStatusPayload {
+  status: Exclude<RescueRequestStatus, "New">;
+  reason: string;
+  rejectReasonCode?: RescueRequestRejectReasonCode;
+}
+
+export type RescueRequestRejectReasonCode =
+  | "NO_CAPACITY"
+  | "PERSONAL_EMERGENCY"
+  | "SAFETY_CONCERN";
+
 export const RESCUE_REQUEST_STATUSES: RescueRequestStatus[] = [
   "New",
   "Received",
@@ -71,6 +83,17 @@ export const RESCUE_REQUEST_STATUSES: RescueRequestStatus[] = [
   "Completed",
   "Rejected",
   "Cancelled",
+];
+
+export const RESCUE_REQUEST_MODERATOR_TARGET_STATUSES: Exclude<
+  RescueRequestStatus,
+  "New"
+>[] = ["Received", "InProgress", "Arrived", "Completed", "Rejected", "Cancelled"];
+
+export const RESCUE_REQUEST_REJECT_REASONS: RescueRequestRejectReasonCode[] = [
+  "NO_CAPACITY",
+  "PERSONAL_EMERGENCY",
+  "SAFETY_CONCERN",
 ];
 
 export const RESCUE_REQUEST_STATUS_LABELS: Record<string, string> = {

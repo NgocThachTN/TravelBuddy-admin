@@ -182,9 +182,13 @@ export type {
   RescueRequestListItem,
   RescueRequestServiceItem,
   RescueRequestDetail,
+  UpdateModeratorRescueRequestStatusPayload,
+  RescueRequestRejectReasonCode,
 } from "./rescue-request";
 export {
   RESCUE_REQUEST_STATUSES,
+  RESCUE_REQUEST_MODERATOR_TARGET_STATUSES,
+  RESCUE_REQUEST_REJECT_REASONS,
   RESCUE_REQUEST_STATUS_LABELS,
   RESCUE_REQUEST_CANCEL_REASON_LABELS,
   RESCUE_REQUEST_REJECT_REASON_LABELS,

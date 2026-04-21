@@ -7,8 +7,9 @@ import {
   ArrowLeft,
   CalendarClock,
   Car,
+  CheckCircle2,
   Loader2,
-  MapPin,
+  PencilLine,
   Phone,
   ReceiptText,
   RefreshCw,
@@ -25,6 +26,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,12 +50,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchRescueRequestById } from "@/lib/api";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  fetchRescueRequestById,
+  updateRescueRequestStatusByModerator,
+} from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { RescueRequestDetail } from "@/types";
+import type {
+  RescueRequestDetail,
+  RescueRequestRejectReasonCode,
+  UpdateModeratorRescueRequestStatusPayload,
+} from "@/types";
 import {
   RESCUE_REQUEST_CANCEL_REASON_LABELS,
+  RESCUE_REQUEST_MODERATOR_TARGET_STATUSES,
+  RESCUE_REQUEST_REJECT_REASONS,
   RESCUE_REQUEST_REJECT_REASON_LABELS,
   rescueRequestStatusLabel,
 } from "@/types";
@@ -121,6 +149,193 @@ function PersonCard({
   );
 }
 
+function canModerateStatus(status?: string | null) {
+  return !status || !["Completed", "Rejected", "Cancelled"].includes(status);
+}
+
+function ModeratorStatusDialog({
+  detail,
+  loading,
+  onSubmit,
+}: {
+  detail: RescueRequestDetail;
+  loading: boolean;
+  onSubmit: (payload: UpdateModeratorRescueRequestStatusPayload) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<UpdateModeratorRescueRequestStatusPayload["status"]>(
+    "Received",
+  );
+  const [reason, setReason] = useState("");
+  const [rejectReasonCode, setRejectReasonCode] =
+    useState<RescueRequestRejectReasonCode>("NO_CAPACITY");
+  const [error, setError] = useState<string | null>(null);
+
+  const availableStatuses = useMemo(
+    () =>
+      RESCUE_REQUEST_MODERATOR_TARGET_STATUSES.filter(
+        (item) => item !== detail.status,
+      ),
+    [detail.status],
+  );
+
+  useEffect(() => {
+    setStatus(availableStatuses[0] ?? "Received");
+  }, [availableStatuses]);
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setError(null);
+      setReason("");
+      setRejectReasonCode("NO_CAPACITY");
+      setStatus(availableStatuses[0] ?? "Received");
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!reason.trim()) {
+      setError("Vui lòng nhập lý do cập nhật trạng thái.");
+      return;
+    }
+
+    try {
+      setError(null);
+      const payload: UpdateModeratorRescueRequestStatusPayload = {
+        status,
+        reason: reason.trim(),
+      };
+
+      if (status === "Rejected") {
+        payload.rejectReasonCode = rejectReasonCode;
+      }
+
+      await onSubmit(payload);
+      setOpen(false);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật trạng thái đơn cứu hộ.",
+      );
+    }
+  }
+
+  if (!canModerateStatus(detail.status)) {
+    return null;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button type="button">
+          <PencilLine className="h-4 w-4" />
+          Cập nhật trạng thái
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cập nhật trạng thái đơn cứu hộ</DialogTitle>
+          <DialogDescription>
+            Chọn trạng thái đích và nhập lý do vận hành cho đơn #
+            {detail.rescueRequestId.slice(0, 8)}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="rescue-status">Trạng thái đích</Label>
+            <Select
+              value={status}
+              onValueChange={(value) =>
+                setStatus(value as UpdateModeratorRescueRequestStatusPayload["status"])
+              }
+            >
+              <SelectTrigger id="rescue-status">
+                <SelectValue placeholder="Chọn trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableStatuses.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {rescueRequestStatusLabel(item)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {status === "Rejected" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="rescue-reject-reason">Lý do từ chối</Label>
+              <Select
+                value={rejectReasonCode}
+                onValueChange={(value) =>
+                  setRejectReasonCode(value as RescueRequestRejectReasonCode)
+                }
+              >
+                <SelectTrigger id="rescue-reject-reason">
+                  <SelectValue placeholder="Chọn lý do từ chối" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESCUE_REQUEST_REJECT_REASONS.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {RESCUE_REQUEST_REJECT_REASON_LABELS[item] ?? item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="rescue-reason">Lý do vận hành</Label>
+            <Textarea
+              id="rescue-reason"
+              placeholder="Nhập lý do cập nhật trạng thái..."
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={4}
+              maxLength={1000}
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {reason.length}/1000
+            </p>
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={loading}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || availableStatuses.length === 0 || !reason.trim()}
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
+              Xác nhận cập nhật
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function RescueRequestDetailClient({
   rescueRequestId,
 }: {
@@ -129,6 +344,7 @@ export default function RescueRequestDetailClient({
   const [detail, setDetail] = useState<RescueRequestDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadDetail = useCallback(
@@ -156,6 +372,30 @@ export default function RescueRequestDetailClient({
   useEffect(() => {
     void loadDetail(false);
   }, [loadDetail]);
+
+  const handleStatusUpdate = useCallback(
+    async (payload: UpdateModeratorRescueRequestStatusPayload) => {
+      try {
+        setIsSubmittingStatus(true);
+        setErrorMessage(null);
+        const result = await updateRescueRequestStatusByModerator(
+          rescueRequestId,
+          payload,
+        );
+        setDetail(result.data);
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Không thể cập nhật trạng thái đơn cứu hộ.";
+        setErrorMessage(message);
+        throw new Error(message);
+      } finally {
+        setIsSubmittingStatus(false);
+      }
+    },
+    [rescueRequestId],
+  );
 
   const timeline = useMemo(() => {
     if (!detail) return [];
@@ -227,7 +467,7 @@ export default function RescueRequestDetailClient({
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Đối tác xử lý, thông tin traveler, dịch vụ và chi phí của đơn cứu hộ
+              Đối tác xử lý, thông tin người yêu cầu, dịch vụ và chi phí của đơn cứu hộ
             </p>
           </div>
         </div>
@@ -235,7 +475,7 @@ export default function RescueRequestDetailClient({
           type="button"
           variant="outline"
           onClick={() => void loadDetail(true)}
-          disabled={isRefreshing}
+          disabled={isRefreshing || isSubmittingStatus}
         >
           {isRefreshing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -244,6 +484,11 @@ export default function RescueRequestDetailClient({
           )}
           Làm mới
         </Button>
+        <ModeratorStatusDialog
+          detail={detail}
+          loading={isSubmittingStatus}
+          onSubmit={handleStatusUpdate}
+        />
       </div>
 
       {errorMessage && (
@@ -254,7 +499,7 @@ export default function RescueRequestDetailClient({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <PersonCard
-          title="Traveler"
+          title="Người yêu cầu"
           name={detail.travelerDisplayName}
           phone={detail.travelerPhone}
           avatarUrl={detail.travelerAvatarUrl}
@@ -329,7 +574,7 @@ export default function RescueRequestDetailClient({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Dịch vụ đã chọn</CardTitle>
             <CardDescription className="text-[13px]">
-              Danh sách service item trong đơn cứu hộ
+              Danh sách dịch vụ trong đơn cứu hộ
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -366,7 +611,7 @@ export default function RescueRequestDetailClient({
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <CalendarClock className="h-4 w-4" />
-              Timeline xử lý
+              Tiến trình xử lý
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -390,7 +635,7 @@ export default function RescueRequestDetailClient({
       {detail.travelerPhotoUrls.length > 0 && (
         <Card className="border border-border/50 shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ảnh traveler gửi</CardTitle>
+            <CardTitle className="text-sm font-medium">Ảnh người yêu cầu gửi</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {detail.travelerPhotoUrls.map((url) => (
@@ -408,14 +653,6 @@ export default function RescueRequestDetailClient({
         </Card>
       )}
 
-      <Card className="border border-border/50 shadow-none">
-        <CardContent className="flex flex-col gap-2 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center">
-          <MapPin className="h-4 w-4" />
-          <span>
-            RescueRequestId: <span className="font-mono">{detail.rescueRequestId}</span>
-          </span>
-        </CardContent>
-      </Card>
     </div>
   );
 }

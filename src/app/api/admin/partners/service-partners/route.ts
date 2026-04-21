@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
 
   if (searchParams.has("pageNumber")) params.PageNumber = searchParams.get("pageNumber")!;
   if (searchParams.has("pageSize")) params.PageSize = searchParams.get("pageSize")!;
+  if (searchParams.has("search")) params.Search = searchParams.get("search")!;
   if (searchParams.has("servicePartnerStatus")) {
     params.ServicePartnerStatus = searchParams.get("servicePartnerStatus")!;
   }

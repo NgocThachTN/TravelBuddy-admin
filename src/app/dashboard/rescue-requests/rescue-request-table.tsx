@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { Eye, Loader2, RefreshCw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,7 @@ export default function RescueRequestTable() {
   const [sortDirection, setSortDirection] =
     useState<NonNullable<GetRescueRequestsParams["sortDirection"]>>("desc");
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search.trim());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export default function RescueRequestTable() {
         const result = await fetchRescueRequests({
           pageNumber,
           pageSize: PAGE_SIZE,
+          search: deferredSearch,
           status,
           sortBy,
           sortDirection,
@@ -114,29 +116,12 @@ export default function RescueRequestTable() {
         setIsRefreshing(false);
       }
     },
-    [pageNumber, sortBy, sortDirection, status],
+    [deferredSearch, pageNumber, sortBy, sortDirection, status],
   );
 
   useEffect(() => {
     void loadItems(false);
   }, [loadItems]);
-
-  const filteredItems = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    if (!keyword) return items;
-    return items.filter((item) =>
-      [
-        item.rescueRequestId,
-        item.travelerDisplayName,
-        item.travelerPhone,
-        item.assignedPartnerName,
-        item.vehicleName,
-        item.vehicleNumber,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword)),
-    );
-  }, [items, search]);
 
   function handleStatusChange(value: string) {
     setStatus(value as RescueRequestStatus | "all");
@@ -151,7 +136,10 @@ export default function RescueRequestTable() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPageNumber(1);
+              }}
               placeholder="Tìm theo mã đơn, traveler, đối tác, biển số..."
               className="pl-9"
             />
@@ -249,8 +237,8 @@ export default function RescueRequestTable() {
                     Đang tải danh sách đơn cứu hộ
                   </TableCell>
                 </TableRow>
-              ) : filteredItems.length ? (
-                filteredItems.map((item) => (
+              ) : items.length ? (
+                items.map((item) => (
                   <TableRow key={item.rescueRequestId}>
                     <TableCell>
                       <div className="max-w-[160px]">
