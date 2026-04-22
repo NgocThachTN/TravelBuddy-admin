@@ -28,6 +28,7 @@ import type {
   TripModerationTaskDetail,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
+  TripModerationDispatchNowResponse,
   ReportListItem,
   ReportDetail,
   GetReportsParams,
@@ -466,6 +467,15 @@ export async function reviewTrip(
   const { data } = await api.post<BeWrapper<TripModerationDecisionResponse>>(
     API_ROUTES.ADMIN_TRIP_MODERATION_DECISION(taskId),
     payload,
+  );
+  return data;
+}
+
+export async function dispatchTripModerationScanNow(): Promise<
+  BeWrapper<TripModerationDispatchNowResponse>
+> {
+  const { data } = await api.post<BeWrapper<TripModerationDispatchNowResponse>>(
+    API_ROUTES.ADMIN_TRIP_MODERATION_DISPATCH_NOW,
   );
   return data;
 }

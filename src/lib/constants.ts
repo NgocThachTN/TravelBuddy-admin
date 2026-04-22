@@ -78,6 +78,7 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  ADMIN_TRIP_MODERATION_DISPATCH_NOW: "/api/admin/moderation/trips/scan/dispatch-now",
   RESCUE_REQUESTS: "/api/rescue-requests",
   RESCUE_REQUESTS_DETAIL: (id: string) => `/api/rescue-requests/${id}`,
   RESCUE_REQUESTS_MODERATOR_STATUS: (id: string) =>

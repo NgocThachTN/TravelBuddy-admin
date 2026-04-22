@@ -97,6 +97,7 @@ export type {
   UpdateAdminTripPayload,
   ReviewTripModerationPayload,
   TripModerationDecisionResponse,
+  TripModerationDispatchNowResponse,
   GetTripModerationTasksParams,
   TripModerationTaskListItem,
   TripModerationFlaggedItem,

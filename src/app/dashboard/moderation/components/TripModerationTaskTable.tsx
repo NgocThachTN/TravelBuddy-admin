@@ -22,6 +22,7 @@ import {
   Home,
 } from "lucide-react";
 import {
+  dispatchTripModerationScanNow,
   fetchTripById,
   fetchTripModerationTaskDetail,
   fetchTripModerationTasks,
@@ -539,6 +540,9 @@ export default function TripModerationTaskTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dispatchNowLoading, setDispatchNowLoading] = useState(false);
+  const [dispatchNowError, setDispatchNowError] = useState<string | null>(null);
+  const [dispatchNowSuccess, setDispatchNowSuccess] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("openQueue");
@@ -635,6 +639,36 @@ export default function TripModerationTaskTable() {
       setDetailLoading(false);
     }
   }, []);
+
+  const handleDispatchNow = useCallback(async () => {
+    try {
+      setDispatchNowLoading(true);
+      setDispatchNowError(null);
+      setDispatchNowSuccess(null);
+
+      const result = await dispatchTripModerationScanNow();
+      const { dispatchedTripCount, batchSizeUsed, hasPublishedMessage } = result.data;
+
+      if (!hasPublishedMessage || dispatchedTripCount <= 0) {
+        setDispatchNowSuccess(
+          `Đã kích hoạt duyệt AI ngay nhưng hiện không có chuyến đi chờ quét`,
+        );
+      } else {
+        setDispatchNowSuccess(
+          `Đã kích hoạt duyệt AI ngay cho ${dispatchedTripCount} chuyến đi.`,
+        );
+      }
+
+      await loadTasks(1);
+      setPage(1);
+    } catch (err) {
+      setDispatchNowError(
+        err instanceof Error ? err.message : "Không thể kích hoạt duyệt AI ngay.",
+      );
+    } finally {
+      setDispatchNowLoading(false);
+    }
+  }, [loadTasks]);
 
   const submitDecision = useCallback(async (decision: "Approve" | "Reject") => {
     if (!selectedTask) return;
@@ -838,6 +872,16 @@ export default function TripModerationTaskTable() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="h-9 bg-background shadow-sm"
+              onClick={() => void handleDispatchNow()}
+              disabled={loading || dispatchNowLoading}
+            >
+              <PlayCircle className={cn("mr-2 h-4 w-4", dispatchNowLoading && "animate-spin")} />
+              Kích hoạt duyệt AI ngay
+            </Button>
+
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatusFilter)}>
               <SelectTrigger className="h-9 w-[180px] bg-background shadow-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
               <SelectContent>
@@ -867,6 +911,19 @@ export default function TripModerationTaskTable() {
             </Button>
           </div>
         </div>
+
+        {(dispatchNowError || dispatchNowSuccess) && (
+          <div
+            className={cn(
+              "border-b px-5 py-3 text-sm",
+              dispatchNowError
+                ? "border-destructive/20 bg-destructive/5 text-destructive"
+                : "border-emerald-200/60 bg-emerald-50/70 text-emerald-700",
+            )}
+          >
+            {dispatchNowError ?? dispatchNowSuccess}
+          </div>
+        )}
         
         <div className="flex justify-between items-center bg-muted/20 px-5 py-2.5 border-b">
           <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
