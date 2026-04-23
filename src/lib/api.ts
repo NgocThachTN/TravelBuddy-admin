@@ -50,10 +50,12 @@ import type {
   GetAdminTransactionsParams,
   AdminTransactionRecord,
   AdminWalletWithdrawalRecord,
+  WalletWithdrawalSettings,
   GetAdminWalletWithdrawalsParams,
   MarkWalletWithdrawalProcessingPayload,
   ApproveWalletWithdrawalPayload,
   RejectWalletWithdrawalPayload,
+  UpdateWalletWithdrawalSettingsPayload,
   MyProfileData,
   DashboardOverviewData,
   RescueCommissionRevenueData,
@@ -80,10 +82,12 @@ export type {
   GetAdminTransactionsParams,
   AdminTransactionRecord,
   AdminWalletWithdrawalRecord,
+  WalletWithdrawalSettings,
   GetAdminWalletWithdrawalsParams,
   MarkWalletWithdrawalProcessingPayload,
   ApproveWalletWithdrawalPayload,
   RejectWalletWithdrawalPayload,
+  UpdateWalletWithdrawalSettingsPayload,
 } from "@/types";
 // Backward-compat alias
 export type { UserListItem as User } from "@/types";
@@ -290,6 +294,23 @@ export async function fetchAdminWalletWithdrawalWorkQueue(
   const { data } = await api.get<BePagedWrapper<AdminWalletWithdrawalRecord>>(
     API_ROUTES.ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE,
     { params },
+  );
+  return data;
+}
+
+export async function fetchAdminWalletWithdrawalSettings(): Promise<BeWrapper<WalletWithdrawalSettings>> {
+  const { data } = await api.get<BeWrapper<WalletWithdrawalSettings>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_SETTINGS,
+  );
+  return data;
+}
+
+export async function updateAdminWalletWithdrawalSettings(
+  payload: UpdateWalletWithdrawalSettingsPayload,
+): Promise<BeWrapper<WalletWithdrawalSettings>> {
+  const { data } = await api.put<BeWrapper<WalletWithdrawalSettings>>(
+    API_ROUTES.ADMIN_WALLET_WITHDRAWALS_SETTINGS,
+    payload,
   );
   return data;
 }

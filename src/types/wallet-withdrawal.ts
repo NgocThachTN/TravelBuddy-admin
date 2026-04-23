@@ -34,6 +34,11 @@ export interface AdminWalletWithdrawalRecord {
   createdAt: string;
 }
 
+export interface WalletWithdrawalSettings {
+  withdrawFeePercent: number;
+  minimumWithdrawAmount: number;
+}
+
 export interface GetAdminWalletWithdrawalsParams {
   pageNumber?: number;
   pageSize?: number;
@@ -51,4 +56,9 @@ export interface ApproveWalletWithdrawalPayload {
 
 export interface RejectWalletWithdrawalPayload {
   rejectedReason: string;
+}
+
+export interface UpdateWalletWithdrawalSettingsPayload {
+  withdrawFeePercent: number;
+  minimumWithdrawAmount: number;
 }

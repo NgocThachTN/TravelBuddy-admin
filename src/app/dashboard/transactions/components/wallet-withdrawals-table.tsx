@@ -10,14 +10,17 @@ import {
 } from "lucide-react";
 import {
   approveAdminWalletWithdrawal,
+  fetchAdminWalletWithdrawalSettings,
   fetchAdminWalletWithdrawalWorkQueue,
   markAdminWalletWithdrawalProcessing,
   rejectAdminWalletWithdrawal,
+  updateAdminWalletWithdrawalSettings,
 } from "@/lib/api";
 import type {
   AdminWalletWithdrawalRecord,
   AdminWalletWithdrawalStatusFilter,
   GetAdminWalletWithdrawalsParams,
+  WalletWithdrawalSettings,
 } from "@/types";
 import { cn } from "@/lib/utils";
 import PaginationControl from "@/components/pagination-control";
@@ -159,6 +162,12 @@ export default function WalletWithdrawalsTable() {
   const [externalRef, setExternalRef] = useState("");
   const [rejectedReason, setRejectedReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [settings, setSettings] = useState<WalletWithdrawalSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [withdrawFeeInput, setWithdrawFeeInput] = useState("");
+  const [minimumWithdrawInput, setMinimumWithdrawInput] = useState("");
 
   const requestIdRef = useRef(0);
 
@@ -219,10 +228,82 @@ export default function WalletWithdrawalsTable() {
     void loadWithdrawals(page, debouncedSearchText, statusFilter);
   }, [loadWithdrawals, page, debouncedSearchText, statusFilter]);
 
+  const loadSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const response = await fetchAdminWalletWithdrawalSettings();
+      const nextSettings = response.data;
+      setSettings(nextSettings);
+      setWithdrawFeeInput(nextSettings.withdrawFeePercent.toString());
+      setMinimumWithdrawInput(nextSettings.minimumWithdrawAmount.toString());
+      setSettingsError(null);
+    } catch (err) {
+      setSettingsError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải cấu hình rút tiền ví.",
+      );
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSettings();
+  }, [loadSettings]);
+
   const pageNetAmount = useMemo(
     () => rows.reduce((sum, row) => sum + (row.netAmount ?? 0), 0),
     [rows],
   );
+
+  function resetSettingsForm() {
+    if (!settings) return;
+    setWithdrawFeeInput(settings.withdrawFeePercent.toString());
+    setMinimumWithdrawInput(settings.minimumWithdrawAmount.toString());
+    setSettingsError(null);
+  }
+
+  async function handleSaveSettings() {
+    const normalizedFee = withdrawFeeInput.trim().replace(",", ".");
+    const normalizedMinimum = minimumWithdrawInput.trim().replace(/,/g, "");
+
+    const feePercent = Number(normalizedFee);
+    const minimumWithdrawAmount = Number(normalizedMinimum);
+
+    if (!Number.isFinite(feePercent) || feePercent < 0 || feePercent > 100) {
+      setSettingsError("Phí rút tiền phải nằm trong khoảng từ 0 đến 100 phần trăm.");
+      return;
+    }
+
+    if (!Number.isInteger(minimumWithdrawAmount) || minimumWithdrawAmount <= 0) {
+      setSettingsError("Mức rút tiền tối thiểu phải là số nguyên dương.");
+      return;
+    }
+
+    setSettingsSaving(true);
+    try {
+      const response = await updateAdminWalletWithdrawalSettings({
+        withdrawFeePercent: feePercent,
+        minimumWithdrawAmount,
+      });
+
+      const nextSettings = response.data;
+      setSettings(nextSettings);
+      setWithdrawFeeInput(nextSettings.withdrawFeePercent.toString());
+      setMinimumWithdrawInput(nextSettings.minimumWithdrawAmount.toString());
+      setSettingsError(null);
+      await loadWithdrawals(page, debouncedSearchText, statusFilter);
+    } catch (err) {
+      setSettingsError(
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật cấu hình rút tiền ví.",
+      );
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
 
   async function handleMarkProcessing() {
     if (!processingTarget) return;
@@ -495,6 +576,83 @@ export default function WalletWithdrawalsTable() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border border-border/50 shadow-none py-0">
+          <CardContent className="space-y-4 p-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Cấu hình rút tiền ví</p>
+                <p className="text-xs text-muted-foreground">
+                  Admin có thể điều chỉnh phí rút tiền và mức rút tiền tối thiểu áp dụng toàn hệ thống.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={settingsLoading || settingsSaving || !settings}
+                  onClick={resetSettingsForm}
+                >
+                  Khôi phục
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={settingsLoading || settingsSaving}
+                  onClick={() => void handleSaveSettings()}
+                >
+                  {settingsSaving ? (
+                    <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Lưu cấu hình
+                </Button>
+              </div>
+            </div>
+
+            {settingsError && (
+              <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                {settingsError}
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="withdraw-fee-percent">Phí rút tiền (%)</Label>
+                <Input
+                  id="withdraw-fee-percent"
+                  inputMode="decimal"
+                  value={withdrawFeeInput}
+                  disabled={settingsLoading || settingsSaving}
+                  onChange={(event) => setWithdrawFeeInput(event.target.value)}
+                  placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 5"}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Giá trị hiện tại:{" "}
+                  {settings ? `${settings.withdrawFeePercent}%` : settingsLoading ? "Đang tải..." : "-"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minimum-withdraw-amount">Mức rút tiền tối thiểu (VNĐ)</Label>
+                <Input
+                  id="minimum-withdraw-amount"
+                  inputMode="numeric"
+                  value={minimumWithdrawInput}
+                  disabled={settingsLoading || settingsSaving}
+                  onChange={(event) => setMinimumWithdrawInput(event.target.value)}
+                  placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 50000"}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Giá trị hiện tại:{" "}
+                  {settings
+                    ? formatMoney(settings.minimumWithdrawAmount, "VND")
+                    : settingsLoading
+                      ? "Đang tải..."
+                      : "-"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3.5">

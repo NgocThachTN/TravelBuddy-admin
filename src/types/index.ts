@@ -28,10 +28,12 @@ export type {
   AdminWalletWithdrawalStatus,
   AdminWalletWithdrawalStatusFilter,
   AdminWalletWithdrawalRecord,
+  WalletWithdrawalSettings,
   GetAdminWalletWithdrawalsParams,
   MarkWalletWithdrawalProcessingPayload,
   ApproveWalletWithdrawalPayload,
   RejectWalletWithdrawalPayload,
+  UpdateWalletWithdrawalSettingsPayload,
 } from "./wallet-withdrawal";
 export type { BePagedWrapper, BeWrapper } from "./api";
 export type { NavItem, NavGroup } from "./nav";

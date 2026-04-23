@@ -61,6 +61,7 @@ export const API_ROUTES = {
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
   ADMIN_TRANSACTIONS_USER_TRANSACTIONS: "/api/admin/transactions/users",
   ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE: "/api/admin/wallet-withdrawals/work-queue",
+  ADMIN_WALLET_WITHDRAWALS_SETTINGS: "/api/admin/wallet-withdrawals/settings",
   ADMIN_WALLET_WITHDRAWALS_PROCESSING: (withdrawalId: string) =>
     `/api/admin/wallet-withdrawals/${withdrawalId}/processing`,
   ADMIN_WALLET_WITHDRAWALS_APPROVE: (withdrawalId: string) =>
