@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   CalendarDays,
+  Eye,
   HandCoins,
   Loader2,
   ReceiptText,
@@ -46,6 +48,7 @@ import {
   fetchAdminRescueCommissionRevenuePartners,
 } from "@/lib/api";
 import { extractApiError } from "@/lib/api-error";
+import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type {
   GetRescueCommissionPartnerSummaryParams,
@@ -125,6 +128,29 @@ function getPartnerInitials(name: string) {
 
   if (parts.length === 0) return "DT";
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
+}
+
+function buildPartnerDetailHref(
+  item: RescueCommissionPartnerSummaryItem,
+  fromDate: string,
+  toDate: string,
+) {
+  const params = new URLSearchParams({
+    fromUtc: dateInputToUtcStart(fromDate),
+    toUtc: dateInputToUtcEndExclusive(toDate),
+    partnerName: item.partnerName,
+    completedRequestCount: String(item.completedRequestCount),
+    grossRevenueVnd: String(item.grossRevenueVnd),
+    commissionRevenueVnd: String(item.commissionRevenueVnd),
+  });
+
+  if (item.partnerAvatarUrl) {
+    params.set("partnerAvatarUrl", item.partnerAvatarUrl);
+  }
+
+  return `${ROUTES.TRANSACTIONS_RESCUE_COMMISSION_REVENUE_PARTNER_DETAIL(
+    item.partnerId,
+  )}?${params.toString()}`;
 }
 
 function SummaryCard({
@@ -584,13 +610,14 @@ export default function RescueCommissionRevenuePage() {
                     </TableHead>
                   );
                 })}
+                <TableHead className="text-right">Chi tiết</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isPartnerLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={SORTABLE_COLUMNS.length}
+                    colSpan={SORTABLE_COLUMNS.length + 1}
                     className="h-24 text-center text-muted-foreground"
                   >
                     <Loader2 className="mx-auto mb-2 h-4 w-4 animate-spin" />
@@ -598,34 +625,49 @@ export default function RescueCommissionRevenuePage() {
                   </TableCell>
                 </TableRow>
               ) : partnerItems.length > 0 ? (
-                partnerItems.map((item) => (
-                  <TableRow key={item.partnerId}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar size="default">
-                          <AvatarImage src={item.partnerAvatarUrl ?? undefined} alt={item.partnerName} />
-                          <AvatarFallback>{getPartnerInitials(item.partnerName)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{item.partnerName}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {item.completedRequestCount.toLocaleString("vi-VN")}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.grossRevenueVnd)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-emerald-700">
-                      {formatCurrency(item.commissionRevenueVnd)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                partnerItems.map((item) => {
+                  const detailHref = buildPartnerDetailHref(item, fromDate, toDate);
+
+                  return (
+                    <TableRow key={item.partnerId}>
+                      <TableCell>
+                        <Link
+                          href={detailHref}
+                          className="flex items-center gap-3 rounded-md transition-colors hover:text-primary"
+                        >
+                          <Avatar size="default">
+                            <AvatarImage src={item.partnerAvatarUrl ?? undefined} alt={item.partnerName} />
+                            <AvatarFallback>{getPartnerInitials(item.partnerName)}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{item.partnerName}</p>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {item.completedRequestCount.toLocaleString("vi-VN")}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.grossRevenueVnd)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-emerald-700">
+                        {formatCurrency(item.commissionRevenueVnd)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={detailHref}>
+                            <Eye className="h-4 w-4" />
+                            Xem đơn
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={SORTABLE_COLUMNS.length}
+                    colSpan={SORTABLE_COLUMNS.length + 1}
                     className="h-24 text-center text-muted-foreground"
                   >
                     Không có partner nào trong khoảng này.

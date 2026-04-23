@@ -179,9 +179,9 @@ function ModeratorStatusDialog({
     [detail.status],
   );
 
-  useEffect(() => {
-    setStatus(availableStatuses[0] ?? "Received");
-  }, [availableStatuses]);
+  const selectedStatus = availableStatuses.includes(status)
+    ? status
+    : availableStatuses[0] ?? "Received";
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -203,11 +203,11 @@ function ModeratorStatusDialog({
     try {
       setError(null);
       const payload: UpdateModeratorRescueRequestStatusPayload = {
-        status,
+        status: selectedStatus,
         reason: reason.trim(),
       };
 
-      if (status === "Rejected") {
+      if (selectedStatus === "Rejected") {
         payload.rejectReasonCode = rejectReasonCode;
       }
 
@@ -247,7 +247,7 @@ function ModeratorStatusDialog({
           <div className="space-y-1.5">
             <Label htmlFor="rescue-status">Trạng thái đích</Label>
             <Select
-              value={status}
+              value={selectedStatus}
               onValueChange={(value) =>
                 setStatus(value as UpdateModeratorRescueRequestStatusPayload["status"])
               }
@@ -265,7 +265,7 @@ function ModeratorStatusDialog({
             </Select>
           </div>
 
-          {status === "Rejected" && (
+          {selectedStatus === "Rejected" && (
             <div className="space-y-1.5">
               <Label htmlFor="rescue-reject-reason">Lý do từ chối</Label>
               <Select
@@ -443,6 +443,18 @@ export default function RescueRequestDetailClient({
     ? RESCUE_REQUEST_REJECT_REASON_LABELS[detail.rejectReasonCode] ??
       detail.rejectReasonCode
     : null;
+  const moneyBreakdown = detail.moneyBreakdown;
+  const serviceAmount = moneyBreakdown?.serviceAmount ?? detail.servicesTotalAmount;
+  const travelFeeAmount =
+    moneyBreakdown?.travelFeeAmount ?? detail.travelFeeAmount;
+  const totalOrderAmount =
+    moneyBreakdown?.totalOrderAmount ?? detail.totalOrderAmount;
+  const depositPercent = moneyBreakdown?.depositPercent ?? detail.depositPercent;
+  const depositAmount = moneyBreakdown?.depositAmount ?? detail.depositAmount;
+  const commissionAmount =
+    moneyBreakdown?.commissionAmount ?? detail.commissionAmount;
+  const partnerNetAmount =
+    moneyBreakdown?.partnerNetAmount ?? detail.partnerNetAmount;
 
   return (
     <div className="space-y-6">
@@ -529,12 +541,8 @@ export default function RescueRequestDetailClient({
             <InfoRow label="Ghi chú địa chỉ" value={detail.addressNote} />
             <InfoRow label="Ghi chú sự cố" value={detail.note} />
             <InfoRow
-              label="Tọa độ"
-              value={
-                detail.breakdownLat != null && detail.breakdownLng != null
-                  ? `${detail.breakdownLat}, ${detail.breakdownLng}`
-                  : "-"
-              }
+              label={"V\u1ECB tr\u00ED s\u1EF1 c\u1ED1"}
+              value={detail.breakdownAddress || detail.addressNote || "-"}
             />
             <InfoRow
               label="Khoảng cách"
@@ -555,16 +563,20 @@ export default function RescueRequestDetailClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="Tiền dịch vụ" value={formatCurrency(detail.servicesTotalAmount)} />
-            <InfoRow label="Phí di chuyển" value={formatCurrency(detail.travelFeeAmount)} />
-            <InfoRow label="Tổng đơn" value={formatCurrency(detail.totalOrderAmount)} />
+            <InfoRow label="Tiền dịch vụ" value={formatCurrency(serviceAmount)} />
+            <InfoRow label="Phí di chuyển" value={formatCurrency(travelFeeAmount)} />
+            <InfoRow label="Tổng đơn" value={formatCurrency(totalOrderAmount)} />
             <InfoRow
               label="Cọc"
-              value={`${formatCurrency(detail.depositAmount)}${
-                detail.depositPercent != null ? ` (${detail.depositPercent}%)` : ""
+              value={`${formatCurrency(depositAmount)}${
+                depositPercent != null ? ` (${depositPercent}%)` : ""
               }`}
             />
-            <InfoRow label="Hoa hồng" value={formatCurrency(detail.commissionAmount)} />
+            <InfoRow label="Hoa hồng" value={formatCurrency(commissionAmount)} />
+            <InfoRow
+              label="Đối tác thực nhận"
+              value={formatCurrency(partnerNetAmount)}
+            />
           </CardContent>
         </Card>
       </div>

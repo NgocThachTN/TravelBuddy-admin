@@ -58,6 +58,8 @@ import type {
   RescueCommissionRevenueData,
   RescueCommissionPartnerSummaryItem,
   GetRescueCommissionPartnerSummaryParams,
+  GetPartnerRescueCommissionRequestsParams,
+  PartnerRescueCommissionRequestItem,
   ModeratorDashboardOverviewData,
   GetRescueRequestsParams,
   RescueRequestListItem,
@@ -200,6 +202,19 @@ export async function fetchAdminRescueCommissionRevenuePartners(
 ): Promise<BePagedWrapper<RescueCommissionPartnerSummaryItem>> {
   const { data } = await api.get<BePagedWrapper<RescueCommissionPartnerSummaryItem>>(
     API_ROUTES.ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE_PARTNERS,
+    { params },
+  );
+  return data;
+}
+
+export async function fetchAdminRescueCommissionPartnerRequests(
+  partnerId: string,
+  params: GetPartnerRescueCommissionRequestsParams = {},
+): Promise<BePagedWrapper<PartnerRescueCommissionRequestItem>> {
+  const { data } = await api.get<BePagedWrapper<PartnerRescueCommissionRequestItem>>(
+    API_ROUTES.ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE_PARTNER_REQUESTS(
+      partnerId,
+    ),
     { params },
   );
   return data;

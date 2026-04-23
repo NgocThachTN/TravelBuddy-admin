@@ -52,16 +52,29 @@ export interface RescueRequestServiceItem {
   unitPriceAmount: number;
 }
 
+export interface RescueRequestMoneyBreakdown {
+  serviceAmount: number | null;
+  travelFeeAmount: number | null;
+  totalOrderAmount: number | null;
+  depositPercent: number | null;
+  depositAmount: number | null;
+  commissionAmount: number | null;
+  partnerNetAmount: number | null;
+}
+
 export interface RescueRequestDetail extends RescueRequestListItem {
   travelerAvatarUrl: string | null;
   assignedPartnerPhone: string | null;
   assignedPartnerAvatarUrl: string | null;
   note: string | null;
   addressNote: string | null;
+  breakdownAddress: string | null;
   commissionAmount: number | null;
+  partnerNetAmount: number | null;
   confirmationCodeGeneratedAt: string | null;
   travelerPhotoUrls: string[];
   serviceItems: RescueRequestServiceItem[];
+  moneyBreakdown: RescueRequestMoneyBreakdown | null;
 }
 
 export interface UpdateModeratorRescueRequestStatusPayload {

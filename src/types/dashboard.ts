@@ -65,6 +65,45 @@ export interface GetRescueCommissionPartnerSummaryParams {
   toUtc?: string;
 }
 
+export interface PartnerRescueCommissionRequestItem {
+  rescueRequestId: string;
+  partnerId: string;
+  partnerName: string;
+  partnerAvatarUrl: string | null;
+  travelerUserId: string | null;
+  travelerDisplayName: string | null;
+  travelerPhone: string | null;
+  vehicleType: string | null;
+  vehicleName: string | null;
+  vehicleNumber: string | null;
+  distanceKm: number | null;
+  servicesTotalAmount: number | null;
+  travelFeeAmount: number | null;
+  totalOrderAmount: number | null;
+  depositAmount: number | null;
+  commissionAmount: number | null;
+  partnerNetAmount: number | null;
+  createdAt: string;
+  completedAt: string | null;
+  commissionChargedAt: string | null;
+  serviceTypes: string[];
+}
+
+export interface GetPartnerRescueCommissionRequestsParams {
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?:
+    | "commissionChargedAt"
+    | "completedAt"
+    | "totalOrderAmount"
+    | "commissionAmount";
+  sortDirection?: "asc" | "desc";
+  windowDays?: 7 | 30 | 90;
+  fromUtc?: string;
+  toUtc?: string;
+}
+
 export interface DashboardUserGrowthPoint {
   date: string;
   currentCount: number;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchPartnerRequestById, fetchServicePartnerById } from "@/lib/api";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -44,6 +44,7 @@ const LABELS: Record<string, string> = {
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const segments = pathname.split("/").filter(Boolean);
   const [detailLabel, setDetailLabel] = useState<string | null>(null);
   const isPartnerRequestDetail =
@@ -56,6 +57,16 @@ function DashboardBreadcrumb() {
     segments[0] === "dashboard" &&
     segments[1] === "partners" &&
     segments[2] === "active";
+  const isRescueRequestDetail =
+    segments.length === 3 &&
+    segments[0] === "dashboard" &&
+    segments[1] === "rescue-requests";
+  const isRescueCommissionPartnerDetail =
+    segments.length === 5 &&
+    segments[0] === "dashboard" &&
+    segments[1] === "transactions" &&
+    segments[2] === "rescue-commission-revenue" &&
+    segments[3] === "partners";
 
   useEffect(() => {
     let ignore = false;
@@ -101,12 +112,19 @@ function DashboardBreadcrumb() {
   const visibleSegments =
     isPartnerRequestDetail || isActivePartnerDetail
       ? [segments[0], segments[1], segments[3]]
+      : isRescueCommissionPartnerDetail
+        ? [segments[0], segments[1], segments[2], segments[3], segments[4]]
       : segments;
 
   const crumbs = visibleSegments.map((seg, i) => {
     const isPartnerDetailLastCrumb =
       i === visibleSegments.length - 1 &&
       (isPartnerRequestDetail || isActivePartnerDetail);
+    const isRescueRequestLastCrumb =
+      i === visibleSegments.length - 1 && isRescueRequestDetail;
+    const isRescueCommissionPartnerLastCrumb =
+      i === visibleSegments.length - 1 && isRescueCommissionPartnerDetail;
+    const partnerName = searchParams.get("partnerName")?.trim();
 
     return {
       label: isPartnerDetailLastCrumb
@@ -114,8 +132,15 @@ function DashboardBreadcrumb() {
           (isPartnerRequestDetail
             ? "Chi tiết hồ sơ"
             : "Chi tiết đối tác")
-        : (LABELS[seg] ?? seg),
-      href: isPartnerDetailLastCrumb
+        : isRescueRequestLastCrumb
+          ? `#${seg.slice(0, 8)}`
+          : isRescueCommissionPartnerLastCrumb
+            ? partnerName || `#${seg.slice(0, 8)}`
+          : (LABELS[seg] ?? seg),
+      href:
+        isPartnerDetailLastCrumb ||
+        isRescueRequestLastCrumb ||
+        isRescueCommissionPartnerLastCrumb
         ? pathname
         : "/" + visibleSegments.slice(0, i + 1).join("/"),
     };

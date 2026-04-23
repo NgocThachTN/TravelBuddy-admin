@@ -28,6 +28,8 @@ export const ROUTES = {
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
   TRANSACTIONS_RESCUE_COMMISSION_REVENUE:
     "/dashboard/transactions/rescue-commission-revenue",
+  TRANSACTIONS_RESCUE_COMMISSION_REVENUE_PARTNER_DETAIL: (partnerId: string) =>
+    `/dashboard/transactions/rescue-commission-revenue/partners/${partnerId}`,
   SUBSCRIPTIONS: "/dashboard/subscriptions",
   SUBSCRIPTIONS_USERS: "/dashboard/subscriptions/users",
   SUBSCRIPTIONS_PARTNER_COMMISSIONS: "/dashboard/subscriptions/partner-commissions",
@@ -55,6 +57,10 @@ export const API_ROUTES = {
     "/api/admin/dashboard/rescue-commission-revenue",
   ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE_PARTNERS:
     "/api/admin/dashboard/rescue-commission-revenue/partners",
+  ADMIN_DASHBOARD_RESCUE_COMMISSION_REVENUE_PARTNER_REQUESTS: (
+    partnerId: string,
+  ) =>
+    `/api/admin/dashboard/rescue-commission-revenue/partners/${partnerId}/rescue-requests`,
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
