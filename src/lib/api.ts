@@ -264,6 +264,16 @@ export async function fetchAdminDepositTransactions(
   return data;
 }
 
+export async function fetchAdminUserTransactions(
+  params: GetAdminTransactionsParams = {},
+): Promise<BePagedWrapper<AdminTransactionRecord>> {
+  const { data } = await api.get<BePagedWrapper<AdminTransactionRecord>>(
+    API_ROUTES.ADMIN_TRANSACTIONS_USER_TRANSACTIONS,
+    { params },
+  );
+  return data;
+}
+
 export async function fetchAdminUserSubscriptionTransactions(
   params: GetAdminTransactionsParams = {},
 ): Promise<BePagedWrapper<AdminTransactionRecord>> {

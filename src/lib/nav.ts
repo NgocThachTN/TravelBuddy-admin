@@ -7,8 +7,6 @@ import {
   Megaphone,
   Package,
   Siren,
-  ScrollText,
-  Settings,
   Shield,
   Users,
 } from "lucide-react";
@@ -86,6 +84,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
     children: [
       {
+        label: "Giao d\u1ecbch ng\u01b0\u1eddi d\u00f9ng",
+        href: ROUTES.TRANSACTIONS_USER_TRANSACTIONS,
+        icon: CreditCard,
+        roles: ["ADMIN"],
+      },
+      {
         label: "Giao d\u1ecbch n\u1ea1p ti\u1ec1n",
         href: ROUTES.TRANSACTIONS_DEPOSITS,
         icon: CreditCard,
@@ -110,18 +114,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
         roles: ["ADMIN"],
       },
     ],
-  },
-  {
-    label: "Nh\u1eadt k\u00fd",
-    href: ROUTES.AUDIT_LOGS,
-    icon: ScrollText,
-    roles: ["ADMIN"],
-  },
-  {
-    label: "C\u00e0i \u0111\u1eb7t",
-    href: ROUTES.SETTINGS,
-    icon: Settings,
-    roles: ["ADMIN"],
   },
 ];
 

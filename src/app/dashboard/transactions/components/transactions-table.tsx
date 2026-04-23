@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreditCard, RefreshCw, Search } from "lucide-react";
 import {
   fetchAdminDepositTransactions,
+  fetchAdminUserTransactions,
   fetchAdminUserSubscriptionTransactions,
 } from "@/lib/api";
 import type {
@@ -43,7 +44,7 @@ import {
 
 const PAGE_SIZE = 10;
 
-type TransactionMode = "deposits" | "user-subscriptions";
+type TransactionMode = "deposits" | "user-subscriptions" | "user-transactions";
 type StatusFilter = "all" | "Pending" | "Processing" | "Completed" | "Failed";
 
 interface TransactionsTableProps {
@@ -71,6 +72,8 @@ interface NormalizedTransaction {
   status: string;
   paymentSource: string;
   packageName: string;
+  userRole: string;
+  operation: string;
   createdAt: string;
   startedAt: string;
   endedAt: string;
@@ -83,6 +86,8 @@ interface NormalizedTransaction {
   transferAmount: number | null;
   referenceCode: string;
   sePayError: boolean | null;
+  refType: string;
+  refPk: string;
 }
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
@@ -265,6 +270,68 @@ function formatSePayError(value: boolean | null) {
   return value ? "Có lỗi" : "Không có lỗi";
 }
 
+function formatUserRole(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "traveler") return "Người dùng";
+  if (normalized === "servicepartner" || normalized === "service_partner") return "Đối tác dịch vụ";
+  return value || "-";
+}
+
+function formatWalletOperation(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "credit") return "Cộng tiền";
+  if (normalized === "debit") return "Trừ tiền";
+  if (normalized === "freeze") return "Đóng băng";
+  if (normalized === "unfreeze") return "Hoàn đóng băng";
+  if (normalized === "consume") return "Sử dụng tiền đóng băng";
+  if (normalized === "adjust") return "Điều chỉnh";
+  return value || "-";
+}
+
+function formatPaymentSource(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "wallet") return "Ví TravelBuddy";
+  if (normalized === "sepay") return "SePay";
+  return value || "-";
+}
+
+function formatReferenceType(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "subscription_purchase") return "Thanh toán mua gói người dùng";
+  if (normalized === "wallet_withdrawal_pending") return "Yêu cầu rút tiền đang chờ xử lý";
+  if (normalized === "wallet_withdrawal_created") return "Tạo yêu cầu rút tiền";
+  if (normalized === "wallet_withdrawal_completed") return "Yêu cầu rút tiền đã hoàn tất";
+  if (normalized === "wallet_withdrawal_rejected") return "Yêu cầu rút tiền bị từ chối";
+  if (normalized === "user_subscription_purchase") return "Mua gói người dùng";
+  if (normalized === "sepay_topup") return "Nạp tiền SePay";
+  if (normalized === "sepay_partner_topup") return "Nạp tiền SePay cho đối tác";
+  if (normalized === "join_request_deposit") return "Đóng băng tiền cọc khi gửi yêu cầu tham gia";
+  if (normalized === "join_request_refund") return "Hoàn tiền cọc yêu cầu tham gia";
+  if (normalized === "participant_leave_refund") return "Hoàn tiền khi thành viên rời chuyến";
+  if (normalized === "participant_leave_forfeit") return "Thu tiền cọc khi thành viên rời chuyến";
+  if (normalized === "participant_owner_remove_refund") return "Hoàn tiền khi trưởng đoàn xóa thành viên";
+  if (normalized === "participant_owner_remove_forfeit") return "Thu tiền cọc khi trưởng đoàn xóa thành viên";
+  if (normalized === "participant_kick_failed_start_forfeit") {
+    return "Thu tiền cọc do không điểm danh khởi hành";
+  }
+  if (normalized === "trip_deposit") return "Đặt cọc tham gia chuyến đi";
+  if (normalized === "trip_deposit_refund") return "Hoàn tiền đặt cọc chuyến đi";
+  if (normalized === "trip_complete_refund") return "Hoàn tiền cọc khi hoàn thành chuyến đi";
+  if (normalized === "trip_complete_absent_forfeit") {
+    return "Thu tiền cọc do vắng mặt khi hoàn thành chuyến đi";
+  }
+  if (normalized === "trip_auto_cancel_not_started_refund") {
+    return "Hoàn tiền do chuyến bị hủy vì không khởi hành";
+  }
+  if (normalized === "rescue_payment") return "Thanh toán cứu hộ";
+  if (normalized === "rescue_deposit_hold") return "Đóng băng tiền đặt cọc cứu hộ";
+  if (normalized === "rescue_deposit_release") return "Hoàn đóng băng tiền đặt cọc cứu hộ";
+  if (normalized === "rescue_deposit_transfer") return "Chuyển tiền đặt cọc cứu hộ";
+  if (normalized === "rescue_deposit_settlement_out") return "Khấu trừ tiền đặt cọc cứu hộ";
+  if (normalized === "rescue_commission") return "Hoa hồng cứu hộ";
+  return value || "-";
+}
+
 function DetailItem({
   label,
   value,
@@ -332,7 +399,7 @@ function normalizeTransaction(
     ?? "-";
 
   const amount =
-    readNumber(item, ["amount", "totalAmount", "amountPaid", "grossAmount", "price"])
+    readNumber(item, ["amount", "deltaAvailable", "deltaFrozen", "totalAmount", "amountPaid", "grossAmount", "price"])
     ?? readNumber(order, ["amount", "totalAmount", "amountPaid", "price"])
     ?? readNumber(wallet, ["deltaAvailable", "amount"]);
   const balanceBefore =
@@ -403,6 +470,8 @@ function normalizeTransaction(
     readString(item, ["subscriptionPackageName", "packageName", "subscriptionName", "planName"])
     ?? readString(order, ["subscriptionPackageName", "packageName", "subscriptionName", "planName"])
     ?? "-";
+  const userRole = readString(item, ["userRole", "role", "accountRole"]) ?? "-";
+  const operation = readString(item, ["operation", "op", "walletOperation"]) ?? "-";
 
   const note =
     readString(item, ["description", "note", "content", "message"])
@@ -421,6 +490,8 @@ function normalizeTransaction(
   const referenceCode =
     readString(item, ["referenceCode", "sePayReferenceCode", "bankReferenceCode"]) ?? "-";
   const sePayError = readBoolean(item, ["error", "sePayError", "isError"]);
+  const refType = readString(item, ["refType", "referenceType"]) ?? "-";
+  const refPk = readString(item, ["refPk", "referenceId", "referencePk"]) ?? "-";
 
   return {
     key: `${transactionCode}-${createdAt}-${index}`,
@@ -436,6 +507,8 @@ function normalizeTransaction(
     status,
     paymentSource,
     packageName,
+    userRole,
+    operation,
     createdAt,
     startedAt,
     endedAt,
@@ -448,6 +521,8 @@ function normalizeTransaction(
     transferAmount,
     referenceCode,
     sePayError,
+    refType,
+    refPk,
   };
 }
 
@@ -465,14 +540,26 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
   const [packageFilter, setPackageFilter] = useState("");
   const [selectedDepositTransaction, setSelectedDepositTransaction] =
     useState<NormalizedTransaction | null>(null);
+  const [selectedUserTransaction, setSelectedUserTransaction] =
+    useState<NormalizedTransaction | null>(null);
   const requestIdRef = useRef(0);
 
   const headerTitle =
-    mode === "deposits" ? "Giao dịch nạp tiền" : "Giao dịch mua gói người dùng";
+    mode === "deposits"
+      ? "Giao dịch nạp tiền"
+      : mode === "user-transactions"
+        ? "Giao dịch người dùng"
+        : "Giao dịch mua gói người dùng";
   const emptyMessage =
     mode === "deposits"
       ? "Chưa có giao dịch nạp tiền phù hợp."
-      : "Chưa có giao dịch mua gói người dùng phù hợp.";
+      : mode === "user-transactions"
+        ? "Chưa có giao dịch người dùng phù hợp."
+        : "Chưa có giao dịch mua gói người dùng phù hợp.";
+  const searchPlaceholder =
+    mode === "user-transactions"
+      ? "Tìm theo SĐT, username, tên..."
+      : "Tìm theo mã, tên, email...";
 
   const pageAmount = useMemo(
     () => rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
@@ -487,6 +574,9 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
   useEffect(() => {
     if (mode !== "deposits") {
       setSelectedDepositTransaction(null);
+    }
+    if (mode !== "user-transactions") {
+      setSelectedUserTransaction(null);
     }
   }, [mode]);
 
@@ -510,15 +600,19 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
           pageSize: PAGE_SIZE,
         };
         if (nextSearch) params.search = nextSearch;
-        if (nextStatus !== "all") params.status = nextStatus;
+        if (mode !== "user-transactions" && nextStatus !== "all") params.status = nextStatus;
         if (mode === "user-subscriptions" && nextPackageFilter.trim().length > 0) {
           params.packageName = nextPackageFilter.trim();
         }
 
-        const response: BePagedWrapper<AdminTransactionRecord> =
-          mode === "deposits"
-            ? await fetchAdminDepositTransactions(params)
-            : await fetchAdminUserSubscriptionTransactions(params);
+        let response: BePagedWrapper<AdminTransactionRecord>;
+        if (mode === "deposits") {
+          response = await fetchAdminDepositTransactions(params);
+        } else if (mode === "user-transactions") {
+          response = await fetchAdminUserTransactions(params);
+        } else {
+          response = await fetchAdminUserSubscriptionTransactions(params);
+        }
 
         if (currentRequestId !== requestIdRef.current) return;
 
@@ -556,6 +650,15 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
       setSelectedDepositTransaction(null);
     }
   }, [rows, selectedDepositTransaction]);
+
+  useEffect(() => {
+    if (!selectedUserTransaction) return;
+
+    const existed = rows.some((row) => row.key === selectedUserTransaction.key);
+    if (!existed) {
+      setSelectedUserTransaction(null);
+    }
+  }, [rows, selectedUserTransaction]);
 
   if (isInitialLoading) {
     return (
@@ -722,6 +825,100 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={mode === "user-transactions" && Boolean(selectedUserTransaction)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedUserTransaction(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>Chi tiết giao dịch người dùng</DialogTitle>
+          </DialogHeader>
+
+          {selectedUserTransaction && (
+            <div className="space-y-4 text-sm">
+              <DetailItem
+                label="Mã giao dịch"
+                value={selectedUserTransaction.transactionCode}
+                className="bg-muted/30"
+              />
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1 rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Người dùng</p>
+                  <p className="font-medium">{selectedUserTransaction.userName}</p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    {selectedUserTransaction.userContact}
+                  </p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    User ID: {selectedUserTransaction.userId}
+                  </p>
+                  <p className="break-all text-xs text-muted-foreground">
+                    Wallet ID: {selectedUserTransaction.walletId}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <DetailItem
+                    label="Vai trò"
+                    value={formatUserRole(selectedUserTransaction.userRole)}
+                  />
+                  <DetailItem
+                    label="Loại giao dịch"
+                    value={formatWalletOperation(selectedUserTransaction.operation)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <DetailItem
+                  label="Số dư trước"
+                  value={formatMoney(
+                    selectedUserTransaction.balanceBefore,
+                    selectedUserTransaction.currency,
+                  )}
+                />
+                <DetailItem
+                  label="Biến động ví"
+                  value={formatMoney(selectedUserTransaction.amount, selectedUserTransaction.currency)}
+                />
+                <DetailItem
+                  label="Số dư sau"
+                  value={formatMoney(
+                    selectedUserTransaction.balanceAfter,
+                    selectedUserTransaction.currency,
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <DetailItem
+                  label="Nguồn giao dịch"
+                  value={formatPaymentSource(selectedUserTransaction.paymentSource)}
+                />
+                <DetailItem
+                  label="Thời gian giao dịch"
+                  value={formatDateTime(selectedUserTransaction.createdAt)}
+                />
+                <DetailItem
+                  label="Loại tham chiếu"
+                  value={formatReferenceType(selectedUserTransaction.refType)}
+                />
+                <DetailItem label="Mã tham chiếu" value={selectedUserTransaction.refPk} />
+                <DetailItem
+                  label="Ghi chú"
+                  value={selectedUserTransaction.note}
+                  className="sm:col-span-2"
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="border border-border/50 shadow-none py-0">
@@ -763,7 +960,7 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
               <Input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Tìm theo mã, tên, email..."
+                placeholder={searchPlaceholder}
                 className="pl-8"
               />
             </div>
@@ -777,21 +974,23 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
               />
             )}
 
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {mode !== "user-transactions" && (
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             <Button
               variant="outline"
@@ -827,10 +1026,17 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <TableHead className="pl-5">Mã giao dịch</TableHead>
                     <TableHead>Người dùng</TableHead>
+                    {mode === "user-transactions" && <TableHead>Vai trò</TableHead>}
                     {mode === "user-subscriptions" && <TableHead>Gói dịch vụ</TableHead>}
-                    <TableHead className="text-right">Số tiền</TableHead>
-                    <TableHead className="text-center">Trạng thái</TableHead>
-                    <TableHead>Nguồn thanh toán</TableHead>
+                    <TableHead className="text-right">
+                      {mode === "user-transactions" ? "Biến động ví" : "Số tiền"}
+                    </TableHead>
+                    {mode !== "user-transactions" && (
+                      <TableHead className="text-center">Trạng thái</TableHead>
+                    )}
+                    <TableHead>
+                      {mode === "user-transactions" ? "Loại giao dịch" : "Nguồn thanh toán"}
+                    </TableHead>
                     {mode === "user-subscriptions" && (
                       <>
                         <TableHead>Ngày bắt đầu</TableHead>
@@ -838,9 +1044,11 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                       </>
                     )}
                     <TableHead className={mode === "deposits" ? "" : "pr-5"}>
-                      {mode === "deposits" ? "Thời gian" : "Thời gian mua gói"}
+                      {mode === "user-subscriptions" ? "Thời gian mua gói" : "Thời gian"}
                     </TableHead>
-                    {mode === "deposits" && <TableHead className="pr-5 text-right">Thao tác</TableHead>}
+                    {(mode === "deposits" || mode === "user-transactions") && (
+                      <TableHead className="pr-5 text-right">Thao tác</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -867,18 +1075,36 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                           </TableCell>
                         )}
 
-                        <TableCell className="text-right font-medium">
+                        {mode === "user-transactions" && (
+                          <TableCell className="max-w-[150px]">
+                            <p className="truncate text-sm">{formatUserRole(row.userRole)}</p>
+                          </TableCell>
+                        )}
+
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium",
+                            mode === "user-transactions" && (row.amount ?? 0) > 0 && "text-emerald-700",
+                            mode === "user-transactions" && (row.amount ?? 0) < 0 && "text-red-700",
+                          )}
+                        >
                           {formatMoney(row.amount, row.currency)}
                         </TableCell>
 
-                        <TableCell className="text-center">
-                          <Badge className={cn("rounded-full px-2.5 text-[11px]", status.className)}>
-                            {status.label}
-                          </Badge>
-                        </TableCell>
+                        {mode !== "user-transactions" && (
+                          <TableCell className="text-center">
+                            <Badge className={cn("rounded-full px-2.5 text-[11px]", status.className)}>
+                              {status.label}
+                            </Badge>
+                          </TableCell>
+                        )}
 
                         <TableCell className="max-w-[180px]">
-                          <p className="truncate text-sm">{row.paymentSource}</p>
+                          <p className="truncate text-sm">
+                            {mode === "user-transactions"
+                              ? formatWalletOperation(row.operation)
+                              : row.paymentSource}
+                          </p>
                         </TableCell>
 
                         {mode === "user-subscriptions" && (
@@ -902,6 +1128,18 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                               size="sm"
                               variant="outline"
                               onClick={() => setSelectedDepositTransaction(row)}
+                            >
+                              Xem chi tiết
+                            </Button>
+                          </TableCell>
+                        )}
+
+                        {mode === "user-transactions" && (
+                          <TableCell className="pr-5 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedUserTransaction(row)}
                             >
                               Xem chi tiết
                             </Button>
