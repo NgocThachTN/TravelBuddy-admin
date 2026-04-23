@@ -402,6 +402,13 @@ export interface TripModerationDecisionResponse {
   reviewedAt: string;
 }
 
+export interface TripModerationDispatchNowResponse {
+  batchId: string | null;
+  batchSizeUsed: number;
+  dispatchedTripCount: number;
+  hasPublishedMessage: boolean;
+}
+
 export interface GetTripModerationTasksParams {
   pageNumber?: number;
   pageSize?: number;

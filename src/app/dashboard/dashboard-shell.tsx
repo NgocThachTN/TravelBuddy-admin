@@ -30,6 +30,7 @@ const LABELS: Record<string, string> = {
   reports: "Báo cáo",
   transactions: "Giao dịch",
   deposits: "N\u1ea1p ti\u1ec1n",
+  "user-transactions": "Giao d\u1ecbch ng\u01b0\u1eddi d\u00f9ng",
   "user-subscriptions": "Mua g\u00f3i ng\u01b0\u1eddi d\u00f9ng",
   "rescue-commission-revenue": "Chi ti\u1ebft hoa h\u1ed3ng",
   subscriptions: "Chính sách phí",

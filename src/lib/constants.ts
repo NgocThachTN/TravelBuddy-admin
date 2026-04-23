@@ -23,6 +23,7 @@ export const ROUTES = {
       : "/dashboard/moderation-reports",
   REPORTS: "/dashboard/reports",
   TRANSACTIONS: "/dashboard/transactions",
+  TRANSACTIONS_USER_TRANSACTIONS: "/dashboard/transactions/user-transactions",
   TRANSACTIONS_DEPOSITS: "/dashboard/transactions/deposits",
   TRANSACTIONS_WALLET_WITHDRAWALS: "/dashboard/transactions/wallet-withdrawals",
   TRANSACTIONS_USER_SUBSCRIPTIONS: "/dashboard/transactions/user-subscriptions",
@@ -64,7 +65,9 @@ export const API_ROUTES = {
   MODERATION_DASHBOARD_OVERVIEW: "/api/moderation/dashboard/overview",
   ADMIN_SUBSCRIPTIONS: "/api/admin/subscriptions",
   ADMIN_TRANSACTIONS_DEPOSITS: "/api/admin/transactions/deposits",
+  ADMIN_TRANSACTIONS_USER_TRANSACTIONS: "/api/admin/transactions/users",
   ADMIN_WALLET_WITHDRAWALS_WORK_QUEUE: "/api/admin/wallet-withdrawals/work-queue",
+  ADMIN_WALLET_WITHDRAWALS_SETTINGS: "/api/admin/wallet-withdrawals/settings",
   ADMIN_WALLET_WITHDRAWALS_PROCESSING: (withdrawalId: string) =>
     `/api/admin/wallet-withdrawals/${withdrawalId}/processing`,
   ADMIN_WALLET_WITHDRAWALS_APPROVE: (withdrawalId: string) =>
@@ -84,6 +87,7 @@ export const API_ROUTES = {
     `/api/admin/moderation/trips/${taskId}`,
   ADMIN_TRIP_MODERATION_DECISION: (taskId: string) =>
     `/api/admin/moderation/trips/${taskId}/decision`,
+  ADMIN_TRIP_MODERATION_DISPATCH_NOW: "/api/admin/moderation/trips/scan/dispatch-now",
   RESCUE_REQUESTS: "/api/rescue-requests",
   RESCUE_REQUESTS_DETAIL: (id: string) => `/api/rescue-requests/${id}`,
   RESCUE_REQUESTS_MODERATOR_STATUS: (id: string) =>

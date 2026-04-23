@@ -12,33 +12,20 @@ import {
   fetchAdminRescueCommissionRevenue,
 } from "@/lib/api";
 import { mapRangeToWindowDays } from "./overview/components/shared";
-
-function SectionSkeleton({
-  className,
-  heightClass = "h-64",
-}: {
-  className?: string;
-  heightClass?: string;
-}) {
-  return (
-    <div
-      className={`rounded-xl border border-border/50 bg-card/70 p-6 shadow-none ${heightClass} ${className ?? ""}`}
-    >
-      <div className="animate-pulse space-y-4">
-        <div className="h-4 w-32 rounded bg-muted" />
-        <div className="h-3 w-48 rounded bg-muted/80" />
-        <div className="h-36 rounded-lg bg-muted/60" />
-      </div>
-    </div>
-  );
-}
+import {
+  DashboardOverviewSkeleton,
+  OverviewSectionSkeleton,
+} from "./overview/components/dashboard-overview-skeleton";
 
 const DashboardHeader = dynamic(
   () =>
     import("./overview/components/dashboard-header").then(
       (mod) => mod.DashboardHeader,
     ),
-  { ssr: false, loading: () => <SectionSkeleton heightClass="h-20" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton heightClass="h-20" />,
+  },
 );
 
 const StatCards = dynamic(
@@ -49,7 +36,7 @@ const StatCards = dynamic(
     loading: () => (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, index) => (
-          <SectionSkeleton key={index} heightClass="h-40" />
+          <OverviewSectionSkeleton key={index} heightClass="h-40" />
         ))}
       </div>
     ),
@@ -61,7 +48,10 @@ const RevenueOverview = dynamic(
     import("./overview/components/revenue-overview").then(
       (mod) => mod.RevenueOverview,
     ),
-  { ssr: false, loading: () => <SectionSkeleton heightClass="h-[420px]" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton heightClass="h-[420px]" />,
+  },
 );
 
 const UserGrowthChart = dynamic(
@@ -69,7 +59,10 @@ const UserGrowthChart = dynamic(
     import("./overview/components/user-growth-chart").then(
       (mod) => mod.UserGrowthChart,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-4" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-4" />,
+  },
 );
 
 const TripActivityChart = dynamic(
@@ -77,7 +70,10 @@ const TripActivityChart = dynamic(
     import("./overview/components/trip-activity-chart").then(
       (mod) => mod.TripActivityChart,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-3" />,
+  },
 );
 
 const TripCategoriesChart = dynamic(
@@ -85,7 +81,10 @@ const TripCategoriesChart = dynamic(
     import("./overview/components/trip-categories-chart").then(
       (mod) => mod.TripCategoriesChart,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-3" />,
+  },
 );
 
 const TopDestinations = dynamic(
@@ -93,7 +92,10 @@ const TopDestinations = dynamic(
     import("./overview/components/top-destinations").then(
       (mod) => mod.TopDestinations,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-5" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-5" />,
+  },
 );
 
 const QuickActions = dynamic(
@@ -101,7 +103,10 @@ const QuickActions = dynamic(
     import("./overview/components/quick-actions").then(
       (mod) => mod.QuickActions,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-3" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-4" />,
+  },
 );
 
 const SystemStatus = dynamic(
@@ -109,7 +114,10 @@ const SystemStatus = dynamic(
     import("./overview/components/system-status").then(
       (mod) => mod.SystemStatus,
     ),
-  { ssr: false, loading: () => <SectionSkeleton className="lg:col-span-4" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-3" />,
+  },
 );
 
 const RecentActivity = dynamic(
@@ -117,7 +125,10 @@ const RecentActivity = dynamic(
     import("./overview/components/recent-activity").then(
       (mod) => mod.RecentActivity,
     ),
-  { ssr: false, loading: () => <SectionSkeleton heightClass="h-80" /> },
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton heightClass="h-80" />,
+  },
 );
 
 function getCommissionRange(windowDays: number) {
@@ -174,22 +185,7 @@ export default function DashboardPage() {
   }, [loadDashboard]);
 
   if (isLoading && !dashboardData) {
-    return (
-      <div className="space-y-6">
-        <SectionSkeleton heightClass="h-20" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <SectionSkeleton key={index} heightClass="h-40" />
-          ))}
-        </div>
-        <SectionSkeleton heightClass="h-[420px]" />
-        <div className="grid gap-4 lg:grid-cols-10">
-          <SectionSkeleton className="lg:col-span-4" />
-          <SectionSkeleton className="lg:col-span-3" />
-          <SectionSkeleton className="lg:col-span-3" />
-        </div>
-      </div>
-    );
+    return <DashboardOverviewSkeleton />;
   }
 
   if (errorMessage && !dashboardData) {

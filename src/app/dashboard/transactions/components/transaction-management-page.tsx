@@ -1,7 +1,7 @@
 import { CreditCard } from "lucide-react";
 import TransactionsTable from "./transactions-table";
 
-type TransactionTab = "deposits" | "user-subscriptions";
+type TransactionTab = "deposits" | "user-subscriptions" | "user-transactions";
 
 interface TransactionManagementPageProps {
   currentTab: TransactionTab;
@@ -11,6 +11,10 @@ const TAB_CONFIG: Record<
   TransactionTab,
   { title: string; description: string }
 > = {
+  "user-transactions": {
+    title: "Giao dịch người dùng",
+    description: "Theo dõi các giao dịch ví của người dùng và đối tác dịch vụ",
+  },
   deposits: {
     title: "Giao dịch nạp tiền",
     description: "Theo dõi các giao dịch nạp tiền vào ví người dùng",
