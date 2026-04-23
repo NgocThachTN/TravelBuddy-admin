@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreditCard, RefreshCw, Search } from "lucide-react";
 import {
@@ -71,7 +72,17 @@ interface NormalizedTransaction {
   paymentSource: string;
   packageName: string;
   createdAt: string;
+  startedAt: string;
+  endedAt: string;
   note: string;
+  gateway: string;
+  accountNumber: string;
+  code: string;
+  content: string;
+  transferType: string;
+  transferAmount: number | null;
+  referenceCode: string;
+  sePayError: boolean | null;
 }
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
@@ -122,6 +133,26 @@ function readNumber(source: AdminTransactionRecord | null, keys: string[]): numb
   for (const key of keys) {
     const parsed = toNumber(source[key]);
     if (parsed !== null) return parsed;
+  }
+
+  return null;
+}
+
+function readBoolean(source: AdminTransactionRecord | null, keys: string[]): boolean | null {
+  if (!source) return null;
+
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") {
+      if (value === 1) return true;
+      if (value === 0) return false;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "yes", "y", "co", "có"].includes(normalized)) return true;
+      if (["false", "0", "no", "n", "khong", "không"].includes(normalized)) return false;
+    }
   }
 
   return null;
@@ -222,6 +253,35 @@ function formatMoney(amount: number | null, currency: string) {
   }
 }
 
+function formatTransferType(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "in") return "Tiền vào";
+  if (normalized === "out") return "Tiền ra";
+  return value || "-";
+}
+
+function formatSePayError(value: boolean | null) {
+  if (value === null) return "-";
+  return value ? "Có lỗi" : "Không có lỗi";
+}
+
+function DetailItem({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-lg border bg-muted/20 p-3", className)}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="mt-1 break-words font-medium">{value || "-"}</div>
+    </div>
+  );
+}
+
 function normalizeTransaction(
   item: AdminTransactionRecord,
   index: number,
@@ -314,6 +374,31 @@ function normalizeTransaction(
     ?? readString(order, ["createdAt", "paidAt", "completedAt"])
     ?? "";
 
+  const subscription = readRecord(item, [
+    "userSubscription",
+    "subscription",
+    "subscriptionInfo",
+    "userSubscriptionInfo",
+  ]);
+  const startedAt =
+    readString(item, ["startedAt", "startDate", "startAt", "periodStart", "validFrom"])
+    ?? readString(order, ["startedAt", "startDate", "periodStart", "validFrom"])
+    ?? readString(subscription, ["startedAt", "startDate", "startAt", "periodStart", "validFrom"])
+    ?? "";
+  const endedAt =
+    readString(item, ["endedAt", "endDate", "endAt", "expiredAt", "expiresAt", "periodEnd", "validTo"])
+    ?? readString(order, ["endedAt", "endDate", "expiredAt", "expiresAt", "periodEnd", "validTo"])
+    ?? readString(subscription, [
+      "endedAt",
+      "endDate",
+      "endAt",
+      "expiredAt",
+      "expiresAt",
+      "periodEnd",
+      "validTo",
+    ])
+    ?? "";
+
   const packageName =
     readString(item, ["subscriptionPackageName", "packageName", "subscriptionName", "planName"])
     ?? readString(order, ["subscriptionPackageName", "packageName", "subscriptionName", "planName"])
@@ -323,6 +408,19 @@ function normalizeTransaction(
     readString(item, ["description", "note", "content", "message"])
     ?? readString(order, ["description", "note", "content"])
     ?? "-";
+
+  const gateway = readString(item, ["gateway", "sePayGateway", "bankGateway"]) ?? "-";
+  const accountNumber =
+    readString(item, ["accountNumber", "sePayAccountNumber", "bankAccountNumber"]) ?? "-";
+  const code = readString(item, ["code", "sePayCode"]) ?? "-";
+  const content = readString(item, ["content", "sePayContent", "transferContent"]) ?? "-";
+  const transferType = readString(item, ["transferType", "sePayTransferType"]) ?? "-";
+  const transferAmount =
+    readNumber(item, ["transferAmount", "sePayTransferAmount", "bankTransferAmount"])
+    ?? amount;
+  const referenceCode =
+    readString(item, ["referenceCode", "sePayReferenceCode", "bankReferenceCode"]) ?? "-";
+  const sePayError = readBoolean(item, ["error", "sePayError", "isError"]);
 
   return {
     key: `${transactionCode}-${createdAt}-${index}`,
@@ -339,7 +437,17 @@ function normalizeTransaction(
     paymentSource,
     packageName,
     createdAt,
+    startedAt,
+    endedAt,
     note,
+    gateway,
+    accountNumber,
+    code,
+    content,
+    transferType,
+    transferAmount,
+    referenceCode,
+    sePayError,
   };
 }
 
@@ -501,7 +609,7 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="sm:max-w-[720px]">
           <DialogHeader>
             <DialogTitle>Chi tiết giao dịch nạp tiền</DialogTitle>
           </DialogHeader>
@@ -569,6 +677,44 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                       selectedDepositTransaction.currency,
                     )}
                   </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-semibold">Thông tin SePay</p>
+                  <p className="text-xs text-muted-foreground">
+                    Dữ liệu SePay gửi về hệ thống
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <DetailItem label="Cổng thanh toán" value={selectedDepositTransaction.gateway} />
+                  <DetailItem label="Số tài khoản nhận" value={selectedDepositTransaction.accountNumber} />
+                  <DetailItem
+                    label="Loại chuyển khoản"
+                    value={formatTransferType(selectedDepositTransaction.transferType)}
+                  />
+                  <DetailItem
+                    label="Số tiền SePay ghi nhận"
+                    value={formatMoney(
+                      selectedDepositTransaction.transferAmount,
+                      selectedDepositTransaction.currency,
+                    )}
+                  />
+                  <DetailItem
+                    label="Mã tham chiếu ngân hàng"
+                    value={selectedDepositTransaction.referenceCode}
+                  />
+                  <DetailItem
+                    label="Trạng thái lỗi"
+                    value={formatSePayError(selectedDepositTransaction.sePayError)}
+                  />
+                  <DetailItem
+                    label="Nội dung chuyển khoản"
+                    value={selectedDepositTransaction.content}
+                    className="sm:col-span-2"
+                  />
                 </div>
               </div>
             </div>
@@ -685,7 +831,15 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                     <TableHead className="text-right">Số tiền</TableHead>
                     <TableHead className="text-center">Trạng thái</TableHead>
                     <TableHead>Nguồn thanh toán</TableHead>
-                    <TableHead className={mode === "deposits" ? "" : "pr-5"}>Thời gian</TableHead>
+                    {mode === "user-subscriptions" && (
+                      <>
+                        <TableHead>Ngày bắt đầu</TableHead>
+                        <TableHead>Ngày hết hạn</TableHead>
+                      </>
+                    )}
+                    <TableHead className={mode === "deposits" ? "" : "pr-5"}>
+                      {mode === "deposits" ? "Thời gian" : "Thời gian mua gói"}
+                    </TableHead>
                     {mode === "deposits" && <TableHead className="pr-5 text-right">Thao tác</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -726,6 +880,17 @@ export default function TransactionsTable({ mode }: TransactionsTableProps) {
                         <TableCell className="max-w-[180px]">
                           <p className="truncate text-sm">{row.paymentSource}</p>
                         </TableCell>
+
+                        {mode === "user-subscriptions" && (
+                          <>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDateTime(row.startedAt)}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDateTime(row.endedAt)}
+                            </TableCell>
+                          </>
+                        )}
 
                         <TableCell className={cn("text-sm text-muted-foreground", mode !== "deposits" && "pr-5")}>
                           {formatDateTime(row.createdAt)}
