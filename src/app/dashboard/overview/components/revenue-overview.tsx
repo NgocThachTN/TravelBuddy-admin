@@ -40,8 +40,8 @@ export function RevenueOverview({
   );
   const rescueCommissionRevenueVnd =
     rescueCommission?.totalCommissionRevenueVnd ?? 0;
-  const totalAdminCommissionRevenueVnd =
-    revenue.servicePartnerCommissionRevenueVnd + rescueCommissionRevenueVnd;
+  const totalPlatformIncomeVnd =
+    revenue.subscriptionTravelerRevenueVnd + rescueCommissionRevenueVnd;
   const chartData = revenue.daily.map((item) => ({
     label: formatDayLabel(item.date),
     subscription: item.subscriptionTravelerRevenueVnd,
@@ -80,10 +80,10 @@ export function RevenueOverview({
           </div>
           <div className="rounded-lg bg-rose-50 px-4 py-3">
             <p className="text-[12px] text-rose-700/80">
-              Tổng hoa hồng admin
+              Tổng thu nhập nền tảng
             </p>
             <p className="mt-1 text-[18px] font-semibold text-rose-900">
-              {formatCurrency(totalAdminCommissionRevenueVnd)}
+              {formatCurrency(totalPlatformIncomeVnd)}
             </p>
           </div>
         </div>
