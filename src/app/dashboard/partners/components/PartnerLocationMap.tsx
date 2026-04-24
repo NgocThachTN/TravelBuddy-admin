@@ -60,7 +60,7 @@ export default function PartnerLocationMap({
         map.on("error", (event) => {
           const message = event.error instanceof Error
             ? event.error.message
-            : "Khong the tai ban do Mapbox.";
+            : "Không thể tải bản đồ Mapbox.";
           setMapError(message);
         });
 
@@ -73,7 +73,7 @@ export default function PartnerLocationMap({
             .setLngLat([lng, lat])
             .setPopup(
               new mapboxgl.Popup({ offset: 18 }).setHTML(
-                `<div style="font-size:12px;line-height:1.4">${label || "Vi tri doi tac"}</div>`,
+                `<div style="font-size:12px;line-height:1.4">${label || "Vị trí đối tác"}</div>`,
               ),
             )
             .addTo(map);
@@ -84,7 +84,7 @@ export default function PartnerLocationMap({
         });
         resizeObserver.observe(mapContainerRef.current);
       } catch (error) {
-        setMapError(error instanceof Error ? error.message : "Khong the khoi tao ban do Mapbox.");
+        setMapError(error instanceof Error ? error.message : "Không thể khởi tạo bản đồ Mapbox.");
       }
     }
 
@@ -118,7 +118,7 @@ export default function PartnerLocationMap({
   if (!token) {
     return (
       <div className="rounded-md border border-border bg-secondary p-3 text-sm text-secondary-foreground">
-        Thieu Mapbox access token. Them NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vao .env.local de hien thi ban do.
+        Thiếu mã truy cập Mapbox. Thêm NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vào .env.local để hiển thị bản đồ.
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function PartnerLocationMap({
   if (mapError) {
     return (
       <div className="rounded-md border border-destructive/30 bg-secondary p-3 text-sm text-secondary-foreground">
-        Khong the hien thi Mapbox: {mapError}
+        Không thể hiển thị Mapbox: {mapError}
       </div>
     );
   }

@@ -59,7 +59,7 @@ export const REPORT_TARGET_TYPE_LABELS: Record<ReportTargetTypeCode, string> = {
   RescueRequest: "Yêu cầu cứu hộ",
   RescueRequestMessage: "Tin nhắn cứu hộ",
   TripMessage: "Tin nhắn chuyến đi",
-  SocialCheckpoint: "Checkpoint xã hội",
+  SocialCheckpoint: "Điểm cộng đồng",
   User: "Người dùng",
   Other: "Khác",
 };

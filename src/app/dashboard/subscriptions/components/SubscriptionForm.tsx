@@ -96,7 +96,7 @@ export default function SubscriptionForm({
 
   function handleDefaultFreeToggle(checked: boolean) {
     if (isEditingDefaultFree && !checked) {
-      setError("Không thể bỏ cờ Free mặc định tại đây. Hãy đặt gói khác làm Free mặc định trước.");
+      setError("Không thể bỏ cờ miễn phí mặc định tại đây. Hãy đặt gói khác làm gói miễn phí mặc định trước.");
       return;
     }
 
@@ -138,11 +138,11 @@ export default function SubscriptionForm({
 
     if (form.isDefaultFree) {
       if (form.price !== 0) {
-        setError("Gói Free mặc định bắt buộc có giá bằng 0.");
+        setError("Gói miễn phí mặc định bắt buộc có giá bằng 0.");
         return;
       }
       if (!form.isEnabled) {
-        setError("Gói Free mặc định bắt buộc phải đang hoạt động.");
+        setError("Gói miễn phí mặc định bắt buộc phải đang hoạt động.");
         return;
       }
     } else {
@@ -153,7 +153,7 @@ export default function SubscriptionForm({
     }
 
     if (isEditingDefaultFree && !form.isDefaultFree) {
-      setError("Không thể bỏ cờ Free mặc định tại đây. Hãy đặt gói khác làm Free mặc định trước.");
+      setError("Không thể bỏ cờ miễn phí mặc định tại đây. Hãy đặt gói khác làm gói miễn phí mặc định trước.");
       return;
     }
 
@@ -232,7 +232,7 @@ export default function SubscriptionForm({
                 />
                 {form.isDefaultFree && (
                   <p className="text-[11px] text-muted-foreground">
-                    Gói Free mặc định có giá cố định 0đ.
+                Gói miễn phí mặc định có giá cố định 0đ.
                   </p>
                 )}
               </div>
@@ -274,14 +274,14 @@ export default function SubscriptionForm({
               Giới hạn sử dụng
             </p>
             <p className="text-[11px] text-muted-foreground/70 -mt-2">
-              Nhập 0 cho tạo trip, người tham gia và AI để không giới hạn. Ảnh kỷ niệm phải lớn hơn 0.
+                Nhập 0 cho tạo chuyến đi, người tham gia và AI để không giới hạn. Ảnh kỷ niệm phải lớn hơn 0.
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="tripCreateLimit" className="text-xs flex items-center gap-1.5">
                   <MapPin className="h-3 w-3 text-muted-foreground" />
-                  Tạo trip
+                  Tạo chuyến đi
                 </Label>
                 <Input
                   id="tripCreateLimit"
@@ -343,10 +343,10 @@ export default function SubscriptionForm({
           <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
             <div>
               <Label htmlFor="isDefaultFree" className="cursor-pointer text-sm font-medium">
-                Gói free mặc định
+                Gói miễn phí mặc định
               </Label>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Hệ thống chỉ nên có một gói Free mặc định đang hoạt động.
+                Hệ thống chỉ nên có một gói miễn phí mặc định đang hoạt động.
               </p>
             </div>
             <Switch
@@ -359,7 +359,7 @@ export default function SubscriptionForm({
 
           {isEditingDefaultFree && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-              Gói này đang là Free mặc định. Muốn đổi, hãy đặt gói khác làm Free mặc định trước.
+              Gói này đang là gói miễn phí mặc định. Muốn đổi, hãy đặt gói khác làm gói miễn phí mặc định trước.
             </div>
           )}
 
@@ -370,7 +370,7 @@ export default function SubscriptionForm({
               </Label>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {form.isDefaultFree
-                  ? "Gói Free mặc định luôn ở trạng thái hoạt động."
+                  ? "Gói miễn phí mặc định luôn ở trạng thái hoạt động."
                   : "Gói sẽ hiển thị cho người dùng sau khi tạo."}
               </p>
             </div>

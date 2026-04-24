@@ -195,11 +195,11 @@ function PackageCard({
   const features = [
     {
       icon: MapPin,
-      label: "Tạo trip",
+      label: "Tạo chuyến đi",
       value:
         pkg.tripCreateLimit === 0
           ? "Không giới hạn"
-          : `${pkg.tripCreateLimit} trip`,
+          : `${pkg.tripCreateLimit} chuyến đi`,
     },
     {
       icon: Users,
@@ -211,7 +211,7 @@ function PackageCard({
     },
     {
       icon: Sparkles,
-      label: "AI Usage",
+      label: "Lượt dùng AI",
       value:
         pkg.aiUsageLimit === 0 ? "Không giới hạn" : `${pkg.aiUsageLimit} lượt`,
     },
@@ -269,7 +269,7 @@ function PackageCard({
                     variant="outline"
                     className="rounded-full border-amber-300 bg-amber-50 px-2 py-0 text-[10px] font-medium text-amber-700"
                   >
-                    Free mặc định
+                  Miễn phí mặc định
                   </Badge>
                 )}
               </div>
@@ -293,7 +293,7 @@ function PackageCard({
               className="h-7 w-7 text-muted-foreground hover:text-destructive"
               onClick={onDelete}
               disabled={pkg.isDefaultFree}
-              title={pkg.isDefaultFree ? "Không thể xóa gói Free mặc định" : "Xóa"}
+          title={pkg.isDefaultFree ? "Không thể xóa gói miễn phí mặc định" : "Xóa"}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -426,7 +426,7 @@ export default function SubscriptionTable() {
   async function handleDelete() {
     if (!deleteTarget) return;
     if (deleteTarget.isDefaultFree) {
-      alert("Không thể xóa gói Free mặc định.");
+      alert("Không thể xóa gói miễn phí mặc định.");
       return;
     }
 
@@ -662,7 +662,7 @@ export default function SubscriptionTable() {
                   <TableHead className="w-[220px] pl-5">Tên gói</TableHead>
                   <TableHead className="text-right">Giá</TableHead>
                   <TableHead className="text-center">Thời hạn</TableHead>
-                  <TableHead className="text-center">Tạo trip</TableHead>
+                  <TableHead className="text-center">Tạo chuyến đi</TableHead>
                   <TableHead className="text-center">Người tham gia</TableHead>
                   <TableHead className="text-center">AI</TableHead>
                   <TableHead className="text-center">Ảnh kỷ niệm</TableHead>
@@ -699,7 +699,7 @@ export default function SubscriptionTable() {
                                 variant="outline"
                                 className="mt-1 rounded-full border-amber-300 bg-amber-50 px-2 py-0 text-[10px] font-medium text-amber-700"
                               >
-                                Free mặc định
+                          Miễn phí mặc định
                               </Badge>
                             )}
                             {pkg.description && (
@@ -775,7 +775,7 @@ export default function SubscriptionTable() {
                               if (!pkg.isDefaultFree) setDeleteTarget(pkg);
                             }}
                             disabled={pkg.isDefaultFree}
-                            title={pkg.isDefaultFree ? "Không thể xóa gói Free mặc định" : "Xóa"}
+                            title={pkg.isDefaultFree ? "Không thể xóa gói miễn phí mặc định" : "Xóa"}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>

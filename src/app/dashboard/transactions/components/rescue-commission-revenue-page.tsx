@@ -484,7 +484,7 @@ export default function RescueCommissionRevenuePage() {
           value={(chartDataSource?.totalCommissionChargedRequests ?? 0).toLocaleString(
             "vi-VN",
           )}
-          description="Các rescue request hoàn tất và có commission"
+          description="Các yêu cầu cứu hộ đã hoàn tất và có hoa hồng"
           tone="cyan"
           icon={ReceiptText}
         />
@@ -556,7 +556,7 @@ export default function RescueCommissionRevenuePage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle className="text-sm font-medium">
-                Bảng tổng hợp theo partner
+                Bảng tổng hợp theo đối tác
               </CardTitle>
               <CardDescription className="text-[13px]">
                 Tổng hợp số đơn hoàn thành, doanh thu và hoa hồng của từng đối tác
@@ -567,7 +567,7 @@ export default function RescueCommissionRevenuePage() {
               <Input
                 value={partnerSearch}
                 onChange={(event) => setPartnerSearch(event.target.value)}
-                placeholder="Tìm theo tên partner..."
+                placeholder="Tìm theo tên đối tác..."
                 className="pl-9"
               />
             </div>

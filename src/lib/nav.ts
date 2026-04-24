@@ -191,7 +191,7 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
         roles: ["MODERATOR"],
       },
       {
-        label: "Checkpoint x\u00e3 h\u1ed9i",
+        label: "Điểm cộng đồng",
         href: ROUTES.MODERATION_REPORTS_BY_TYPE("SocialCheckpoint"),
         icon: Megaphone,
         roles: ["MODERATOR"],

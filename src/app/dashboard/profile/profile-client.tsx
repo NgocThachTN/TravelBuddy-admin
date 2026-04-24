@@ -374,7 +374,7 @@ export default function ProfileClientPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error ?? "Upload thất bại.");
+      throw new Error(data.error ?? "Tải ảnh lên thất bại.");
       }
 
       emitProfileAvatarUpdated(data.url);

@@ -509,8 +509,8 @@ export default function TripCheckpointMap({
   if (!token) {
     return (
       <div className="flex h-[65vh] min-h-[500px] flex-col items-center justify-center gap-2 rounded-lg border border-border bg-secondary p-4 text-center">
-        <p className="text-sm font-medium text-secondary-foreground">Thiếu Mapbox access token.</p>
-        <p className="text-xs text-secondary-foreground">Thêm NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vào .env.local để hiển thị bản đồ checkpoint.</p>
+        <p className="text-sm font-medium text-secondary-foreground">Thiếu mã truy cập Mapbox.</p>
+        <p className="text-xs text-secondary-foreground">Thêm NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN vào .env.local để hiển thị bản đồ điểm dừng.</p>
       </div>
     );
   }

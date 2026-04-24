@@ -31,7 +31,11 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   GetTripModerationTasksParams,
+  MediaAttachment,
   TripDetail,
+  TripCheckpoint,
+  TripExpenseCategory,
+  TripModerationFlaggedItem,
   TripModerationTaskDetail,
   TripModerationTaskListItem,
 } from "@/types";
@@ -123,7 +127,7 @@ const FLAGGED_FIELD_LABELS_VI: Record<string, string> = {
   title: "Tiêu đề",
   description: "Mô tả",
   rule: "Quy định",
-  checkpoints: "Lộ trình checkpoint",
+  checkpoints: "Lộ trình điểm dừng",
   backTime: "Thời gian quay về",
   endTime: "Thời gian kết thúc",
   itemRequired: "Vật dụng cần mang",
@@ -515,10 +519,10 @@ function normalizeModerationResult(task: TripModerationTaskDetail | null): Norma
 
   const fallbackSummary =
     moderationCode === "Clean"
-      ? "Noi dung trip tam thoi sach, co the xem nhanh truoc khi phe duyet."
+      ? "Nội dung chuyến đi tạm thời sạch, có thể xem nhanh trước khi phê duyệt."
       : flaggedItems.length > 0
-        ? `Trip co ${flaggedItems.length} muc can reviewer kiem tra ky truoc khi ra quyet dinh.`
-        : "Trip co dau hieu can xem xet thu cong truoc khi phe duyet.";
+        ? `Chuyến đi có ${flaggedItems.length} mục cần người duyệt kiểm tra kỹ trước khi ra quyết định.`
+        : "Chuyến đi có dấu hiệu cần xem xét thủ công trước khi phê duyệt.";
 
   return {
     batchId: task.batchId ?? null,
@@ -600,7 +604,7 @@ export default function TripModerationTaskTable() {
       setTotalPages(result.data.totalPages);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách task kiểm duyệt");
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách tác vụ kiểm duyệt");
     } finally {
       setLoading(false);
     }
@@ -630,11 +634,11 @@ export default function TripModerationTaskTable() {
           const tripResult = await fetchTripById(taskDetail.tripId);
           setDetailTrip(tripResult.data);
         } catch (tripErr) {
-          setDetailError(tripErr instanceof Error ? tripErr.message : "Không thể tải đầy đủ dữ liệu trip.");
+          setDetailError(tripErr instanceof Error ? tripErr.message : "Không thể tải đầy đủ dữ liệu chuyến đi.");
         }
       }
     } catch (err) {
-      setDetailError(err instanceof Error ? err.message : "Không thể tải chi tiết task");
+      setDetailError(err instanceof Error ? err.message : "Không thể tải chi tiết tác vụ");
     } finally {
       setDetailLoading(false);
     }
@@ -864,7 +868,7 @@ export default function TripModerationTaskTable() {
           <div className="relative min-w-[280px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo Mã task, Tên chuyến đi..."
+              placeholder="Tìm theo mã tác vụ, tên chuyến đi..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="h-9 bg-background pl-9 shadow-sm"
@@ -948,7 +952,7 @@ export default function TripModerationTaskTable() {
               <TableRow>
                 <TableCell colSpan={8} className="py-12 text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted"><Shield className="h-5 w-5 text-muted-foreground" /></div>
-                  <p className="text-sm font-medium">Không có task kiểm duyệt phù hợp</p>
+                  <p className="text-sm font-medium">Không có tác vụ kiểm duyệt phù hợp</p>
                   <p className="mt-1 text-xs text-muted-foreground">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
                 </TableCell>
               </TableRow>
@@ -964,12 +968,12 @@ export default function TripModerationTaskTable() {
                     <p className="max-w-[300px] truncate text-sm font-bold text-primary hover:underline cursor-pointer" onClick={() => openTaskDetail(task.taskId)}>{task.tripTitle || "(Không có tiêu đề)"}</p>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5 bg-muted">
-                        <AvatarImage src={task.tripOwnerAvatarUrl || undefined} alt={task.tripOwnerName || "Trip owner"} />
+                        <AvatarImage src={task.tripOwnerAvatarUrl || undefined} alt={task.tripOwnerName || "Chủ chuyến"} />
                         <AvatarFallback className={cn("text-[8px]", getAvatarColor(task.tripOwnerName || "U"))}>
                           {(task.tripOwnerName || "U").substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <p className="max-w-[150px] truncate text-xs font-medium text-muted-foreground">{task.tripOwnerName || "Không rõ chủ trip"}</p>
+                      <p className="max-w-[150px] truncate text-xs font-medium text-muted-foreground">{task.tripOwnerName || "Không rõ chủ chuyến"}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -985,7 +989,7 @@ export default function TripModerationTaskTable() {
                       </Badge>
                     </div>
                     <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20">
-                      Độ Ưu tiên: P{task.priority || "3"}
+                      Độ ưu tiên: P{task.priority || "3"}
                     </Badge>
                   </div>
                 </TableCell>
@@ -1137,7 +1141,7 @@ export default function TripModerationTaskTable() {
                     </div>
                     <div className="border rounded-lg p-5 bg-card">
                       <h3 className="font-semibold mb-4 text-base flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground"/> Chủ Trip & Thống kê
+                        <Users className="h-4 w-4 text-muted-foreground"/> Chủ chuyến & thống kê
                       </h3>
                       <div className="flex items-center gap-3 mb-4">
                         <Avatar className="h-10 w-10">
@@ -1173,13 +1177,13 @@ export default function TripModerationTaskTable() {
                     </div>
                     {detailTrip.mediaAttachments && detailTrip.mediaAttachments.length > 0 && (
                         <div className="md:col-span-2 border rounded-lg p-5 bg-card">
-                          <h3 className="font-semibold mb-4 text-base">Media đính kèm ({detailTrip.mediaAttachments.length})</h3>
+                          <h3 className="font-semibold mb-4 text-base">Tệp đính kèm ({detailTrip.mediaAttachments.length})</h3>
                           <div className="flex flex-wrap gap-2">
-                            {detailTrip.mediaAttachments.map((m: any) => (
+                            {detailTrip.mediaAttachments.map((m: MediaAttachment) => (
                               <img 
                                 key={m.mediaAttachmentId} 
                                 src={m.mediaUrl} 
-                                alt="trip media"
+                                alt="Tệp chuyến đi"
                                 className="w-32 h-32 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition"
                                 onClick={() => setSelectedMediaUrl(m.mediaUrl)}
                               />
@@ -1252,9 +1256,9 @@ export default function TripModerationTaskTable() {
                       <div className="grid md:grid-cols-2 gap-6 h-full">
                         {/* Left: Itinerary List */}
                         <div className="space-y-4 pr-2 overflow-y-auto max-h-[600px] scrollbar-thin">
-                          {sortedCheckpoints.map((cp: any, index: number) => {
+                          {sortedCheckpoints.map((cp: TripCheckpoint, index: number) => {
                             const checkpointCosts = Array.isArray(cp.costs) ? cp.costs : [];
-                            const categoryExpenses = detailTrip.expenseCategories?.filter((e: any) => e.tripCheckpointId === cp.tripCheckpointId) || [];
+                            const categoryExpenses = detailTrip.expenseCategories?.filter((e: TripExpenseCategory) => e.tripCheckpointId === cp.tripCheckpointId) || [];
                             const cpExpenses = checkpointCosts.length > 0 ? checkpointCosts : categoryExpenses;
                             
                             // fallback color styles based on checkpoint label
@@ -1297,7 +1301,7 @@ export default function TripModerationTaskTable() {
                                       <Wallet className="h-3.5 w-3.5" /> Chi phí tại điểm
                                     </p>
                                     <div className="space-y-1.5">
-                                      {cpExpenses.map((exp: any, i: number) => {
+                                      {cpExpenses.map((exp: TripExpenseCategory, i: number) => {
                                         const rawLabel = exp.expenseType || exp.type || exp.categoryName || exp.expenseCategoryName || "Other";
                                         const label = translateExpenseType(rawLabel);
                                         const amount = exp.estimatedCost || exp.amount || 0;
@@ -1435,14 +1439,14 @@ export default function TripModerationTaskTable() {
         
         {sortedFlaggedItems.length > 0 ? (
           <div className="space-y-3">
-            {sortedFlaggedItems.map((fi: any, i: number) => (
+            {sortedFlaggedItems.map((fi: TripModerationFlaggedItem, i: number) => (
               <div key={i} className="text-sm bg-red-50/50 border border-red-100/50 p-4 rounded-xl flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-red-800 uppercase tracking-wider text-[10px]">{fi.severity} risk</span>
                   <Badge variant="outline" className="text-[10px] bg-white border-red-200 text-red-700">{fi.contentPath}</Badge>
                 </div>
                 <p className="text-red-900 font-semibold mt-1">{fi.reason}</p>
-                <div className="bg-white/60 p-2 rounded text-red-700 italic border border-red-100/50">"{fi.evidence}"</div>
+                <div className="bg-white/60 p-2 rounded text-red-700 italic border border-red-100/50">&quot;{fi.evidence}&quot;</div>
                 <div className="mt-2 pt-2 border-t border-red-200/50">
                   <p className="text-red-800 font-medium"><span className="opacity-70">Kiểm tra:</span> {fi.whatReviewerShouldCheck}</p>
                   <p className="text-red-800 font-medium mt-1"><span className="opacity-70">Gợi ý:</span> {fi.suggestedReviewerAction}</p>
@@ -1525,7 +1529,7 @@ export default function TripModerationTaskTable() {
             onClick={() => submitDecision("Approve")}
           >
             {decisionLoading && pendingDecision === "Approve" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : null}
-            Duyệt Trip
+            Duyệt chuyến đi
           </Button>
         </div>
       </div>
@@ -1535,7 +1539,7 @@ export default function TripModerationTaskTable() {
 
       </Dialog>
 
-      {/* Media Zoom Dialog */}
+      {/* Hộp thoại phóng to tệp */}
       <Dialog open={!!selectedMediaUrl} onOpenChange={(open) => !open && setSelectedMediaUrl(null)}>
         <DialogContent className="max-w-[90vw] md:max-w-4xl p-1 bg-transparent border-none shadow-none flex justify-center items-center [&>button]:bg-white [&>button]:text-black [&>button]:opacity-100 [&>button]:hover:bg-slate-200 [&>button]:p-2 [&>button]:rounded-full [&>button]:shadow-xl sm:[&>button]:-right-4 sm:[&>button]:-top-4">
           <DialogTitle className="sr-only">Hình ảnh phóng to</DialogTitle>
@@ -1543,7 +1547,7 @@ export default function TripModerationTaskTable() {
           {selectedMediaUrl && (
             <img 
               src={selectedMediaUrl} 
-              alt="zoomed media" 
+              alt="Tệp đang phóng to"
               className="max-w-full max-h-[90vh] object-contain rounded-md" 
             />
           )}

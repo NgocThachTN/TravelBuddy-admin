@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      console.error("Cloudinary upload failed:", body);
+      console.error("Tải ảnh lên Cloudinary thất bại:", body);
       const detail = (body as Record<string, unknown>)?.error;
       const message =
         typeof detail === "object" && detail !== null && "message" in detail
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json({ url: data.secure_url });
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("Lỗi tải ảnh lên:", err);
     return NextResponse.json({ error: "Lỗi hệ thống khi tải ảnh lên." }, { status: 500 });
   }
 }

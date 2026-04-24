@@ -638,7 +638,7 @@ export default function ModerationReportTable() {
               <SelectItem value="TripMessage">{"Tin nhắn chuyến đi"}</SelectItem>
               <SelectItem value="RescueRequest">{"Yêu cầu cứu hộ"}</SelectItem>
               <SelectItem value="RescueRequestMessage">{"Tin nhắn cứu hộ"}</SelectItem>
-              <SelectItem value="SocialCheckpoint">{"Checkpoint xã hội"}</SelectItem>
+              <SelectItem value="SocialCheckpoint">{"Điểm cộng đồng"}</SelectItem>
             </SelectContent>
           </Select>
 

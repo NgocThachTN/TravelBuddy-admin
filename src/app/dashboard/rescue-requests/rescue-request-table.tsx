@@ -141,7 +141,7 @@ export default function RescueRequestTable() {
                 setSearch(event.target.value);
                 setPageNumber(1);
               }}
-              placeholder="Tìm theo mã đơn, traveler, đối tác, biển số..."
+            placeholder="Tìm theo mã đơn, người dùng, đối tác, biển số..."
               className="pl-9"
             />
           </div>

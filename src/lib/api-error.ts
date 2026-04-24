@@ -7,7 +7,7 @@ import { AxiosError } from "axios";
  */
 export function extractApiError(
   err: unknown,
-  fallback = "Lỗi server",
+  fallback = "Lỗi máy chủ",
 ): { message: string; status: number; data: unknown } {
   if (!(err instanceof AxiosError) || !err.response) {
     const msg = err instanceof Error ? err.message : fallback;

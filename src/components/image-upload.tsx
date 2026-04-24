@@ -48,12 +48,12 @@ export default function ImageUpload({
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error ?? "Upload thất bại");
+      throw new Error(data.error ?? "Tải ảnh lên thất bại");
         }
 
         onChange(data.url);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload thất bại");
+      setError(err instanceof Error ? err.message : "Tải ảnh lên thất bại");
       } finally {
         setUploading(false);
         if (inputRef.current) inputRef.current.value = "";

@@ -19,7 +19,7 @@ const TRIP_TYPE_LABELS_VI: Record<string, string> = {
   Teambuilding: "Team building",
   CityExploration: "Khám phá thành phố",
   SoloTravel: "Du lịch một mình",
-  RoadTrip: "Road trip",
+  RoadTrip: "Đi đường dài",
   Backpacking: "Du lịch bụi",
   CloudHunting: "Săn mây",
   MountainPassChallenge: "Chinh phục đèo",
@@ -141,7 +141,7 @@ export function memberLevelLabelViWithCatalog(
   value: number | string | null | undefined,
   levels?: MemberLevelCatalogLevel[] | null,
 ) {
-  if (value === null || value === undefined) return "KhÃ´ng rÃµ";
+  if (value === null || value === undefined) return "Không rõ";
 
   const raw = String(value).trim();
   if (raw && levels?.length) {

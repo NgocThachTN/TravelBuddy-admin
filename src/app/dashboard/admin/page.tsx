@@ -56,8 +56,8 @@ export default async function AdminPage() {
         <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
         <p className="text-sm text-foreground/80">
           Trang này và các tính năng bên dưới chỉ hiển thị với tài khoản{" "}
-          <strong className="text-primary">Admin</strong>. Moderator sẽ bị chặn
-          bởi route guard.
+          <strong className="text-primary">quản trị viên</strong>. Người kiểm duyệt sẽ bị chặn
+          bởi kiểm tra quyền trên tuyến.
         </p>
       </div>
     </div>

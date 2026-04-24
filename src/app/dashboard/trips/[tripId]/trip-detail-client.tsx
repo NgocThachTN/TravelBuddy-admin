@@ -477,7 +477,7 @@ function TripEditDialog({ open, form, loading, onClose, onChange, onSubmit }: Tr
             <div className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
               <div className="space-y-0.5">
                 <p className="inline-flex items-center gap-1.5 font-medium"><ShieldCheck className="h-3.5 w-3.5" />Duyệt thành viên</p>
-                <p className="text-xs text-muted-foreground">Bật để yêu cầu chủ trip duyệt yêu cầu tham gia.</p>
+                <p className="text-xs text-muted-foreground">Bật để yêu cầu chủ chuyến đi duyệt yêu cầu tham gia.</p>
               </div>
               <Switch checked={form.isApprovalMemberEnable} onCheckedChange={(value) => setField("isApprovalMemberEnable", value)} />
             </div>
@@ -878,7 +878,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                 <CardContent>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                      {trip.owner.avatarUrl && <AvatarImage src={trip.owner.avatarUrl} alt="Owner" />}
+                      {trip.owner.avatarUrl && <AvatarImage src={trip.owner.avatarUrl} alt="Chủ chuyến đi" />}
                       <AvatarFallback className={cn("text-xs font-semibold", getAvatarColor(trip.owner.userId))}>
                         {(trip.owner.firstName?.[0] || "") + (trip.owner.lastName?.[0] || "") || "??"}
                       </AvatarFallback>
@@ -888,7 +888,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                         {[trip.owner.firstName, trip.owner.lastName].filter(Boolean).join(" ") || "(Chưa đặt tên)"}
                       </p>
                       {trip.owner.experienceLevel !== null && (
-                        <p className="text-xs text-muted-foreground">Level: {memberLevelLabelViWithCatalog(trip.owner.experienceLevel, memberLevelCatalog?.levels)}</p>
+                        <p className="text-xs text-muted-foreground">Cấp độ: {memberLevelLabelViWithCatalog(trip.owner.experienceLevel, memberLevelCatalog?.levels)}</p>
                       )}
                     </div>
                   </div>
