@@ -44,7 +44,6 @@ import {
   aiModerationStatusLabel,
   moderationStatusLabel,
   PARTICIPANT_STATUS_LABELS,
-  SCAN_STATUS_LABELS,
   tripStatusLabel,
   TRIP_STATUS_CODES,
   MODERATION_STATUS_CODES,
@@ -116,13 +115,6 @@ const TASK_STATUS_STYLES: Record<string, string> = {
   Failed: "bg-transparent text-destructive border-border",
 };
 
-const SCAN_STATUS_STYLES: Record<string, string> = {
-  Clean: "bg-transparent text-foreground border-border",
-  Flagged: "bg-transparent text-foreground border-border",
-  Error: "bg-transparent text-destructive border-border",
-  NotScanned: "bg-transparent text-muted-foreground border-border",
-};
-
 const FLAGGED_FIELD_LABELS_VI: Record<string, string> = {
   title: "Tiêu đề",
   description: "Mô tả",
@@ -151,36 +143,6 @@ function isTaskActionable(status: number | string | null | undefined) {
   if (status === null || status === undefined) return false;
   const key = typeof status === "number" ? AI_MODERATION_STATUS_CODES[status] : status;
   return key === "Open" || key === "Assigned" || key === "InReview";
-}
-
-function scanStatusLabel(value: number | string | null | undefined) {
-  if (value === null || value === undefined) return "Không rõ";
-  if (typeof value === "number") return SCAN_STATUS_LABELS[value] ?? `${value}`;
-  const n = value.toLowerCase();
-  if (n === "clean") return "Sạch";
-  if (n === "flagged") return "Cảnh báo";
-  if (n === "error") return "Lỗi";
-  if (n === "notscanned") return "Chưa quét";
-  return value;
-}
-
-function getScanStatusStyle(status: number | string | null | undefined) {
-  if (status === null || status === undefined) return "bg-secondary text-foreground border-border";
-  if (typeof status === "number") {
-    return status === 1
-      ? SCAN_STATUS_STYLES.Clean
-      : status === 2
-        ? SCAN_STATUS_STYLES.Flagged
-        : status === 3
-          ? SCAN_STATUS_STYLES.Error
-          : SCAN_STATUS_STYLES.NotScanned;
-  }
-  const key = status.toLowerCase();
-  if (key === "clean") return SCAN_STATUS_STYLES.Clean;
-  if (key === "flagged") return SCAN_STATUS_STYLES.Flagged;
-  if (key === "error") return SCAN_STATUS_STYLES.Error;
-  if (key === "notscanned") return SCAN_STATUS_STYLES.NotScanned;
-  return "bg-secondary text-foreground border-border";
 }
 
 function getTripStatusStyle(status: number | string | null | undefined) {
@@ -988,30 +950,16 @@ export default function TripModerationTaskTable() {
                         {tripStatusLabel(task.tripCurrentStatus)}
                       </Badge>
                     </div>
-                    <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20">
-                      Độ ưu tiên: P{task.priority || "3"}
-                    </Badge>
                   </div>
                 </TableCell>
 
                 <TableCell className="hidden md:table-cell">
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className={cn("text-[10px]", getScanStatusStyle(task.aiStatus))}>{scanStatusLabel(task.aiStatus)}</Badge>
-                    </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="outline" className="text-[10px]">
                         Kết quả: {task.aiStatus === 2 ? "Cảnh báo" : "Sạch"}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        Ưu tiên: {task.priority <= 1 ? "Cao" : task.priority === 2 ? "Vừa" : "Thấp"}
-                      </Badge>
                     </div>
-                    {task.aiLabels && (
-                      <p className="max-w-[200px] truncate text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded border border-muted/50">
-                        {task.aiLabels}
-                      </p>
-                    )}
                   </div>
                 </TableCell>
 
@@ -1262,7 +1210,7 @@ export default function TripModerationTaskTable() {
                             const cpExpenses = checkpointCosts.length > 0 ? checkpointCosts : categoryExpenses;
                             
                             // fallback color styles based on checkpoint label
-                            const typeLabel = getCheckpointTypeLabel(cp.tripCheckpointType ?? cp.checkpointType ?? cp.type);
+                            const typeLabel = getCheckpointTypeLabel(cp.tripCheckpointType);
                             let bgPoint = "bg-blue-100 text-blue-700";
                             let TypeIcon = MapPin;
                             
@@ -1302,11 +1250,11 @@ export default function TripModerationTaskTable() {
                                     </p>
                                     <div className="space-y-1.5">
                                       {cpExpenses.map((exp: TripExpenseCategory, i: number) => {
-                                        const rawLabel = exp.expenseType || exp.type || exp.categoryName || exp.expenseCategoryName || "Other";
+                                        const rawLabel = exp.expenseType || "Other";
                                         const label = translateExpenseType(rawLabel);
-                                        const amount = exp.estimatedCost || exp.amount || 0;
+                                        const amount = exp.estimatedCost || 0;
                                         return (
-                                          <div key={exp.tripExpenseCategoryId || exp.id || i} className="flex justify-between items-center text-xs">
+                                          <div key={exp.tripExpenseCategoryId || i} className="flex justify-between items-center text-xs">
                                             <span className="text-emerald-700 font-medium flex items-center gap-1.5">
                                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                                               {label}
