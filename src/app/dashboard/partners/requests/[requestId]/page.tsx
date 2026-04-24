@@ -139,24 +139,6 @@ function getPartnerDocumentGroups(detail: PartnerRequestDetail): PartnerDocument
   return { identityCards, businessLicenses };
 }
 
-function getTaxVerificationStatusLabel(rawStatus?: string) {
-  const normalized = rawStatus?.trim().toLowerCase();
-  if (!normalized) return "Chưa có dữ liệu";
-
-  switch (normalized) {
-    case "pending":
-      return "Đang chờ xác minh";
-    case "verifiedactive":
-      return "Đã xác minh đang hoạt động";
-    case "verifiedinactive":
-      return "Đã xác minh ngừng hoạt động";
-    case "failed":
-      return "Xác minh thất bại";
-    default:
-      return rawStatus ?? "Chưa có dữ liệu";
-  }
-}
-
 function hasVietnameseText(value: string) {
   return /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(
     value,
@@ -204,7 +186,7 @@ function normalizeTaxCode(value?: string | null) {
   return (value ?? "").replace(/\D/g, "");
 }
 
-function shouldShowVerifiedBusinessStatus(
+function isSuccessfulTaxVerification(
   detail: PartnerRequestDetail,
   verification?: PartnerRequestDetail["taxVerification"],
 ) {
@@ -221,6 +203,30 @@ function shouldShowVerifiedBusinessStatus(
   }
 
   if (!responseTaxCode || !submittedTaxCode || responseTaxCode !== submittedTaxCode) {
+    return false;
+  }
+
+  return true;
+}
+
+function getTaxVerificationStatusLabel(
+  detail: PartnerRequestDetail,
+  verification?: PartnerRequestDetail["taxVerification"],
+) {
+  if (!verification) return "Chưa có dữ liệu";
+
+  const normalized = verification.verificationStatus?.trim().toLowerCase();
+  if (normalized === "pending") return "Đang chờ xác minh";
+  if (isSuccessfulTaxVerification(detail, verification)) return "Xác minh thành công";
+
+  return "Xác minh thất bại";
+}
+
+function shouldShowVerifiedBusinessStatus(
+  detail: PartnerRequestDetail,
+  verification?: PartnerRequestDetail["taxVerification"],
+) {
+  if (!isSuccessfulTaxVerification(detail, verification)) {
     return false;
   }
 
@@ -614,7 +620,7 @@ export default function PartnerRequestDetailPage() {
             <CardContent className="space-y-3">
               {readOnlyField(
                 "Trạng thái xác minh",
-                getTaxVerificationStatusLabel(taxVerification?.verificationStatus),
+                getTaxVerificationStatusLabel(detail, taxVerification),
               )}
               {readOnlyField("Mã số thuế phản hồi", taxVerification?.taxCode ?? detail.taxId)}
               {businessStatusValue != null &&
