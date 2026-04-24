@@ -226,7 +226,7 @@ function shouldShowVerifiedBusinessStatus(
   detail: PartnerRequestDetail,
   verification?: PartnerRequestDetail["taxVerification"],
 ) {
-  if (!isSuccessfulTaxVerification(detail, verification)) {
+  if (!verification || !isSuccessfulTaxVerification(detail, verification)) {
     return false;
   }
 
