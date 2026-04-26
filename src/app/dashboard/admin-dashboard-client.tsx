@@ -120,6 +120,17 @@ const SystemStatus = dynamic(
   },
 );
 
+const SystemWallets = dynamic(
+  () =>
+    import("./overview/components/system-wallets").then(
+      (mod) => mod.SystemWallets,
+    ),
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-4" />,
+  },
+);
+
 const RecentActivity = dynamic(
   () =>
     import("./overview/components/recent-activity").then(
@@ -243,6 +254,7 @@ export default function DashboardPage() {
           data={dashboardData.systemStatus}
           generatedAtUtc={dashboardData.generatedAtUtc}
         />
+        <SystemWallets data={dashboardData.systemWallets} />
       </div>
 
       <RecentActivity data={dashboardData.recentActivities} />

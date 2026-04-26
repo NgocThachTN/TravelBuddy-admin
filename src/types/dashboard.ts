@@ -27,6 +27,23 @@ export interface DashboardRevenue {
   daily: DashboardRevenueDailyPoint[];
 }
 
+export interface DashboardSystemWalletItem {
+  systemWalletKey: string;
+  displayName: string;
+  currency: string;
+  balanceAvailable: number;
+  balanceFrozen: number;
+  totalBalance: number;
+  updatedAt: string | null;
+}
+
+export interface DashboardSystemWallets {
+  totalAvailableVnd: number;
+  totalFrozenVnd: number;
+  totalBalanceVnd: number;
+  wallets: DashboardSystemWalletItem[];
+}
+
 export interface RescueCommissionRevenueDailyPoint {
   dateUtc: string;
   commissionRevenueVnd: number;
@@ -154,6 +171,7 @@ export interface DashboardOverviewData {
   topDestinations: DashboardTopDestinationItem[];
   recentActivities: DashboardRecentActivityItem[];
   systemStatus: DashboardSystemStatus;
+  systemWallets: DashboardSystemWallets;
 }
 
 export interface ModeratorDashboardKpis {

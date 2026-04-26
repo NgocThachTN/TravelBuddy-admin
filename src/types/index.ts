@@ -42,6 +42,8 @@ export type {
   DashboardKpis,
   DashboardRevenueDailyPoint,
   DashboardRevenue,
+  DashboardSystemWalletItem,
+  DashboardSystemWallets,
   RescueCommissionRevenueDailyPoint,
   RescueCommissionRevenueData,
   RescueCommissionPartnerSummaryItem,
