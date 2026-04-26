@@ -23,6 +23,7 @@ export interface AdminWalletWithdrawalRecord {
   userName?: string | null;
   userEmail?: string | null;
   userPhone?: string | null;
+  userRole?: string | null;
   bankCode?: string | null;
   bankAccountNumber?: string | null;
   maskedBankAccountNumber?: string | null;

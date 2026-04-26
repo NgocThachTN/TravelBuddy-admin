@@ -106,6 +106,17 @@ function statusMeta(status: string) {
   return { label: status || "Không rõ", className: "bg-muted text-muted-foreground" };
 }
 
+function userRoleMeta(role?: string | null) {
+  const normalized = role?.trim().toLowerCase();
+  if (normalized === "traveler") {
+    return { label: "Traveler", className: "bg-sky-100 text-sky-700" };
+  }
+  if (normalized === "servicepartner" || normalized === "service_partner") {
+    return { label: "Service Partner", className: "bg-violet-100 text-violet-700" };
+  }
+  return { label: "Không rõ vai trò", className: "bg-muted text-muted-foreground" };
+}
+
 function shortId(value: string) {
   if (!value) return "-";
   if (value.length <= 14) return value;
@@ -747,9 +758,19 @@ export default function WalletWithdrawalsTable() {
                           </TableCell>
 
                           <TableCell className="max-w-[240px]">
-                            <p className="truncate text-sm font-medium">
-                              {row.userName || "-"}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="min-w-0 truncate text-sm font-medium">
+                                {row.userName || "-"}
+                              </p>
+                              <Badge
+                                className={cn(
+                                  "rounded-full px-2 text-[10px]",
+                                  userRoleMeta(row.userRole).className,
+                                )}
+                              >
+                                {userRoleMeta(row.userRole).label}
+                              </Badge>
+                            </div>
                             <p className="truncate text-xs text-muted-foreground">
                               {row.userPhone || row.userEmail || row.userId}
                             </p>
