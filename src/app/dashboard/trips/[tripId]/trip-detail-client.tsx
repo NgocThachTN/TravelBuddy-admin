@@ -10,12 +10,15 @@ import {
   CheckCircle,
   Clock3,
   FileText,
+  Flag,
+  Home,
   Image as ImageIcon,
   Map,
   MapPin,
   NotebookPen,
   PackageOpen,
   Pencil,
+  PlayCircle,
   RefreshCw,
   Route,
   Shield,
@@ -761,14 +764,13 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         onSubmit={handleSaveTripEdit}
       />
 
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-border bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push(ROUTES.TRIPS)}>
+            <Button variant="outline" size="icon" onClick={() => router.push(ROUTES.TRIPS)}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{trip.title || "(Chưa đặt tên)"}</h1>
               <div className="mt-1 flex items-center gap-2">
                 <Badge variant="outline" className={cn("text-[11px]", getStatusStyle(trip.currentStatus))}>
                   {tripStatusLabel(trip.currentStatus)}
@@ -786,6 +788,10 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                   </Badge>
                 )}
               </div>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">{trip.title || "(Chưa đặt tên)"}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Hồ sơ chuyến đi chi tiết, lộ trình, thành viên và nội dung đính kèm.
+              </p>
             </div>
           </div>
 
@@ -823,8 +829,23 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
 
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
+        <div className="space-y-6 bg-slate-50/50 p-6">
+          <div className="sticky top-14 z-20 -mx-6 -mt-6 border-b border-border bg-white/95 px-6 py-2 backdrop-blur">
+            <div className="grid w-full max-w-2xl grid-cols-3 rounded-md bg-slate-100 p-1 text-sm font-medium text-muted-foreground">
+              <a href="#trip-overview" className="rounded-md px-3 py-1.5 text-center hover:bg-white hover:text-foreground">
+                Tổng quan
+              </a>
+              <a href="#trip-itinerary" className="rounded-md px-3 py-1.5 text-center hover:bg-white hover:text-foreground">
+                Lộ trình
+              </a>
+              <a href="#trip-members" className="rounded-md px-3 py-1.5 text-center hover:bg-white hover:text-foreground">
+                Thành viên
+              </a>
+            </div>
+          </div>
+
+        <div id="trip-overview" className="grid scroll-mt-28 gap-6 md:grid-cols-2">
+          <Card className="border border-border/80 bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -832,22 +853,43 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Bắt đầu</span>
-                <span className="font-medium">{formatDateTime(trip.startTime)}</span>
+              <div className="mb-5 ml-2">
+                <div className="relative space-y-5 border-l-[3px] border-slate-200 pb-2">
+                  <div className="relative pl-6">
+                    <div className="absolute -left-[8.5px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 ring-4 ring-white" />
+                    <p className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Clock3 className="h-3 w-3" />
+                      Hạn đăng ký
+                    </p>
+                    <p className="text-sm font-medium text-foreground">{formatDateTime(trip.registrationDeadline)}</p>
+                  </div>
+                  <div className="relative pl-6">
+                    <div className="absolute -left-[8.5px] top-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-4 ring-white" />
+                    <p className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
+                      <PlayCircle className="h-3 w-3" />
+                      Khởi hành
+                    </p>
+                    <p className="text-sm font-medium text-foreground">{formatDateTime(trip.startTime)}</p>
+                  </div>
+                  <div className="relative pl-6">
+                      <div className="absolute -left-[8.5px] top-1 h-3.5 w-3.5 rounded-full bg-slate-400 ring-4 ring-white" />
+                      <p className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <Home className="h-3 w-3" />
+                        Quay về
+                      </p>
+                      <p className="text-sm font-medium text-foreground">{formatDateTime(trip.backTime)}</p>
+                    </div>
+                  <div className="relative pl-6">
+                    <div className="absolute -left-[8.5px] top-1 h-3.5 w-3.5 rounded-full bg-amber-500 ring-4 ring-white" />
+                    <p className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-600">
+                      <Flag className="h-3 w-3" />
+                      Kết thúc
+                    </p>
+                    <p className="text-sm font-medium text-foreground">{formatDateTime(trip.endTime)}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Kết thúc</span>
-                <span className="font-medium">{formatDateTime(trip.endTime)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Quay về</span>
-                <span className="font-medium">{formatDateTime(trip.backTime)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Hạn đăng ký</span>
-                <span className="font-medium">{formatDateTime(trip.registrationDeadline)}</span>
-              </div>
+              <div className="border-t pt-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tiền cọc</span>
                 <span className="font-medium">
@@ -863,12 +905,13 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
                 <span className="text-muted-foreground">Ngày tạo</span>
                 <span className="font-medium">{formatDateTime(trip.createdAt)}</span>
               </div>
+              </div>
             </CardContent>
           </Card>
 
           <div className="space-y-6">
             {trip.owner && (
-              <Card>
+              <Card className="border border-border/80 bg-card shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <Users className="h-4 w-4 text-muted-foreground" />
@@ -896,7 +939,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
               </Card>
             )}
 
-            <Card>
+            <Card className="border border-border/80 bg-card shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <Users className="h-4 w-4 text-muted-foreground" />
@@ -930,7 +973,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         </div>
 
         {trip.description && (
-          <Card>
+          <Card className="border border-border/80 bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">Mô tả</CardTitle>
             </CardHeader>
@@ -940,7 +983,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
           </Card>
         )}
 
-        <Card>
+        <Card className="border border-border/80 bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Tag className="h-4 w-4 text-muted-foreground" />
@@ -1007,7 +1050,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-border/80 bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">Nội dung bổ sung</CardTitle>
           </CardHeader>
@@ -1024,7 +1067,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         </Card>
 
         {sortedCheckpoints.length > 0 && (
-          <Card>
+          <Card id="trip-itinerary" className="scroll-mt-28 border border-border/80 bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -1123,7 +1166,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         )}
 
         {trip.participants.length > 0 && (
-          <Card>
+          <Card id="trip-members" className="scroll-mt-28 border border-border/80 bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -1184,7 +1227,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
         )}
 
         {orderedMediaAttachments.length > 0 && (
-          <Card>
+          <Card className="border border-border/80 bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -1213,6 +1256,7 @@ export default function TripDetailClient({ role }: TripDetailClientProps) {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
 
       {/* Media Zoom Dialog */}

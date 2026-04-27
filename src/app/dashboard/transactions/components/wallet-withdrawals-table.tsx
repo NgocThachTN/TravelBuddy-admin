@@ -628,14 +628,20 @@ export default function WalletWithdrawalsTable() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="withdraw-fee-percent">Phí rút tiền (%)</Label>
-                <Input
-                  id="withdraw-fee-percent"
-                  inputMode="decimal"
-                  value={withdrawFeeInput}
-                  disabled={settingsLoading || settingsSaving}
-                  onChange={(event) => setWithdrawFeeInput(event.target.value)}
-                  placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 5"}
-                />
+                <div className="relative">
+                  <Input
+                    id="withdraw-fee-percent"
+                    inputMode="decimal"
+                    value={withdrawFeeInput}
+                    disabled={settingsLoading || settingsSaving}
+                    onChange={(event) => setWithdrawFeeInput(event.target.value)}
+                    placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 5"}
+                    className="pr-10"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                    %
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Giá trị hiện tại:{" "}
                   {settings ? `${settings.withdrawFeePercent}%` : settingsLoading ? "Đang tải..." : "-"}
@@ -644,14 +650,20 @@ export default function WalletWithdrawalsTable() {
 
               <div className="space-y-2">
                 <Label htmlFor="minimum-withdraw-amount">Mức rút tiền tối thiểu (VNĐ)</Label>
-                <Input
-                  id="minimum-withdraw-amount"
-                  inputMode="numeric"
-                  value={minimumWithdrawInput}
-                  disabled={settingsLoading || settingsSaving}
-                  onChange={(event) => setMinimumWithdrawInput(event.target.value)}
-                  placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 50000"}
-                />
+                <div className="relative">
+                  <Input
+                    id="minimum-withdraw-amount"
+                    inputMode="numeric"
+                    value={minimumWithdrawInput}
+                    disabled={settingsLoading || settingsSaving}
+                    onChange={(event) => setMinimumWithdrawInput(event.target.value)}
+                    placeholder={settingsLoading ? "Đang tải..." : "Ví dụ: 50000"}
+                    className="pr-14"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                    VND
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Giá trị hiện tại:{" "}
                   {settings

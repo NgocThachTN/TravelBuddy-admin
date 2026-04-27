@@ -98,17 +98,6 @@ const TopDestinations = dynamic(
   },
 );
 
-const QuickActions = dynamic(
-  () =>
-    import("./overview/components/quick-actions").then(
-      (mod) => mod.QuickActions,
-    ),
-  {
-    ssr: false,
-    loading: () => <OverviewSectionSkeleton className="lg:col-span-4" />,
-  },
-);
-
 const SystemStatus = dynamic(
   () =>
     import("./overview/components/system-status").then(
@@ -226,6 +215,8 @@ export default function DashboardPage() {
       <DashboardHeader
         systemStatusLabel={dashboardData.systemStatus.overallStatus}
         generatedAtUtc={dashboardData.generatedAtUtc}
+        chartRange={chartRange}
+        onRangeChange={setChartRange}
         onRefresh={() => void loadDashboard(true)}
         isRefreshing={isRefreshing}
       />
@@ -239,8 +230,6 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-10">
         <UserGrowthChart
-          chartRange={chartRange}
-          onRangeChange={setChartRange}
           data={dashboardData.series.userGrowth}
         />
         <TripActivityChart data={dashboardData.series.tripCreation} />
@@ -249,12 +238,11 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-12">
         <TopDestinations data={dashboardData.topDestinations} />
-        <QuickActions />
+        <SystemWallets data={dashboardData.systemWallets} />
         <SystemStatus
           data={dashboardData.systemStatus}
           generatedAtUtc={dashboardData.generatedAtUtc}
         />
-        <SystemWallets data={dashboardData.systemWallets} />
       </div>
 
       <RecentActivity data={dashboardData.recentActivities} />

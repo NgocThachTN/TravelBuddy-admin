@@ -10,7 +10,7 @@ export default function WalletWithdrawalsManagementPage() {
             Giao dịch rút tiền ví
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hàng đợi xử lý thủ công cho các yêu cầu rút tiền của traveler và service partner
+            Hàng đợi xử lý thủ công cho các yêu cầu rút tiền của người dùng và đối tác dịch vụ
           </p>
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

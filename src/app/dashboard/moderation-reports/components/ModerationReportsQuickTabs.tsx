@@ -26,12 +26,12 @@ export default function ModerationReportsQuickTabs() {
         </TabsTrigger>
         <TabsTrigger value="trip" asChild>
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("Trip")}>
-            Trip Reports
+            Báo cáo chuyến đi
           </Link>
         </TabsTrigger>
         <TabsTrigger value="post" asChild>
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("Post")}>
-            Post Reports
+            Báo cáo bài viết
           </Link>
         </TabsTrigger>
         <TabsTrigger value="mine" asChild>

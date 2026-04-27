@@ -121,13 +121,29 @@ function parsePostTargetMetadata(raw: string | null | undefined): PostTargetMeta
 }
 
 function mediaTypeLabel(value: number | string | null | undefined): string {
+  const labels = ["Hình ảnh", "Video", "Âm thanh", "Tệp", "Khác"] as const;
   if (value === null || value === undefined) {
-    return "Khac";
+    return "Khác";
   }
   if (typeof value === "number") {
-    return (["Image", "Video", "Audio", "File", "Other"] as const)[value] ?? `Type ${value}`;
+    return labels[value] ?? `Loại ${value}`;
   }
-  return value;
+
+  const normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case "image":
+      return labels[0];
+    case "video":
+      return labels[1];
+    case "audio":
+      return labels[2];
+    case "file":
+      return labels[3];
+    case "other":
+      return labels[4];
+    default:
+      return value;
+  }
 }
 
 function getTripOwnerDisplayName(trip: TripDetail | null): string {
@@ -519,7 +535,7 @@ export default function ReportDetailDialog({
 
                     {tripCheckpoints.length > 0 && (
                       <div>
-                        <p className="mb-1 text-xs text-muted-foreground">Checkpoint</p>
+                        <p className="mb-1 text-xs text-muted-foreground">Điểm dừng</p>
                         <div className="space-y-1">
                           {tripCheckpoints.slice(0, 5).map((checkpoint, index) => (
                             <p
@@ -580,17 +596,17 @@ export default function ReportDetailDialog({
 
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Media đính kèm ({postMediaAttachments.length})
+                    Tệp đính kèm ({postMediaAttachments.length})
                   </p>
                   {postMediaAttachments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Không có media đính kèm.</p>
+                    <p className="text-sm text-muted-foreground">Không có tệp đính kèm.</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       {postMediaAttachments.map((media, index) => {
                         const mediaUrl = media.mediaUrl?.trim();
                         const mediaLabel = mediaTypeLabel(media.mediaType);
                         const isImage =
-                          mediaLabel === "Image" ||
+                          mediaLabel === "Hình ảnh" ||
                           mediaUrl?.match(/\.(png|jpg|jpeg|gif|webp)$/i);
 
                         return (
@@ -615,18 +631,18 @@ export default function ReportDetailDialog({
                                     rel="noreferrer"
                                     className="text-primary underline"
                                   >
-                                    Mở media
+                                    Mở tệp
                                   </a>
                                 </div>
                               )
                             ) : (
                               <div className="flex aspect-video items-center justify-center text-xs text-muted-foreground">
-                                Không có URL media
+                                Không có đường dẫn tệp
                               </div>
                             )}
                             {media.isRemoved && (
                               <p className="border-t px-2 py-1 text-[11px] text-destructive">
-                                Media đã bị gỡ
+                                Tệp đã bị gỡ
                               </p>
                             )}
                           </div>
@@ -665,7 +681,7 @@ export default function ReportDetailDialog({
                 )}
                 {report.strikeExpiresAt && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Strike hết hạn</p>
+                    <p className="text-xs text-muted-foreground">Điểm phạt hết hạn</p>
                     <p className="text-sm">
                       {new Date(report.strikeExpiresAt).toLocaleString("vi-VN")}
                     </p>
