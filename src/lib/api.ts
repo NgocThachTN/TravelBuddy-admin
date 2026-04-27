@@ -225,11 +225,14 @@ export async function fetchAdminRescueCommissionPartnerRequests(
   return data;
 }
 
-export async function fetchModeratorDashboardOverview(): Promise<
+export async function fetchModeratorDashboardOverview(
+  windowDays = 30,
+): Promise<
   BeWrapper<ModeratorDashboardOverviewData>
 > {
   const { data } = await api.get<BeWrapper<ModeratorDashboardOverviewData>>(
     API_ROUTES.MODERATION_DASHBOARD_OVERVIEW,
+    { params: { windowDays } },
   );
   return data;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import {
   BadgeCheck,
@@ -9,10 +10,56 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { fetchModeratorDashboardOverview } from "@/lib/api";
-import type { ModeratorDashboardOverviewData } from "@/types";
+import type { ModeratorDashboardOverviewData, TimeRange } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { OverviewSectionSkeleton } from "./overview/components/dashboard-overview-skeleton";
+import { TimeRangeSelector, mapRangeToWindowDays } from "./overview/components/shared";
+
+const TripActivityChart = dynamic(
+  () =>
+    import("./overview/components/trip-activity-chart").then(
+      (mod) => mod.TripActivityChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-3" />,
+  },
+);
+
+const TripCategoriesChart = dynamic(
+  () =>
+    import("./overview/components/trip-categories-chart").then(
+      (mod) => mod.TripCategoriesChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-3" />,
+  },
+);
+
+const TopDestinations = dynamic(
+  () =>
+    import("./overview/components/top-destinations").then(
+      (mod) => mod.TopDestinations,
+    ),
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton className="lg:col-span-5" />,
+  },
+);
+
+const RecentActivity = dynamic(
+  () =>
+    import("./overview/components/recent-activity").then(
+      (mod) => mod.RecentActivity,
+    ),
+  {
+    ssr: false,
+    loading: () => <OverviewSectionSkeleton heightClass="h-80" />,
+  },
+);
 
 type ModeratorKpiCard = {
   title: string;
@@ -63,7 +110,29 @@ function KpiSkeleton() {
   );
 }
 
+function ModeratorOverviewSectionSkeleton() {
+  return (
+    <>
+      <div className="grid gap-4 lg:grid-cols-11">
+        <OverviewSectionSkeleton className="lg:col-span-3" />
+        <OverviewSectionSkeleton className="lg:col-span-3" />
+        <OverviewSectionSkeleton className="lg:col-span-5" />
+      </div>
+      <OverviewSectionSkeleton heightClass="h-80" />
+    </>
+  );
+}
+
+function isTripRelatedActivity(activityType: string, title: string, detail: string) {
+  const normalizedType = activityType.toLowerCase();
+  if (normalizedType === "trip") return true;
+
+  const mergedText = `${title} ${detail}`.toLowerCase();
+  return mergedText.includes("trip") || mergedText.includes("chuyến đi");
+}
+
 export default function ModeratorDashboardClient() {
+  const [chartRange, setChartRange] = useState<TimeRange>("30d");
   const [overview, setOverview] = useState<ModeratorDashboardOverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -78,7 +147,9 @@ export default function ModeratorDashboardClient() {
     setErrorMessage(null);
 
     try {
-      const response = await fetchModeratorDashboardOverview();
+      const response = await fetchModeratorDashboardOverview(
+        mapRangeToWindowDays(chartRange),
+      );
       setOverview(response.data);
     } catch {
       setErrorMessage(
@@ -88,7 +159,7 @@ export default function ModeratorDashboardClient() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [chartRange]);
 
   useEffect(() => {
     void loadOverview(false);
@@ -127,6 +198,18 @@ export default function ModeratorDashboardClient() {
       ]
     : [];
 
+  const tripCreationSeries = overview?.series?.tripCreation ?? [];
+  const tripCategoryDistribution = overview?.tripCategoryDistribution ?? [];
+  const topDestinations = overview?.topDestinations ?? [];
+  const tripRelatedRecentActivities = (overview?.recentActivities ?? []).filter(
+    (activity) =>
+      isTripRelatedActivity(
+        activity.activityType,
+        activity.title,
+        activity.detail,
+      ),
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -136,14 +219,17 @@ export default function ModeratorDashboardClient() {
             Theo dõi nhanh các chỉ số chính phục vụ công tác duyệt chuyến đi.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void loadOverview(true)}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? "Đang làm mới..." : "Làm mới"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <TimeRangeSelector value={chartRange} onChange={setChartRange} />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void loadOverview(true)}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? "Đang làm mới..." : "Làm mới"}
+          </Button>
+        </div>
       </div>
 
       {errorMessage && (
@@ -154,6 +240,8 @@ export default function ModeratorDashboardClient() {
 
       {isLoading && !overview && <KpiSkeleton />}
 
+      {isLoading && !overview && <ModeratorOverviewSectionSkeleton />}
+
       {!isLoading && !overview && !errorMessage && (
         <div className="rounded-xl border border-border/50 bg-card p-6 text-sm text-muted-foreground">
           Chưa có dữ liệu để hiển thị tổng quan kiểm duyệt.
@@ -161,11 +249,28 @@ export default function ModeratorDashboardClient() {
       )}
 
       {overview && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {cards.map((card) => (
-            <KpiCard key={card.title} {...card} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {cards.map((card) => (
+              <KpiCard key={card.title} {...card} />
+            ))}
+          </div>
+
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight">Tổng quan chuyến đi</h2>
+            <p className="text-sm text-muted-foreground">
+              Biểu đồ phân tích theo khoảng thời gian đã chọn.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-11">
+            <TripActivityChart data={tripCreationSeries} />
+            <TripCategoriesChart data={tripCategoryDistribution} />
+            <TopDestinations data={topDestinations} />
+          </div>
+
+          <RecentActivity data={tripRelatedRecentActivities} />
+        </>
       )}
     </div>
   );

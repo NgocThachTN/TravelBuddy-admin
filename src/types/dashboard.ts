@@ -184,4 +184,10 @@ export interface ModeratorDashboardKpis {
 export interface ModeratorDashboardOverviewData {
   generatedAtUtc: string;
   kpis: ModeratorDashboardKpis;
+  series?: {
+    tripCreation?: DashboardTripCreationPoint[];
+  };
+  tripCategoryDistribution?: DashboardCategoryDistributionItem[];
+  topDestinations?: DashboardTopDestinationItem[];
+  recentActivities?: DashboardRecentActivityItem[];
 }
