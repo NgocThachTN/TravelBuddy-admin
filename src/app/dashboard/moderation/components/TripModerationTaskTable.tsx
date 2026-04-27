@@ -965,7 +965,7 @@ export default function TripModerationTaskTable() {
 
                 <TableCell>
                   <div className="flex justify-center">
-                    <Button size="sm" variant="default" className="shadow-sm font-semibold" onClick={() => openTaskDetail(task.taskId)}>Duyệt ngay</Button>
+                    <Button size="sm" variant="default" className="shadow-sm font-semibold" onClick={() => openTaskDetail(task.taskId)}>Xem chi tiết</Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -1472,7 +1472,7 @@ export default function TripModerationTaskTable() {
             Từ chối
           </Button>
           <Button 
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 h-11 transition-all" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 h-11 transition-all" 
             disabled={decisionLoading || pendingDecision === "Reject"} 
             onClick={() => submitDecision("Approve")}
           >

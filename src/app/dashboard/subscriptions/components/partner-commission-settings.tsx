@@ -185,46 +185,64 @@ export default function PartnerCommissionSettings() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="rescueCommissionTwoWheel">{FIELD_LABELS.rescue_commission_two_wheel}</Label>
-            <Input
-              id="rescueCommissionTwoWheel"
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              value={form.rescueCommissionTwoWheel}
-              onChange={(event) => setField("rescueCommissionTwoWheel", event.target.value)}
-              disabled={isLoading || isSaving}
-            />
+            <div className="relative">
+              <Input
+                id="rescueCommissionTwoWheel"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                value={form.rescueCommissionTwoWheel}
+                onChange={(event) => setField("rescueCommissionTwoWheel", event.target.value)}
+                disabled={isLoading || isSaving}
+                className="pr-14"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                VND
+              </span>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="rescueCommissionFourWheel">{FIELD_LABELS.rescue_commission_four_wheel}</Label>
-            <Input
-              id="rescueCommissionFourWheel"
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              value={form.rescueCommissionFourWheel}
-              onChange={(event) => setField("rescueCommissionFourWheel", event.target.value)}
-              disabled={isLoading || isSaving}
-            />
+            <div className="relative">
+              <Input
+                id="rescueCommissionFourWheel"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                value={form.rescueCommissionFourWheel}
+                onChange={(event) => setField("rescueCommissionFourWheel", event.target.value)}
+                disabled={isLoading || isSaving}
+                className="pr-14"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                VND
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="space-y-2 md:max-w-sm">
           <Label htmlFor="rescueDepositPercent">{FIELD_LABELS.rescue_deposit_percent}</Label>
-          <Input
-            id="rescueDepositPercent"
-            type="number"
-            min={1}
-            max={100}
-            step={1}
-            inputMode="numeric"
-            value={form.rescueDepositPercent}
-            onChange={(event) => setField("rescueDepositPercent", event.target.value)}
-            disabled={isLoading || isSaving}
-          />
+          <div className="relative">
+            <Input
+              id="rescueDepositPercent"
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              inputMode="numeric"
+              value={form.rescueDepositPercent}
+              onChange={(event) => setField("rescueDepositPercent", event.target.value)}
+              disabled={isLoading || isSaving}
+              className="pr-10"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+              %
+            </span>
+          </div>
         </div>
 
         {message && (

@@ -192,8 +192,7 @@ function CreateReportDialog({
         <DialogHeader>
           <DialogTitle>Tạo báo cáo mới</DialogTitle>
           <DialogDescription>
-            Dùng <code>GET /api/v1/reports/reasons</code> để lấy lý do và{" "}
-            <code>POST /api/v1/reports</code> để gửi báo cáo.
+            Điền thông tin đối tượng, lý do và bằng chứng liên quan để gửi báo cáo.
           </DialogDescription>
         </DialogHeader>
 
@@ -409,10 +408,6 @@ export default function MyReportsTable() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle>Báo cáo của tôi</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Dùng <code>GET /api/v1/reports/me</code> và{" "}
-                <code>GET /api/v1/reports/me/{"{reportId}"}</code> để theo dõi các báo cáo moderator đã gửi.
-              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -506,8 +501,7 @@ export default function MyReportsTable() {
               <div>
                 <p className="text-sm font-medium">Chưa có báo cáo nào</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Moderator có thể tạo báo cáo mới bằng các endpoint{" "}
-                  <code>reports/reasons</code> và <code>reports</code>.
+                  Bạn có thể tạo báo cáo mới để đội kiểm duyệt xem xét.
                 </p>
               </div>
             </div>

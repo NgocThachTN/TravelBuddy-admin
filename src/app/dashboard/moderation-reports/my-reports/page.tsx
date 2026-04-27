@@ -9,7 +9,7 @@ export default function ModeratorMyReportsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Báo cáo của tôi</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Moderator có thể tạo báo cáo mới và xem lại các báo cáo đã gửi qua các endpoint `reports/*`.
+            Tạo báo cáo mới và xem lại các báo cáo bạn đã gửi.
           </p>
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
