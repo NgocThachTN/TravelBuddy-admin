@@ -1,15 +1,20 @@
 import { CalendarDays, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getToday } from "./shared";
+import { getToday, TimeRangeSelector } from "./shared";
+import type { TimeRange } from "@/types";
 
 export function DashboardHeader({
   systemStatusLabel,
   generatedAtUtc,
+  chartRange,
+  onRangeChange,
   onRefresh,
   isRefreshing,
 }: {
   systemStatusLabel: string;
   generatedAtUtc: string;
+  chartRange: TimeRange;
+  onRangeChange: (value: TimeRange) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 }) {
@@ -37,6 +42,7 @@ export function DashboardHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <TimeRangeSelector value={chartRange} onChange={onRangeChange} />
         <Button
           variant="outline"
           size="sm"

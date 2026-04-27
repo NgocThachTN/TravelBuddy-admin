@@ -226,6 +226,8 @@ export default function DashboardPage() {
       <DashboardHeader
         systemStatusLabel={dashboardData.systemStatus.overallStatus}
         generatedAtUtc={dashboardData.generatedAtUtc}
+        chartRange={chartRange}
+        onRangeChange={setChartRange}
         onRefresh={() => void loadDashboard(true)}
         isRefreshing={isRefreshing}
       />
@@ -239,8 +241,6 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-10">
         <UserGrowthChart
-          chartRange={chartRange}
-          onRangeChange={setChartRange}
           data={dashboardData.series.userGrowth}
         />
         <TripActivityChart data={dashboardData.series.tripCreation} />

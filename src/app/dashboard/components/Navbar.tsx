@@ -6,9 +6,7 @@ import { logoutAction } from "@/server/auth/actions";
 import { ROUTES } from "@/lib/constants";
 import type { Role } from "@/types";
 import { getMyProfile } from "@/lib/api";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -19,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Bell, LogOut, ChevronDown, User } from "lucide-react";
+import { LogOut, ChevronDown, User } from "lucide-react";
 
 interface NavbarProps {
   email: string;
@@ -82,14 +80,7 @@ export default function Navbar({ email, role }: NavbarProps) {
 
   return (
     <div className="flex h-full items-center justify-between pr-6">
-      <div className="relative max-w-md flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Tìm kiếm người dùng, chuyến đi..."
-          className="h-9 pl-9 pr-4 text-sm bg-background"
-        />
-      </div>
+      <div className="flex-1" />
 
       <div className="flex items-center gap-2">
         <Badge
@@ -102,13 +93,6 @@ export default function Navbar({ email, role }: NavbarProps) {
         >
           {roleLabel}
         </Badge>
-
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
-        </Button>
-
-        <Separator orientation="vertical" className="mx-1 h-6" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

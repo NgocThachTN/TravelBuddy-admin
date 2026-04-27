@@ -209,10 +209,12 @@ export function AppSidebar({ role }: AppSidebarProps) {
               onClick={handleLogout}
               disabled={isPending}
               tooltip={logoutLabel}
-              className="text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive"
+              className="text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive group-data-[collapsible=icon]:justify-center"
             >
               <LogOut />
-              <span>{isPending ? logoutPendingLabel : logoutLabel}</span>
+              <span className="group-data-[collapsible=icon]:hidden">
+                {isPending ? logoutPendingLabel : logoutLabel}
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

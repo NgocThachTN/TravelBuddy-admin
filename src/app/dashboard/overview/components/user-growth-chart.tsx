@@ -16,16 +16,12 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { DashboardUserGrowthPoint, TimeRange } from "@/types";
-import { TimeRangeSelector, ChartTooltipContent, formatDayLabel } from "./shared";
+import type { DashboardUserGrowthPoint } from "@/types";
+import { ChartTooltipContent, formatDayLabel } from "./shared";
 
 export function UserGrowthChart({
-  chartRange,
-  onRangeChange,
   data,
 }: {
-  chartRange: TimeRange;
-  onRangeChange: (v: TimeRange) => void;
   data: DashboardUserGrowthPoint[];
 }) {
   const chartData = data.map((item) => ({
@@ -41,7 +37,6 @@ export function UserGrowthChart({
           <CardTitle className="text-sm font-medium">Tăng trưởng người dùng</CardTitle>
           <CardDescription className="text-[13px]">So sánh với kỳ trước</CardDescription>
         </div>
-        <TimeRangeSelector value={chartRange} onChange={onRangeChange} />
       </CardHeader>
       <CardContent className="pt-4">
         {chartData.length === 0 ? (
