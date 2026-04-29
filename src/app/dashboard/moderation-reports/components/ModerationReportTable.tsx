@@ -31,15 +31,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -83,6 +76,7 @@ import ReportDetailDialog from "../../reports/components/ReportDetailDialog";
 const PAGE_SIZE = 15;
 const TARGET_TYPE_CODES = [
   "Trip",
+  "DirectMessage",
   "Post",
   "PostComment",
   "ServicePartner",
@@ -96,6 +90,7 @@ const TARGET_TYPE_CODES = [
 
 const MODERATION_TARGET_TYPES = [
   "Trip",
+  "DirectMessage",
   "Post",
   "PostComment",
   "RescueRequest",
@@ -104,7 +99,13 @@ const MODERATION_TARGET_TYPES = [
   "SocialCheckpoint",
 ] as const;
 
-type StatusFilter = "all" | "Pending" | "Reviewing" | "Resolved" | "Rejected" | "Duplicate";
+type StatusFilter =
+  | "all"
+  | "Pending"
+  | "Reviewing"
+  | "Resolved"
+  | "Rejected"
+  | "Duplicate";
 type TargetTypeFilter = "all" | string;
 
 /* -- Helpers -- */
@@ -118,12 +119,16 @@ const avatarColors = [
 
 function getAvatarColor(seed: string) {
   let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < seed.length; i++)
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
   return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
 function getReporterName(item: ReportListItem) {
-  const full = [item.reporterFirstName, item.reporterLastName].filter(Boolean).join(" ").trim();
+  const full = [item.reporterFirstName, item.reporterLastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
   return full || "(Ẩn danh)";
 }
 
@@ -137,7 +142,11 @@ function getInitials(item: ReportListItem) {
 
 function resolveReporterName(item: ReportListItem) {
   const baseName = getReporterName(item);
-  return item.reporterName || item.reporterEmail || (baseName === "(Ẩn danh)" ? "(Ẩn danh)" : baseName);
+  return (
+    item.reporterName ||
+    item.reporterEmail ||
+    (baseName === "(Ẩn danh)" ? "(Ẩn danh)" : baseName)
+  );
 }
 
 function resolveReporterInitials(item: ReportListItem) {
@@ -145,21 +154,33 @@ function resolveReporterInitials(item: ReportListItem) {
   const baseInitials = getInitials(item);
   if (source === "(Ẩn danh)") return baseInitials === "?" ? "?" : baseInitials;
   const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+  if (parts.length >= 2)
+    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
   return parts[0]?.slice(0, 2).toUpperCase() || baseInitials || "?";
 }
 
-function statusBadgeVariant(status: number | string): "default" | "secondary" | "destructive" | "outline" {
-  const s = typeof status === "number"
-    ? (["Pending", "Reviewing", "Resolved", "Rejected", "Duplicate"] as const)[status]
-    : status;
+function statusBadgeVariant(
+  status: number | string,
+): "default" | "secondary" | "destructive" | "outline" {
+  const s =
+    typeof status === "number"
+      ? (
+          ["Pending", "Reviewing", "Resolved", "Rejected", "Duplicate"] as const
+        )[status]
+      : status;
   switch (s) {
-    case "Pending": return "destructive";
-    case "Reviewing": return "secondary";
-    case "Resolved": return "default";
-    case "Rejected": return "outline";
-    case "Duplicate": return "outline";
-    default: return "secondary";
+    case "Pending":
+      return "destructive";
+    case "Reviewing":
+      return "secondary";
+    case "Resolved":
+      return "default";
+    case "Rejected":
+      return "outline";
+    case "Duplicate":
+      return "outline";
+    default:
+      return "secondary";
   }
 }
 
@@ -173,18 +194,30 @@ function toTargetTypeCode(targetType: number | string): string {
 function targetTypeIcon(targetType: number | string) {
   const t = toTargetTypeCode(targetType);
   switch (t) {
-    case "Trip": return <Map className="h-3.5 w-3.5" />;
-    case "Post": return <MessageSquare className="h-3.5 w-3.5" />;
-    case "PostComment": return <MessageSquare className="h-3.5 w-3.5" />;
-    case "RescueRequest": return <LifeBuoy className="h-3.5 w-3.5" />;
-    case "RescueRequestMessage": return <LifeBuoy className="h-3.5 w-3.5" />;
-    case "TripMessage": return <MessageSquare className="h-3.5 w-3.5" />;
-    case "SocialCheckpoint": return <MapPin className="h-3.5 w-3.5" />;
-    default: return <AlertTriangle className="h-3.5 w-3.5" />;
+    case "Trip":
+      return <Map className="h-3.5 w-3.5" />;
+    case "DirectMessage":
+      return <MessageSquare className="h-3.5 w-3.5" />;
+    case "Post":
+      return <MessageSquare className="h-3.5 w-3.5" />;
+    case "PostComment":
+      return <MessageSquare className="h-3.5 w-3.5" />;
+    case "RescueRequest":
+      return <LifeBuoy className="h-3.5 w-3.5" />;
+    case "RescueRequestMessage":
+      return <LifeBuoy className="h-3.5 w-3.5" />;
+    case "TripMessage":
+      return <MessageSquare className="h-3.5 w-3.5" />;
+    case "SocialCheckpoint":
+      return <MapPin className="h-3.5 w-3.5" />;
+    default:
+      return <AlertTriangle className="h-3.5 w-3.5" />;
   }
 }
 
-function getAvailableResolvedActions(targetType: number | string): ResolvedActionCode[] {
+function getAvailableResolvedActions(
+  targetType: number | string,
+): ResolvedActionCode[] {
   const code = toTargetTypeCode(targetType);
 
   if (code === "Trip") {
@@ -200,6 +233,7 @@ function getAvailableResolvedActions(targetType: number | string): ResolvedActio
   }
 
   if (
+    code === "DirectMessage" ||
     code === "PostComment" ||
     code === "TripMessage" ||
     code === "RescueRequestMessage" ||
@@ -227,9 +261,19 @@ interface ProcessDialogProps {
   loading: boolean;
 }
 
-function ProcessDialog({ report, onClose, onConfirm, loading }: ProcessDialogProps) {
+function ProcessDialog({
+  report,
+  onClose,
+  onConfirm,
+  loading,
+}: ProcessDialogProps) {
   return (
-    <Dialog open={!!report} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open={!!report}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent>
         {report && (
           <ProcessForm
@@ -256,10 +300,15 @@ function ProcessForm({
   loading: boolean;
 }) {
   const availableActions = getAvailableResolvedActions(report.targetType);
-  const defaultSelectedAction: ResolvedActionCode =
-    availableActions.includes("Warn") ? "Warn" : availableActions[0];
+  const defaultSelectedAction: ResolvedActionCode = availableActions.includes(
+    "Warn",
+  )
+    ? "Warn"
+    : availableActions[0];
   const [decision, setDecision] = useState<ReportDecisionCode>("Resolved");
-  const [selectedActions, setSelectedActions] = useState<ResolvedActionCode[]>([defaultSelectedAction]);
+  const [selectedActions, setSelectedActions] = useState<ResolvedActionCode[]>([
+    defaultSelectedAction,
+  ]);
   const [note, setNote] = useState("");
   const [createStrike, setCreateStrike] = useState(false);
   const [strikeExpiresAt, setStrikeExpiresAt] = useState("");
@@ -304,12 +353,14 @@ function ProcessForm({
     if (note) payload.resolvedNote = note;
     if (createStrike) {
       payload.createStrike = true;
-      if (strikeExpiresAt) payload.strikeExpiresAt = new Date(strikeExpiresAt).toISOString();
+      if (strikeExpiresAt)
+        payload.strikeExpiresAt = new Date(strikeExpiresAt).toISOString();
     }
     onConfirm(payload);
   }
 
-  const disableSubmit = decision === "Resolved" && normalizedSelectedActions.length === 0;
+  const disableSubmit =
+    decision === "Resolved" && normalizedSelectedActions.length === 0;
 
   return (
     <>
@@ -326,7 +377,10 @@ function ProcessForm({
         {/* Decision */}
         <div className="space-y-2">
           <Label>{"Quyết định"}</Label>
-          <Select value={decision} onValueChange={(v) => setDecision(v as ReportDecisionCode)}>
+          <Select
+            value={decision}
+            onValueChange={(v) => setDecision(v as ReportDecisionCode)}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -352,7 +406,9 @@ function ProcessForm({
                     key={action}
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-md border p-2",
-                      isChecked ? "border-primary bg-primary/5" : "border-border",
+                      isChecked
+                        ? "border-primary bg-primary/5"
+                        : "border-border",
                     )}
                   >
                     <input
@@ -362,7 +418,9 @@ function ProcessForm({
                       className="mt-0.5 h-4 w-4 rounded border-border"
                     />
                     <span className="space-y-0.5">
-                      <span className="block text-sm font-medium">{RESOLVED_ACTION_LABELS[action]}</span>
+                      <span className="block text-sm font-medium">
+                        {RESOLVED_ACTION_LABELS[action]}
+                      </span>
                       {ACTION_DESCRIPTIONS[action] && (
                         <span className="block text-xs text-muted-foreground">
                           {ACTION_DESCRIPTIONS[action]}
@@ -374,7 +432,9 @@ function ProcessForm({
               })}
             </div>
             {normalizedSelectedActions.length === 0 && (
-              <p className="text-xs text-destructive">Vui lòng chọn ít nhất 1 hành động xử lý.</p>
+              <p className="text-xs text-destructive">
+                Vui lòng chọn ít nhất 1 hành động xử lý.
+              </p>
             )}
           </div>
         )}
@@ -390,7 +450,9 @@ function ProcessForm({
             rows={3}
             maxLength={2000}
           />
-          <p className="text-right text-xs text-muted-foreground">{note.length}/2000</p>
+          <p className="text-right text-xs text-muted-foreground">
+            {note.length}/2000
+          </p>
         </div>
 
         {/* Strike */}
@@ -409,11 +471,14 @@ function ProcessForm({
               </Label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Ghi nhận vi phạm giúp hệ thống theo dõi lịch sử tái phạm để xử lý mạnh hơn khi cần.
+              Ghi nhận vi phạm giúp hệ thống theo dõi lịch sử tái phạm để xử lý
+              mạnh hơn khi cần.
             </p>
             {createStrike && (
               <div className="space-y-2">
-                <Label htmlFor="mod-strike-expires">{"Hết hạn strike (không bắt buộc)"}</Label>
+                <Label htmlFor="mod-strike-expires">
+                  {"Hết hạn strike (không bắt buộc)"}
+                </Label>
                 <Input
                   id="mod-strike-expires"
                   type="datetime-local"
@@ -434,7 +499,11 @@ function ProcessForm({
           disabled={loading || disableSubmit}
           onClick={handleSubmit}
         >
-          {loading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+          {loading ? (
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle className="mr-2 h-4 w-4" />
+          )}
           Xác nhận
         </Button>
       </DialogFooter>
@@ -453,7 +522,8 @@ export default function ModerationReportTable() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [targetTypeFilter, setTargetTypeFilter] = useState<TargetTypeFilter>("all");
+  const [targetTypeFilter, setTargetTypeFilter] =
+    useState<TargetTypeFilter>("all");
   const [page, setPage] = useState(1);
 
   // Debounce
@@ -477,41 +547,59 @@ export default function ModerationReportTable() {
 
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+    searchDebounceRef.current = setTimeout(
+      () => setDebouncedSearch(search),
+      400,
+    );
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
   }, [search]);
 
-  useEffect(() => { setPage(1); }, [debouncedSearch, statusFilter, targetTypeFilter]);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, targetTypeFilter]);
 
   // Dialogs
-  const [processTarget, setProcessTarget] = useState<ReportListItem | null>(null);
+  const [processTarget, setProcessTarget] = useState<ReportListItem | null>(
+    null,
+  );
   const [dialogLoading, setDialogLoading] = useState(false);
   const [detailReport, setDetailReport] = useState<ReportListItem | null>(null);
 
-  const loadReports = useCallback(async (p = page) => {
-    try {
-      setLoading(true);
-      const params: GetReportsParams = {
-        pageNumber: p,
-        pageSize: PAGE_SIZE,
-      };
-      if (debouncedSearch) params.search = debouncedSearch;
-      if (statusFilter !== "all") params.status = statusFilter;
-      if (targetTypeFilter !== "all") params.targetType = targetTypeFilter;
+  const loadReports = useCallback(
+    async (p = page) => {
+      try {
+        setLoading(true);
+        const params: GetReportsParams = {
+          pageNumber: p,
+          pageSize: PAGE_SIZE,
+        };
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (statusFilter !== "all") params.status = statusFilter;
+        if (targetTypeFilter !== "all") params.targetType = targetTypeFilter;
 
-      const result = await fetchModerationReports(params);
-      setReports(result.data.items);
-      setTotalCount(result.data.totalCount);
-      setTotalPages(result.data.totalPages);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách báo cáo");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, debouncedSearch, statusFilter, targetTypeFilter]);
+        const result = await fetchModerationReports(params);
+        setReports(result.data.items);
+        setTotalCount(result.data.totalCount);
+        setTotalPages(result.data.totalPages);
+        setError(null);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Không thể tải danh sách báo cáo",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, debouncedSearch, statusFilter, targetTypeFilter],
+  );
 
-  useEffect(() => { loadReports(page); }, [loadReports, page]);
+  useEffect(() => {
+    loadReports(page);
+  }, [loadReports, page]);
 
   async function handleProcess(payload: ProcessReportPayload) {
     if (!processTarget) return;
@@ -549,7 +637,10 @@ export default function ModerationReportTable() {
         </div>
         <CardContent className="p-0">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0">
+            <div
+              key={i}
+              className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0"
+            >
               <Skeleton className="h-8 w-8 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-40" />
@@ -573,7 +664,12 @@ export default function ModerationReportTable() {
             <Shield className="h-6 w-6 text-destructive" />
           </div>
           <p className="text-sm font-medium text-destructive">{error}</p>
-          <Button variant="outline" size="sm" className="mt-4" onClick={() => loadReports(page)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => loadReports(page)}
+          >
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Thử lại
           </Button>
@@ -611,7 +707,10 @@ export default function ModerationReportTable() {
           </div>
 
           {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+          >
             <SelectTrigger className="h-9 w-[160px]">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
@@ -626,19 +725,29 @@ export default function ModerationReportTable() {
           </Select>
 
           {/* Target Type Filter */}
-          <Select value={targetTypeFilter} onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}>
+          <Select
+            value={targetTypeFilter}
+            onValueChange={(v) => setTargetTypeFilter(v as TargetTypeFilter)}
+          >
             <SelectTrigger className="h-9 w-[190px]">
               <SelectValue placeholder={"Loại đối tượng"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả loại</SelectItem>
               <SelectItem value="Trip">{"Chuyến đi"}</SelectItem>
+              <SelectItem value="DirectMessage">Tin nhắn chat</SelectItem>
               <SelectItem value="Post">Bài viết</SelectItem>
               <SelectItem value="PostComment">Bình luận</SelectItem>
-              <SelectItem value="TripMessage">{"Tin nhắn chuyến đi"}</SelectItem>
+              <SelectItem value="TripMessage">
+                {"Tin nhắn chuyến đi"}
+              </SelectItem>
               <SelectItem value="RescueRequest">{"Yêu cầu cứu hộ"}</SelectItem>
-              <SelectItem value="RescueRequestMessage">{"Tin nhắn cứu hộ"}</SelectItem>
-              <SelectItem value="SocialCheckpoint">{"Điểm cộng đồng"}</SelectItem>
+              <SelectItem value="RescueRequestMessage">
+                {"Tin nhắn cứu hộ"}
+              </SelectItem>
+              <SelectItem value="SocialCheckpoint">
+                {"Điểm cộng đồng"}
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -657,7 +766,9 @@ export default function ModerationReportTable() {
         <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            {"Tổng cộng "}<span className="font-semibold text-foreground">{totalCount}</span>{" báo cáo"}
+            {"Tổng cộng "}
+            <span className="font-semibold text-foreground">{totalCount}</span>
+            {" báo cáo"}
           </span>
         </div>
 
@@ -691,8 +802,10 @@ export default function ModerationReportTable() {
             ) : (
               reports.map((report) => {
                 const name = resolveReporterName(report);
-                const isPending = report.status === 0 || report.status === "Pending";
-                const isReviewing = report.status === 1 || report.status === "Reviewing";
+                const isPending =
+                  report.status === 0 || report.status === "Pending";
+                const isReviewing =
+                  report.status === 1 || report.status === "Reviewing";
                 const canAct = isPending || isReviewing;
 
                 return (
@@ -702,12 +815,18 @@ export default function ModerationReportTable() {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           {report.reporterAvatarUrl && (
-                            <AvatarImage src={report.reporterAvatarUrl} alt={name} />
+                            <AvatarImage
+                              src={report.reporterAvatarUrl}
+                              alt={name}
+                            />
                           )}
                           <AvatarFallback
-                            className={cn("text-xs font-semibold", getAvatarColor(report.reporterUserId))}
+                            className={cn(
+                              "text-xs font-semibold",
+                              getAvatarColor(report.reporterUserId),
+                            )}
                           >
-                             {resolveReporterInitials(report)}
+                            {resolveReporterInitials(report)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
@@ -732,7 +851,10 @@ export default function ModerationReportTable() {
                     {/* Reason */}
                     <TableCell className="max-w-[200px]">
                       <p className="truncate text-sm">
-                        {report.reason?.displayName || report.reasonDisplayName || report.reasonText || "—"}
+                        {report.reason?.displayName ||
+                          report.reasonDisplayName ||
+                          report.reasonText ||
+                          "—"}
                       </p>
                     </TableCell>
 
@@ -745,7 +867,7 @@ export default function ModerationReportTable() {
 
                     {/* Priority */}
                     <TableCell>
-                      {(report.priority === 1 || report.priority === "High") ? (
+                      {report.priority === 1 || report.priority === "High" ? (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
                           Cao
@@ -817,5 +939,3 @@ export default function ModerationReportTable() {
     </>
   );
 }
-
-

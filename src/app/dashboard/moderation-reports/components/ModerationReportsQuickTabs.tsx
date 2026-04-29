@@ -13,10 +13,12 @@ export default function ModerationReportsQuickTabs() {
     pathname === ROUTES.MODERATION_MY_REPORTS
       ? "mine"
       : targetType === "Trip"
-      ? "trip"
-      : targetType === "Post"
-        ? "post"
-        : "all";
+        ? "trip"
+        : targetType === "Post"
+          ? "post"
+          : targetType === "DirectMessage" || targetType === "TripMessage"
+            ? "chat"
+            : "all";
 
   return (
     <Tabs value={tabValue}>
@@ -32,6 +34,11 @@ export default function ModerationReportsQuickTabs() {
         <TabsTrigger value="post" asChild>
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("Post")}>
             Báo cáo bài viết
+          </Link>
+        </TabsTrigger>
+        <TabsTrigger value="chat" asChild>
+          <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("DirectMessage")}>
+            Báo cáo chat
           </Link>
         </TabsTrigger>
         <TabsTrigger value="mine" asChild>

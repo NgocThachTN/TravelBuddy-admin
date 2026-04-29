@@ -161,6 +161,12 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
         roles: ["MODERATOR"],
       },
       {
+        label: "Tin nh\u1eafn chat",
+        href: ROUTES.MODERATION_REPORTS_BY_TYPE("DirectMessage"),
+        icon: Megaphone,
+        roles: ["MODERATOR"],
+      },
+      {
         label: "Tin nh\u1eafn chuy\u1ebfn \u0111i",
         href: ROUTES.MODERATION_REPORTS_BY_TYPE("TripMessage"),
         icon: Megaphone,

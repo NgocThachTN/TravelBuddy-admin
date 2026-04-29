@@ -613,6 +613,7 @@ function normalizeReportDetail(report: ReportDetail): ReportDetail {
   return {
     ...normalizedListItem,
     evidenceNote: report.evidenceNote ?? null,
+    mediaAttachments: report.mediaAttachments ?? [],
     targetSnapshot: report.targetSnapshot ?? null,
     resolvedAction: report.resolvedAction ?? null,
     resolvedActions:

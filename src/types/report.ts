@@ -19,12 +19,16 @@ export const REPORT_STATUS_LABELS: Record<ReportStatusCode, string> = {
   Duplicate: "Trùng lặp",
 };
 
-export function reportStatusFromNumber(value: number | null | undefined): ReportStatusCode | null {
+export function reportStatusFromNumber(
+  value: number | null | undefined,
+): ReportStatusCode | null {
   if (value === null || value === undefined) return null;
   return REPORT_STATUS_CODES[value] ?? null;
 }
 
-export function reportStatusLabel(value: number | string | null | undefined): string {
+export function reportStatusLabel(
+  value: number | string | null | undefined,
+): string {
   if (value === null || value === undefined) return "Không rõ";
   if (typeof value === "number") {
     const code = REPORT_STATUS_CODES[value];
@@ -34,25 +38,27 @@ export function reportStatusLabel(value: number | string | null | undefined): st
 }
 
 // -- Report Target Type (mirrors BE ReportTargetTypeCode enum) --
-// BE returns integers: 0=Trip, 1=Post, 2=PostComment, 3=ServicePartner, ...
+// BE returns integers: 0=Trip, 1=DirectMessage, 2=Post, 3=PostComment, ...
 
 export const REPORT_TARGET_TYPE_CODES = [
   "Trip", // 0
-  "Post", // 1
-  "PostComment", // 2
-  "ServicePartner", // 3
-  "RescueRequest", // 4
-  "RescueRequestMessage", // 5
-  "TripMessage", // 6
-  "SocialCheckpoint", // 7
-  "User", // 8
-  "Other", // 9
+  "DirectMessage", // 1
+  "Post", // 2
+  "PostComment", // 3
+  "ServicePartner", // 4
+  "RescueRequest", // 5
+  "RescueRequestMessage", // 6
+  "TripMessage", // 7
+  "SocialCheckpoint", // 8
+  "User", // 9
+  "Other", // 10
 ] as const;
 
 export type ReportTargetTypeCode = (typeof REPORT_TARGET_TYPE_CODES)[number];
 
 export const REPORT_TARGET_TYPE_LABELS: Record<ReportTargetTypeCode, string> = {
   Trip: "Chuyến đi",
+  DirectMessage: "Tin nhắn chat",
   Post: "Bài viết",
   PostComment: "Bình luận",
   ServicePartner: "Đối tác",
@@ -64,13 +70,17 @@ export const REPORT_TARGET_TYPE_LABELS: Record<ReportTargetTypeCode, string> = {
   Other: "Khác",
 };
 
-export function reportTargetTypeLabel(value: number | string | null | undefined): string {
+export function reportTargetTypeLabel(
+  value: number | string | null | undefined,
+): string {
   if (value === null || value === undefined) return "Không rõ";
   if (typeof value === "number") {
     const code = REPORT_TARGET_TYPE_CODES[value];
     return code ? REPORT_TARGET_TYPE_LABELS[code] : `Loại ${value}`;
   }
-  return REPORT_TARGET_TYPE_LABELS[value as ReportTargetTypeCode] ?? String(value);
+  return (
+    REPORT_TARGET_TYPE_LABELS[value as ReportTargetTypeCode] ?? String(value)
+  );
 }
 
 // -- Report Priority (mirrors BE UserReportPriority enum) --
@@ -84,7 +94,9 @@ export const REPORT_PRIORITY_LABELS: Record<ReportPriorityCode, string> = {
   High: "Cao",
 };
 
-export function reportPriorityLabel(value: number | string | null | undefined): string {
+export function reportPriorityLabel(
+  value: number | string | null | undefined,
+): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") {
     const code = REPORT_PRIORITY_CODES[value];
@@ -121,7 +133,11 @@ export const RESOLVED_ACTION_LABELS: Record<ResolvedActionCode, string> = {
 
 // -- Report Decision (mirrors BE UserReportDecision enum) --
 
-export const REPORT_DECISION_CODES = ["Resolved", "Rejected", "Duplicate"] as const;
+export const REPORT_DECISION_CODES = [
+  "Resolved",
+  "Rejected",
+  "Duplicate",
+] as const;
 
 export type ReportDecisionCode = (typeof REPORT_DECISION_CODES)[number];
 
@@ -133,26 +149,37 @@ export const REPORT_DECISION_LABELS: Record<ReportDecisionCode, string> = {
 
 // -- Reported Party Type (mirrors BE ReportedPartyTypeCode enum) --
 
-export const REPORTED_PARTY_TYPE_CODES = ["None", "TravelerUser", "ServicePartner"] as const;
+export const REPORTED_PARTY_TYPE_CODES = [
+  "None",
+  "TravelerUser",
+  "ServicePartner",
+] as const;
 
 export type ReportedPartyTypeCode = (typeof REPORTED_PARTY_TYPE_CODES)[number];
 
-export const REPORTED_PARTY_TYPE_LABELS: Record<ReportedPartyTypeCode, string> = {
-  None: "Không xác định",
-  TravelerUser: "Người dùng",
-  ServicePartner: "Đối tác dịch vụ",
-};
+export const REPORTED_PARTY_TYPE_LABELS: Record<ReportedPartyTypeCode, string> =
+  {
+    None: "Không xác định",
+    TravelerUser: "Người dùng",
+    ServicePartner: "Đối tác dịch vụ",
+  };
 
-export function reportedPartyTypeLabel(value: number | string | null | undefined): string {
+export function reportedPartyTypeLabel(
+  value: number | string | null | undefined,
+): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") {
     const code = REPORTED_PARTY_TYPE_CODES[value];
     return code ? REPORTED_PARTY_TYPE_LABELS[code] : `Bên ${value}`;
   }
-  return REPORTED_PARTY_TYPE_LABELS[value as ReportedPartyTypeCode] ?? String(value);
+  return (
+    REPORTED_PARTY_TYPE_LABELS[value as ReportedPartyTypeCode] ?? String(value)
+  );
 }
 
-export function resolvedActionLabel(value: number | string | null | undefined): string {
+export function resolvedActionLabel(
+  value: number | string | null | undefined,
+): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") {
     const code = RESOLVED_ACTION_CODES[value];
@@ -161,7 +188,9 @@ export function resolvedActionLabel(value: number | string | null | undefined): 
   return RESOLVED_ACTION_LABELS[value as ResolvedActionCode] ?? String(value);
 }
 
-export function resolvedActionsLabel(values: Array<number | string | null | undefined> | null | undefined): string {
+export function resolvedActionsLabel(
+  values: Array<number | string | null | undefined> | null | undefined,
+): string {
   if (!values || values.length === 0) return "—";
   return values
     .map((value) => resolvedActionLabel(value))
@@ -224,8 +253,18 @@ export interface ReportTargetDetailDto {
   metadataJson: string | null;
 }
 
+export interface ReportMediaAttachment {
+  mediaAttachmentId: string;
+  mediaUrl: string;
+  mediaType: number | string;
+  visibility: number | string | null;
+  sortOrder: number | null;
+  createdAt: string;
+}
+
 export interface ReportDetail extends ReportListItem {
   evidenceNote: string | null;
+  mediaAttachments: ReportMediaAttachment[];
   targetSnapshot: string | null;
   resolvedAction: number | string | ResolvedActionCode | null;
   resolvedActions: Array<number | string | ResolvedActionCode> | null;
@@ -259,6 +298,7 @@ export interface CreateReportPayload {
   reasonId?: number | null;
   reasonText?: string | null;
   evidenceNote?: string | null;
+  attachmentUrls?: string[];
   reportedPartyType?: number | string | ReportedPartyTypeCode | null;
 }
 
