@@ -116,18 +116,172 @@ function isPostTargetType(
   return targetType === "Post";
 }
 
+function isUserTargetType(
+  targetType: number | string | null | undefined,
+): boolean {
+  if (targetType === null || targetType === undefined) {
+    return false;
+  }
+  if (typeof targetType === "number") {
+    return targetType === 9;
+  }
+  return targetType === "User";
+}
+
+function isSocialCheckpointTargetType(
+  targetType: number | string | null | undefined,
+): boolean {
+  if (targetType === null || targetType === undefined) {
+    return false;
+  }
+  if (typeof targetType === "number") {
+    return targetType === 8;
+  }
+  return targetType === "SocialCheckpoint";
+}
+
 interface PostMediaMetadataItem {
   mediaAttachmentId?: string;
   mediaUrl?: string;
   mediaType?: number | string;
   isRemoved?: boolean;
   sortOrder?: number | null;
+  capturedAt?: string | null;
+  createdAt?: string | null;
+  meta?: string | null;
 }
 
 interface PostTargetMetadata {
   mediaAttachments?: PostMediaMetadataItem[];
   lat?: number | null;
   lng?: number | null;
+}
+
+interface UserTargetMetadata {
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
+  email?: string | null;
+  isEmailVerified?: boolean;
+  phone?: string | null;
+  isPhoneVerified?: boolean;
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  relativePhone?: string | null;
+  totalTripCount?: number | null;
+  completedTripCount?: number | null;
+  failedTripCount?: number | null;
+  experienceLevel?: string | null;
+  verifiedLevel?: string | null;
+  role?: string | null;
+  isLocked?: boolean;
+  isNeedUpdateProfile?: boolean;
+  userCreatedAt?: string | null;
+  userUpdatedAt?: string | null;
+  profileCreatedAt?: string | null;
+  profileUpdatedAt?: string | null;
+}
+
+interface SocialCheckpointContributionMetadata {
+  socialCheckpointContributionId?: string;
+  contributorUserId?: string;
+  contributorName?: string | null;
+  description?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  mediaAttachments?: PostMediaMetadataItem[];
+}
+
+interface SocialCheckpointTargetMetadata {
+  lat?: number | string | null;
+  lng?: number | string | null;
+  checkpointType?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  contributionCount?: number | null;
+  contributorCount?: number | null;
+  mediaAttachments?: PostMediaMetadataItem[];
+  contributions?: SocialCheckpointContributionMetadata[];
+}
+
+function recordValue(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      return source[key];
+    }
+  }
+  return undefined;
+}
+
+function stringValue(
+  source: Record<string, unknown>,
+  ...keys: string[]
+): string | null {
+  const value = recordValue(source, ...keys);
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : null;
+}
+
+function numberValue(
+  source: Record<string, unknown>,
+  ...keys: string[]
+): number | null {
+  const value = recordValue(source, ...keys);
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function booleanValue(
+  source: Record<string, unknown>,
+  ...keys: string[]
+): boolean | undefined {
+  const value = recordValue(source, ...keys);
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function mediaTypeValue(
+  source: Record<string, unknown>,
+): number | string | undefined {
+  const value = recordValue(source, "mediaType", "MediaType");
+  return typeof value === "number" || typeof value === "string"
+    ? value
+    : undefined;
+}
+
+function normalizeMediaMetadata(raw: unknown): PostMediaMetadataItem | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const source = raw as Record<string, unknown>;
+  return {
+    mediaAttachmentId:
+      stringValue(source, "mediaAttachmentId", "MediaAttachmentId") ??
+      undefined,
+    mediaUrl: stringValue(source, "mediaUrl", "MediaUrl") ?? undefined,
+    mediaType: mediaTypeValue(source),
+    isRemoved: booleanValue(source, "isRemoved", "IsRemoved"),
+    sortOrder: numberValue(source, "sortOrder", "SortOrder"),
+    capturedAt: stringValue(source, "capturedAt", "CapturedAt"),
+    createdAt: stringValue(source, "createdAt", "CreatedAt"),
+    meta: stringValue(source, "meta", "Meta"),
+  };
+}
+
+function normalizeMediaMetadataArray(raw: unknown): PostMediaMetadataItem[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .map(normalizeMediaMetadata)
+    .filter((item): item is PostMediaMetadataItem => item !== null);
 }
 
 function parsePostTargetMetadata(
@@ -138,7 +292,119 @@ function parsePostTargetMetadata(
   }
 
   try {
-    return JSON.parse(raw) as PostTargetMetadata;
+    const source = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      lat: numberValue(source, "lat", "Lat"),
+      lng: numberValue(source, "lng", "Lng"),
+      mediaAttachments: normalizeMediaMetadataArray(
+        recordValue(source, "mediaAttachments", "MediaAttachments"),
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseUserTargetMetadata(
+  raw: string | null | undefined,
+): UserTargetMetadata | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const source = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      username: stringValue(source, "username", "Username"),
+      firstName: stringValue(source, "firstName", "FirstName"),
+      lastName: stringValue(source, "lastName", "LastName"),
+      avatarUrl: stringValue(source, "avatarUrl", "AvatarUrl"),
+      email: stringValue(source, "email", "Email"),
+      isEmailVerified: booleanValue(source, "isEmailVerified", "IsEmailVerified"),
+      phone: stringValue(source, "phone", "Phone"),
+      isPhoneVerified: booleanValue(source, "isPhoneVerified", "IsPhoneVerified"),
+      gender: stringValue(source, "gender", "Gender"),
+      dateOfBirth: stringValue(source, "dateOfBirth", "DateOfBirth"),
+      relativePhone: stringValue(source, "relativePhone", "RelativePhone"),
+      totalTripCount: numberValue(source, "totalTripCount", "TotalTripCount"),
+      completedTripCount: numberValue(
+        source,
+        "completedTripCount",
+        "CompletedTripCount",
+      ),
+      failedTripCount: numberValue(source, "failedTripCount", "FailedTripCount"),
+      experienceLevel: stringValue(source, "experienceLevel", "ExperienceLevel"),
+      verifiedLevel: stringValue(source, "verifiedLevel", "VerifiedLevel"),
+      role: stringValue(source, "role", "Role"),
+      isLocked: booleanValue(source, "isLocked", "IsLocked"),
+      isNeedUpdateProfile: booleanValue(
+        source,
+        "isNeedUpdateProfile",
+        "IsNeedUpdateProfile",
+      ),
+      userCreatedAt: stringValue(source, "userCreatedAt", "UserCreatedAt"),
+      userUpdatedAt: stringValue(source, "userUpdatedAt", "UserUpdatedAt"),
+      profileCreatedAt: stringValue(source, "profileCreatedAt", "ProfileCreatedAt"),
+      profileUpdatedAt: stringValue(source, "profileUpdatedAt", "ProfileUpdatedAt"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseSocialCheckpointTargetMetadata(
+  raw: string | null | undefined,
+): SocialCheckpointTargetMetadata | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const source = JSON.parse(raw) as Record<string, unknown>;
+    const rawContributions = recordValue(source, "contributions", "Contributions");
+    const contributions = Array.isArray(rawContributions)
+      ? rawContributions
+          .filter(
+            (item): item is Record<string, unknown> =>
+              !!item && typeof item === "object" && !Array.isArray(item),
+          )
+          .map((item) => ({
+            socialCheckpointContributionId:
+              stringValue(
+                item,
+                "socialCheckpointContributionId",
+                "SocialCheckpointContributionId",
+              ) ?? undefined,
+            contributorUserId:
+              stringValue(item, "contributorUserId", "ContributorUserId") ??
+              undefined,
+            contributorName: stringValue(item, "contributorName", "ContributorName"),
+            description: stringValue(item, "description", "Description"),
+            createdAt: stringValue(item, "createdAt", "CreatedAt"),
+            updatedAt: stringValue(item, "updatedAt", "UpdatedAt"),
+            mediaAttachments: normalizeMediaMetadataArray(
+              recordValue(item, "mediaAttachments", "MediaAttachments"),
+            ),
+          }))
+      : [];
+
+    return {
+      lat: numberValue(source, "lat", "Lat"),
+      lng: numberValue(source, "lng", "Lng"),
+      checkpointType: stringValue(source, "checkpointType", "CheckpointType"),
+      createdAt: stringValue(source, "createdAt", "CreatedAt"),
+      updatedAt: stringValue(source, "updatedAt", "UpdatedAt"),
+      contributionCount: numberValue(
+        source,
+        "contributionCount",
+        "ContributionCount",
+      ),
+      contributorCount: numberValue(source, "contributorCount", "ContributorCount"),
+      mediaAttachments: normalizeMediaMetadataArray(
+        recordValue(source, "mediaAttachments", "MediaAttachments"),
+      ),
+      contributions,
+    };
   } catch {
     return null;
   }
@@ -202,6 +468,27 @@ function formatDistance(distanceM: number | null | undefined): string {
   if (distanceM === null || distanceM === undefined || Number.isNaN(distanceM))
     return "-";
   return `${(distanceM / 1000).toFixed(1)} km`;
+}
+
+function formatBoolean(value: boolean | undefined): string {
+  if (value === undefined) return "-";
+  return value ? "Có" : "Không";
+}
+
+function buildTargetUserInitials(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+  }
+  return parts[0]?.slice(0, 2).toUpperCase() || "?";
+}
+
+function formatCoordinate(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(6) : "-";
 }
 
 function tripMediaIsImage(
@@ -359,6 +646,30 @@ export default function ReportDetailDialog({
     report?.targetDetail?.metadataJson,
   );
   const postMediaAttachments = postMetadata?.mediaAttachments ?? [];
+  const userMetadata = parseUserTargetMetadata(
+    report?.targetDetail?.metadataJson,
+  );
+  const targetUserName =
+    report?.targetDetail?.displayName ||
+    [userMetadata?.lastName, userMetadata?.firstName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    userMetadata?.username ||
+    "Người dùng";
+  const targetUserInitials = buildTargetUserInitials(targetUserName);
+  const wideDetailDialog =
+    !!report &&
+    (isUserTargetType(report.targetType) ||
+      isTripTargetType(report.targetType) ||
+      isSocialCheckpointTargetType(report.targetType));
+  const socialCheckpointMetadata = parseSocialCheckpointTargetMetadata(
+    report?.targetDetail?.metadataJson,
+  );
+  const socialCheckpointMediaAttachments =
+    socialCheckpointMetadata?.mediaAttachments ?? [];
+  const socialCheckpointContributions =
+    socialCheckpointMetadata?.contributions ?? [];
   const resolvedActionValues = report
     ? report.resolvedActions && report.resolvedActions.length > 0
       ? report.resolvedActions
@@ -375,7 +686,11 @@ export default function ReportDetailDialog({
           if (!open) onClose();
         }}
       >
-        <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
+        <DialogContent
+          className={`max-h-[88vh] overflow-y-auto ${
+            wideDetailDialog ? "max-w-6xl" : "max-w-4xl"
+          }`}
+        >
           <DialogHeader>
             <DialogTitle>Chi tiết báo cáo</DialogTitle>
           </DialogHeader>
@@ -529,7 +844,7 @@ export default function ReportDetailDialog({
                 </div>
               )}
 
-              {report.targetDetail && (
+              {report.targetDetail && !isUserTargetType(report.targetType) && (
                 <div className="space-y-2 rounded-lg border p-4">
                   <p className="text-xs font-medium text-muted-foreground">
                     Thông tin đối tượng bị báo cáo
@@ -572,6 +887,265 @@ export default function ReportDetailDialog({
                       </p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {isUserTargetType(report.targetType) && report.targetDetail && (
+                <div className="overflow-hidden rounded-lg border bg-background">
+                  <div className="border-b bg-muted/30 p-5">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Chi tiết profile người bị báo cáo
+                    </p>
+                    <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-20 w-20 border bg-background text-lg">
+                          {userMetadata?.avatarUrl && (
+                            <AvatarImage
+                              src={userMetadata.avatarUrl}
+                              alt={targetUserName}
+                            />
+                          )}
+                          <AvatarFallback className="text-xl font-bold">
+                            {targetUserInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <h3 className="text-2xl font-bold leading-tight">
+                            {targetUserName}
+                          </h3>
+                          <p className="mt-1 text-base text-muted-foreground">
+                            {userMetadata?.username
+                              ? `@${userMetadata.username}`
+                              : report.targetDetail.targetId}
+                          </p>
+                          {report.targetDetail.content && (
+                            <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm text-muted-foreground">
+                              {report.targetDetail.content}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant={
+                            report.targetDetail.status === "Locked"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                          className="px-3 py-1 text-sm"
+                        >
+                          {report.targetDetail.status || "-"}
+                        </Badge>
+                        <Badge variant="outline" className="px-3 py-1 text-sm">
+                          {userMetadata?.role || "User"}
+                        </Badge>
+                        {userMetadata?.verifiedLevel && (
+                          <Badge
+                            variant="outline"
+                            className="px-3 py-1 text-sm"
+                          >
+                            Xác minh {userMetadata.verifiedLevel}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-md border bg-muted/20 p-4">
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        Thông tin cơ bản
+                      </p>
+                      <div className="mt-3 space-y-3 text-base">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Họ</p>
+                          <p className="font-semibold">
+                            {userMetadata?.lastName || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Tên</p>
+                          <p className="font-semibold">
+                            {userMetadata?.firstName || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Giới tính
+                          </p>
+                          <p className="font-semibold">
+                            {userMetadata?.gender || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Ngày sinh
+                          </p>
+                          <p className="font-semibold">
+                            {userMetadata?.dateOfBirth || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Cấp xác minh
+                          </p>
+                          <p className="font-semibold">
+                            {userMetadata?.verifiedLevel || "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border bg-muted/20 p-4">
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        Liên hệ
+                      </p>
+                      <div className="mt-3 space-y-3 text-base">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="break-all font-semibold">
+                            {userMetadata?.email || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Email xác minh
+                          </p>
+                          <p className="font-semibold">
+                            {formatBoolean(userMetadata?.isEmailVerified)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Số điện thoại
+                          </p>
+                          <p className="font-semibold">
+                            {userMetadata?.phone || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            SĐT xác minh
+                          </p>
+                          <p className="font-semibold">
+                            {formatBoolean(userMetadata?.isPhoneVerified)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            SĐT người thân
+                          </p>
+                          <p className="font-semibold">
+                            {userMetadata?.relativePhone || "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border bg-muted/20 p-4">
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        Hoạt động chuyến đi
+                      </p>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-md bg-background p-3">
+                          <p className="text-2xl font-bold">
+                            {userMetadata?.totalTripCount ?? 0}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Tổng
+                          </p>
+                        </div>
+                        <div className="rounded-md bg-background p-3">
+                          <p className="text-2xl font-bold">
+                            {userMetadata?.completedTripCount ?? 0}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Hoàn tất
+                          </p>
+                        </div>
+                        <div className="rounded-md bg-background p-3">
+                          <p className="text-2xl font-bold">
+                            {userMetadata?.failedTripCount ?? 0}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Thất bại
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          Cấp kinh nghiệm
+                        </p>
+                        <p className="text-base font-semibold">
+                          {userMetadata?.experienceLevel || "-"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border bg-muted/20 p-4 md:col-span-2 xl:col-span-3">
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        Tài khoản và định danh
+                      </p>
+                      <div className="mt-3 grid gap-4 text-base md:grid-cols-2 xl:grid-cols-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            User ID
+                          </p>
+                          <p className="break-all font-semibold">
+                            {report.targetDetail.targetId}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Tài khoản bị khóa
+                          </p>
+                          <p className="font-semibold">
+                            {formatBoolean(userMetadata?.isLocked)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Cần cập nhật profile
+                          </p>
+                          <p className="font-semibold">
+                            {formatBoolean(userMetadata?.isNeedUpdateProfile)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Ngày tạo tài khoản
+                          </p>
+                          <p className="font-semibold">
+                            {formatDateTime(userMetadata?.userCreatedAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Cập nhật tài khoản
+                          </p>
+                          <p className="font-semibold">
+                            {formatDateTime(userMetadata?.userUpdatedAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Ngày tạo profile
+                          </p>
+                          <p className="font-semibold">
+                            {formatDateTime(userMetadata?.profileCreatedAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Cập nhật profile
+                          </p>
+                          <p className="font-semibold">
+                            {formatDateTime(userMetadata?.profileUpdatedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -941,6 +1515,204 @@ export default function ReportDetailDialog({
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isSocialCheckpointTargetType(report.targetType) && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Chi tiết điểm cộng đồng bị báo cáo
+                  </p>
+
+                  <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tên điểm</p>
+                      <p className="font-medium">
+                        {report.targetDetail?.displayName || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Người tạo</p>
+                      <p className="font-medium">
+                        {report.targetDetail?.ownerName || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Trạng thái
+                      </p>
+                      <p className="font-medium">
+                        {report.targetDetail?.status || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Loại điểm</p>
+                      <p className="font-medium">
+                        {socialCheckpointMetadata?.checkpointType || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tọa độ</p>
+                      <p className="font-medium">
+                        {formatCoordinate(socialCheckpointMetadata?.lat)},{" "}
+                        {formatCoordinate(socialCheckpointMetadata?.lng)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Đóng góp</p>
+                      <p className="font-medium">
+                        {socialCheckpointMetadata?.contributionCount ?? 0} từ{" "}
+                        {socialCheckpointMetadata?.contributorCount ?? 0} người
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Ngày tạo</p>
+                      <p className="font-medium">
+                        {formatDateTime(socialCheckpointMetadata?.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {report.targetDetail?.content && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Mô tả điểm</p>
+                      <p className="mt-1 whitespace-pre-wrap rounded-md bg-muted p-2 text-sm">
+                        {report.targetDetail.content}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Ảnh/video của điểm ({socialCheckpointMediaAttachments.length})
+                    </p>
+                    {socialCheckpointMediaAttachments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Không có media trực tiếp trên điểm.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                        {socialCheckpointMediaAttachments.map((media, index) => {
+                          const mediaUrl = media.mediaUrl?.trim();
+                          const isImage = tripMediaIsImage(
+                            media.mediaType,
+                            mediaUrl,
+                          );
+
+                          return (
+                            <button
+                              key={
+                                media.mediaAttachmentId ||
+                                `${mediaUrl}-${index}`
+                              }
+                              type="button"
+                              className="overflow-hidden rounded-md border bg-muted/20 text-left"
+                              disabled={!mediaUrl || !isImage}
+                              onClick={() =>
+                                mediaUrl && isImage
+                                  ? setSelectedMediaUrl(mediaUrl)
+                                  : undefined
+                              }
+                            >
+                              {mediaUrl && isImage ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={mediaUrl}
+                                  alt="Media điểm cộng đồng"
+                                  className="aspect-video w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex aspect-video items-center justify-center p-2 text-xs text-muted-foreground">
+                                  {mediaTypeLabel(media.mediaType)}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Danh sách đóng góp ({socialCheckpointContributions.length})
+                    </p>
+                    {socialCheckpointContributions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Không có đóng góp nào.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {socialCheckpointContributions.map((contribution, index) => (
+                          <div
+                            key={
+                              contribution.socialCheckpointContributionId ??
+                              `${contribution.contributorUserId}-${index}`
+                            }
+                            className="rounded-md border bg-muted/20 p-3"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-sm font-medium">
+                                {contribution.contributorName ||
+                                  "Người dùng cộng đồng"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDateTime(contribution.createdAt)}
+                              </p>
+                            </div>
+                            {contribution.description && (
+                              <p className="mt-2 whitespace-pre-wrap text-sm">
+                                {contribution.description}
+                              </p>
+                            )}
+                            {(contribution.mediaAttachments ?? []).length > 0 && (
+                              <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                                {(contribution.mediaAttachments ?? []).map(
+                                  (media, mediaIndex) => {
+                                    const mediaUrl = media.mediaUrl?.trim();
+                                    const isImage = tripMediaIsImage(
+                                      media.mediaType,
+                                      mediaUrl,
+                                    );
+
+                                    return (
+                                      <button
+                                        key={
+                                          media.mediaAttachmentId ||
+                                          `${mediaUrl}-${mediaIndex}`
+                                        }
+                                        type="button"
+                                        className="overflow-hidden rounded-md border bg-background text-left"
+                                        disabled={!mediaUrl || !isImage}
+                                        onClick={() =>
+                                          mediaUrl && isImage
+                                            ? setSelectedMediaUrl(mediaUrl)
+                                            : undefined
+                                        }
+                                      >
+                                        {mediaUrl && isImage ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            src={mediaUrl}
+                                            alt="Media đóng góp điểm cộng đồng"
+                                            className="aspect-video w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="flex aspect-video items-center justify-center p-2 text-xs text-muted-foreground">
+                                            {mediaTypeLabel(media.mediaType)}
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

@@ -225,6 +225,7 @@ export interface ReportListItem {
   targetType: number | string | ReportTargetTypeCode;
   targetPk: string;
   reportedPartyType: number | string | ReportedPartyTypeCode | null;
+  reportedTargetName?: string | null;
   reason: ReportReasonSummary | null;
   reasonKey: string | null;
   reasonText: string | null;

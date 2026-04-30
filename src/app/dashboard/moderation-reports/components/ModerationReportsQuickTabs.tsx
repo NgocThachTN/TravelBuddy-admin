@@ -18,7 +18,9 @@ export default function ModerationReportsQuickTabs() {
           ? "post"
           : targetType === "DirectMessage" || targetType === "TripMessage"
             ? "chat"
-            : "all";
+            : targetType === "User"
+              ? "profile"
+              : "all";
 
   return (
     <Tabs value={tabValue}>
@@ -39,6 +41,11 @@ export default function ModerationReportsQuickTabs() {
         <TabsTrigger value="chat" asChild>
           <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("DirectMessage")}>
             Báo cáo chat
+          </Link>
+        </TabsTrigger>
+        <TabsTrigger value="profile" asChild>
+          <Link href={ROUTES.MODERATION_REPORTS_BY_TYPE("User")}>
+            Báo cáo profile
           </Link>
         </TabsTrigger>
         <TabsTrigger value="mine" asChild>

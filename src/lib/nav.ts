@@ -148,20 +148,13 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
     roles: ["MODERATOR"],
     children: [
       {
-        label: "T\u1ea5t c\u1ea3 b\u00e1o c\u00e1o",
-        href: ROUTES.MODERATION_REPORTS,
-        icon: Megaphone,
-        roles: ["MODERATOR"],
-        exact: true,
-      },
-      {
         label: "Chuy\u1ebfn \u0111i",
         href: ROUTES.MODERATION_REPORTS_BY_TYPE("Trip"),
         icon: Megaphone,
         roles: ["MODERATOR"],
       },
       {
-        label: "Tin nh\u1eafn chat",
+        label: "Tin nh\u1eafn tr\u1ef1c ti\u1ebfp",
         href: ROUTES.MODERATION_REPORTS_BY_TYPE("DirectMessage"),
         icon: Megaphone,
         roles: ["MODERATOR"],
@@ -203,8 +196,8 @@ const MODERATOR_NAV_ITEMS: NavItem[] = [
         roles: ["MODERATOR"],
       },
       {
-        label: "B\u00e1o c\u00e1o c\u1ee7a t\u00f4i",
-        href: ROUTES.MODERATION_MY_REPORTS,
+        label: "Profile ng\u01b0\u1eddi d\u00f9ng",
+        href: ROUTES.MODERATION_REPORTS_BY_TYPE("User"),
         icon: Megaphone,
         roles: ["MODERATOR"],
       },

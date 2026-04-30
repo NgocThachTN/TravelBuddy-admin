@@ -69,6 +69,7 @@ import {
   LifeBuoy,
   MapPin,
   HandMetal,
+  UserRound,
 } from "lucide-react";
 import PaginationControl from "@/components/pagination-control";
 import ReportDetailDialog from "../../reports/components/ReportDetailDialog";
@@ -97,6 +98,7 @@ const MODERATION_TARGET_TYPES = [
   "RescueRequestMessage",
   "TripMessage",
   "SocialCheckpoint",
+  "User",
 ] as const;
 
 type StatusFilter =
@@ -159,6 +161,12 @@ function resolveReporterInitials(item: ReportListItem) {
   return parts[0]?.slice(0, 2).toUpperCase() || baseInitials || "?";
 }
 
+function resolveReportedTargetName(item: ReportListItem) {
+  const targetName = item.reportedTargetName?.trim();
+  if (targetName) return targetName;
+  return reportedPartyTypeLabel(item.reportedPartyType);
+}
+
 function statusBadgeVariant(
   status: number | string,
 ): "default" | "secondary" | "destructive" | "outline" {
@@ -210,6 +218,8 @@ function targetTypeIcon(targetType: number | string) {
       return <MessageSquare className="h-3.5 w-3.5" />;
     case "SocialCheckpoint":
       return <MapPin className="h-3.5 w-3.5" />;
+    case "User":
+      return <UserRound className="h-3.5 w-3.5" />;
     default:
       return <AlertTriangle className="h-3.5 w-3.5" />;
   }
@@ -230,6 +240,10 @@ function getAvailableResolvedActions(
 
   if (code === "Post") {
     return ["None", "Warn", "RemoveContent", "LockUser"];
+  }
+
+  if (code === "User") {
+    return ["None", "Warn", "LockUser", "BanUser"];
   }
 
   if (
@@ -748,6 +762,7 @@ export default function ModerationReportTable() {
               <SelectItem value="SocialCheckpoint">
                 {"Điểm cộng đồng"}
               </SelectItem>
+              <SelectItem value="User">Người dùng</SelectItem>
             </SelectContent>
           </Select>
 
@@ -778,7 +793,7 @@ export default function ModerationReportTable() {
             <TableRow>
               <TableHead>Người báo cáo</TableHead>
               <TableHead>Loại</TableHead>
-              <TableHead>{"Bên bị tố"}</TableHead>
+              <TableHead>Người bị báo cáo</TableHead>
               <TableHead>Lý do</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead>Ưu tiên</TableHead>
@@ -806,7 +821,8 @@ export default function ModerationReportTable() {
                   report.status === 0 || report.status === "Pending";
                 const isReviewing =
                   report.status === 1 || report.status === "Reviewing";
-                const canAct = isPending || isReviewing;
+                const canClaim = isPending;
+                const canProcess = isReviewing;
 
                 return (
                   <TableRow key={report.reportId} className="group">
@@ -843,9 +859,9 @@ export default function ModerationReportTable() {
                       </Badge>
                     </TableCell>
 
-                    {/* Reported Party */}
+                    {/* Reported Target */}
                     <TableCell className="text-sm text-muted-foreground">
-                      {reportedPartyTypeLabel(report.reportedPartyType)}
+                      {resolveReportedTargetName(report)}
                     </TableCell>
 
                     {/* Reason */}
@@ -891,7 +907,7 @@ export default function ModerationReportTable() {
                     {/* Actions */}
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
-                        {isPending && (
+                        {canClaim && (
                           <Button
                             size="sm"
                             variant="secondary"
@@ -902,7 +918,7 @@ export default function ModerationReportTable() {
                             Nhận xử lý
                           </Button>
                         )}
-                        {canAct && (
+                        {canProcess && (
                           <Button
                             size="sm"
                             onClick={() => setProcessTarget(report)}
