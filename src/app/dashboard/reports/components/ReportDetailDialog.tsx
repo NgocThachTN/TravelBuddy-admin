@@ -30,12 +30,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   CalendarClock,
   CarFront,
+  CheckCircle2,
   ExternalLink,
   Image as ImageIcon,
+  LockKeyhole,
   MapPin,
   RefreshCw,
   Route,
   Shield,
+  UserRoundCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -687,16 +690,25 @@ export default function ReportDetailDialog({
         }}
       >
         <DialogContent
-          className={`max-h-[88vh] overflow-y-auto ${
-            wideDetailDialog ? "max-w-6xl" : "max-w-4xl"
+          className={`max-h-[90vh] gap-0 overflow-hidden p-0 ${
+            wideDetailDialog
+              ? "!w-[min(1180px,calc(100vw-2rem))] !max-w-none sm:!max-w-none"
+              : "!w-[min(960px,calc(100vw-2rem))] !max-w-none sm:!max-w-none"
           }`}
         >
-          <DialogHeader>
-            <DialogTitle>Chi tiết báo cáo</DialogTitle>
+          <DialogHeader className="border-b bg-background px-6 py-5 pr-14">
+            <div className="flex flex-wrap items-center gap-3">
+              <DialogTitle>Chi tiết báo cáo</DialogTitle>
+              {report && (
+                <Badge variant="secondary">
+                  {reportStatusLabel(report.status)}
+                </Badge>
+              )}
+            </div>
           </DialogHeader>
 
           {loading && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 p-6">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="h-8 w-1/2" />
@@ -705,7 +717,7 @@ export default function ReportDetailDialog({
           )}
 
           {error && !report && (
-            <div className="flex flex-col items-center py-8">
+            <div className="flex flex-col items-center p-8">
               <p className="text-sm text-destructive">{error}</p>
               <Button
                 variant="outline"
@@ -720,129 +732,145 @@ export default function ReportDetailDialog({
           )}
 
           {report && !loading && (
-            <div className="space-y-5">
+            <div className="max-h-[calc(90vh-5.25rem)] overflow-y-auto p-5">
               {error && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                <div className="mb-5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
                   {error}
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  {report.reporterAvatarUrl && (
-                    <AvatarImage
-                      src={report.reporterAvatarUrl}
-                      alt={reporterName}
-                    />
-                  )}
-                  <AvatarFallback className="text-xs font-semibold">
-                    {initials.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-semibold">{reporterName}</p>
-                  <p className="text-xs text-muted-foreground">Người báo cáo</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Loại đối tượng
-                  </p>
-                  <p className="font-medium">
-                    {reportTargetTypeLabel(report.targetType)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Mã đối tượng</p>
-                  <p className="break-all font-mono text-xs font-medium">
-                    {report.targetPk}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Trạng thái</p>
-                  <Badge variant="secondary">
-                    {reportStatusLabel(report.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Ưu tiên</p>
-                  <p className="font-medium">
-                    {reportPriorityLabel(report.priority)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Bên bị tố cáo</p>
-                  <p className="font-medium">
-                    {reportedPartyTypeLabel(report.reportedPartyType)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Ngày tạo</p>
-                  <p className="font-medium">
-                    {new Date(report.createdAt).toLocaleString("vi-VN")}
-                  </p>
-                </div>
-                {report.assignedToName && (
+              <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
+                <aside className="space-y-5 rounded-lg border bg-muted/20 p-4 lg:sticky lg:top-0 lg:self-start">
                   <div>
-                    <p className="text-xs text-muted-foreground">Người xử lý</p>
-                    <p className="font-medium">{report.assignedToName}</p>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">
+                      Người báo cáo
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        {report.reporterAvatarUrl && (
+                          <AvatarImage
+                            src={report.reporterAvatarUrl}
+                            alt={reporterName}
+                          />
+                        )}
+                        <AvatarFallback className="text-xs font-semibold">
+                          {initials.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {reporterName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {report.reporterEmail || "Người báo cáo"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">
-                  Lý do báo cáo
-                </p>
-                <p className="text-sm">
-                  {report.reason?.displayName ||
-                    report.reasonDisplayName ||
-                    "-"}
-                </p>
-                {report.reasonText && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {report.reasonText}
-                  </p>
-                )}
-              </div>
-
-              {report.evidenceNote && (
-                <div>
-                  <p className="mb-1 text-xs text-muted-foreground">
-                    Bằng chứng
-                  </p>
-                  <p className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">
-                    {report.evidenceNote}
-                  </p>
-                </div>
-              )}
-
-              {reportMediaAttachments.length > 0 && (
-                <div className="space-y-2">
-                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <ImageIcon className="h-3.5 w-3.5" />
-                    Ảnh bằng chứng ({reportMediaAttachments.length})
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-                    {reportMediaAttachments.map((media) => (
-                      <button
-                        key={media.mediaAttachmentId}
-                        type="button"
-                        className="overflow-hidden rounded-md border bg-muted/20 text-left"
-                        onClick={() => setSelectedMediaUrl(media.mediaUrl)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={media.mediaUrl}
-                          alt="Ảnh bằng chứng báo cáo"
-                          className="aspect-square w-full object-cover transition hover:opacity-90"
-                        />
-                      </button>
-                    ))}
+                  <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-1">
+                    <div className="rounded-md bg-background p-3">
+                      <p className="text-xs text-muted-foreground">
+                        Loại đối tượng
+                      </p>
+                      <p className="mt-1 font-medium">
+                        {reportTargetTypeLabel(report.targetType)}
+                      </p>
+                    </div>
+                    <div className="rounded-md bg-background p-3">
+                      <p className="text-xs text-muted-foreground">
+                        Mã đối tượng
+                      </p>
+                      <p className="mt-1 break-all font-mono text-xs font-medium">
+                        {report.targetPk}
+                      </p>
+                    </div>
+                    <div className="rounded-md bg-background p-3">
+                      <p className="text-xs text-muted-foreground">
+                        Bên bị tố cáo
+                      </p>
+                      <p className="mt-1 font-medium">
+                        {reportedPartyTypeLabel(report.reportedPartyType)}
+                      </p>
+                    </div>
+                    <div className="rounded-md bg-background p-3">
+                      <p className="text-xs text-muted-foreground">Ưu tiên</p>
+                      <p className="mt-1 font-medium">
+                        {reportPriorityLabel(report.priority)}
+                      </p>
+                    </div>
+                    <div className="rounded-md bg-background p-3">
+                      <p className="text-xs text-muted-foreground">Ngày tạo</p>
+                      <p className="mt-1 font-medium">
+                        {new Date(report.createdAt).toLocaleString("vi-VN")}
+                      </p>
+                    </div>
+                    {report.assignedToName && (
+                      <div className="rounded-md bg-background p-3">
+                        <p className="text-xs text-muted-foreground">
+                          Người xử lý
+                        </p>
+                        <p className="mt-1 font-medium">
+                          {report.assignedToName}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Lý do báo cáo
+                    </p>
+                    <p className="text-sm font-semibold">
+                      {report.reason?.displayName ||
+                        report.reasonDisplayName ||
+                        "-"}
+                    </p>
+                    {report.reasonText && (
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                        {report.reasonText}
+                      </p>
+                    )}
+                  </div>
+
+                  {report.evidenceNote && (
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-muted-foreground">
+                        Bằng chứng
+                      </p>
+                      <p className="whitespace-pre-wrap rounded-md bg-background p-3 text-sm">
+                        {report.evidenceNote}
+                      </p>
+                    </div>
+                  )}
+
+                  {reportMediaAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        Ảnh bằng chứng ({reportMediaAttachments.length})
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {reportMediaAttachments.map((media) => (
+                          <button
+                            key={media.mediaAttachmentId}
+                            type="button"
+                            className="overflow-hidden rounded-md border bg-background text-left"
+                            onClick={() => setSelectedMediaUrl(media.mediaUrl)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={media.mediaUrl}
+                              alt="Ảnh bằng chứng báo cáo"
+                              className="aspect-square w-full object-cover transition hover:opacity-90"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </aside>
+
+                <div className="min-w-0 space-y-5">
 
               {report.targetDetail && !isUserTargetType(report.targetType) && (
                 <div className="space-y-2 rounded-lg border p-4">
@@ -1082,64 +1110,97 @@ export default function ReportDetailDialog({
                       </div>
                     </div>
 
-                    <div className="rounded-md border bg-muted/20 p-4 md:col-span-2 xl:col-span-3">
-                      <p className="text-sm font-semibold text-muted-foreground">
-                        Tài khoản và định danh
-                      </p>
-                      <div className="mt-3 grid gap-4 text-base md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-md border bg-background p-4 md:col-span-2 xl:col-span-3">
+                      <div>
                         <div>
-                          <p className="text-sm text-muted-foreground">
-                            User ID
+                          <p className="inline-flex items-center gap-2 text-sm font-semibold">
+                            <Shield className="h-4 w-4 text-primary" />
+                            Tài khoản và định danh
                           </p>
-                          <p className="break-all font-semibold">
-                            {report.targetDetail.targetId}
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Trạng thái tài khoản, hồ sơ và mốc cập nhật của người bị báo cáo.
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Tài khoản bị khóa
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-3">
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                            <LockKeyhole className="h-3.5 w-3.5" />
+                            Khóa tài khoản
                           </p>
-                          <p className="font-semibold">
-                            {formatBoolean(userMetadata?.isLocked)}
+                          <Badge
+                            variant={
+                              userMetadata?.isLocked ? "destructive" : "secondary"
+                            }
+                            className="mt-2"
+                          >
+                            {userMetadata?.isLocked ? "Đang bị khóa" : "Không khóa"}
+                          </Badge>
+                        </div>
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                            <UserRoundCheck className="h-3.5 w-3.5" />
+                            Cập nhật profile
+                          </p>
+                          <Badge
+                            variant={
+                              userMetadata?.isNeedUpdateProfile
+                                ? "destructive"
+                                : "secondary"
+                            }
+                            className="mt-2"
+                          >
+                            {userMetadata?.isNeedUpdateProfile
+                              ? "Cần cập nhật"
+                              : "Đã đầy đủ"}
+                          </Badge>
+                        </div>
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Cấp xác minh
+                          </p>
+                          <p className="mt-2 text-base font-semibold">
+                            {userMetadata?.verifiedLevel || "-"}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Cần cập nhật profile
-                          </p>
-                          <p className="font-semibold">
-                            {formatBoolean(userMetadata?.isNeedUpdateProfile)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <CalendarClock className="h-3.5 w-3.5" />
                             Ngày tạo tài khoản
                           </p>
-                          <p className="font-semibold">
+                          <p className="mt-1 text-sm font-semibold">
                             {formatDateTime(userMetadata?.userCreatedAt)}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <CalendarClock className="h-3.5 w-3.5" />
                             Cập nhật tài khoản
                           </p>
-                          <p className="font-semibold">
+                          <p className="mt-1 text-sm font-semibold">
                             {formatDateTime(userMetadata?.userUpdatedAt)}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <CalendarClock className="h-3.5 w-3.5" />
                             Ngày tạo profile
                           </p>
-                          <p className="font-semibold">
+                          <p className="mt-1 text-sm font-semibold">
                             {formatDateTime(userMetadata?.profileCreatedAt)}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="rounded-md border bg-muted/20 p-3">
+                          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <CalendarClock className="h-3.5 w-3.5" />
                             Cập nhật profile
                           </p>
-                          <p className="font-semibold">
+                          <p className="mt-1 text-sm font-semibold">
                             {formatDateTime(userMetadata?.profileUpdatedAt)}
                           </p>
                         </div>
@@ -1760,6 +1821,8 @@ export default function ReportDetailDialog({
                   )}
                 </div>
               )}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
