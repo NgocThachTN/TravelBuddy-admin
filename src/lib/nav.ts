@@ -6,6 +6,7 @@ import {
   Map,
   Megaphone,
   Package,
+  Settings,
   Siren,
   Shield,
   Users,
@@ -20,6 +21,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     label: "T\u1ed5ng quan",
     href: ROUTES.DASHBOARD,
     icon: LayoutDashboard,
+    roles: ["ADMIN"],
+  },
+  {
+    label: "C\u00e0i \u0111\u1eb7t h\u1ec7 th\u1ed1ng",
+    href: ROUTES.SETTINGS,
+    icon: Settings,
     roles: ["ADMIN"],
   },
   {

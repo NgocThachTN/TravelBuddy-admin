@@ -4,18 +4,59 @@ export interface RescuePricingRules {
   rescueDepositPercent: number;
 }
 
+export type SystemConfigValueType =
+  | "string"
+  | "int"
+  | "long"
+  | "decimal"
+  | "bool"
+  | "json";
+
+export interface SystemConfigQuery {
+  search?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
 export interface UpdateAdminSystemRulePayload {
-  key:
-    | "rescue_commission_two_wheel"
-    | "rescue_commission_four_wheel"
-    | "rescue_deposit_percent";
+  key: string;
   value: string;
+  valueType?: SystemConfigValueType;
+  description?: string | null;
+}
+
+export interface UpsertAdminSystemRulePayload {
+  key: string;
+  value: string;
+  valueType: SystemConfigValueType;
+  description?: string | null;
+}
+
+export interface UpsertSystemSettingPayload {
+  key: string;
+  value: string;
+  valueType: SystemConfigValueType;
+  description?: string | null;
+  isPublic: boolean;
 }
 
 export interface AdminSystemRule {
   key: string;
   value: string;
   valueType: string;
+  description?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  cacheRefreshed: boolean;
+}
+
+export interface AdminSystemSetting {
+  key: string;
+  value: string;
+  valueType: string;
+  description?: string | null;
+  isPublic: boolean;
+  updatedAt?: string | null;
   cacheRefreshed: boolean;
 }
 

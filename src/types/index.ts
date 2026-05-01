@@ -180,8 +180,13 @@ export type {
 } from "./partner";
 export type {
   RescuePricingRules,
+  SystemConfigValueType,
+  SystemConfigQuery,
   UpdateAdminSystemRulePayload,
+  UpsertAdminSystemRulePayload,
+  UpsertSystemSettingPayload,
   AdminSystemRule,
+  AdminSystemSetting,
   MemberLevelCatalogLevel,
   MemberLevelCatalogData,
 } from "./system-rule";

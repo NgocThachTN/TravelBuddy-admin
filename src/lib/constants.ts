@@ -126,5 +126,7 @@ export const API_ROUTES = {
     `/api/v1/admin/service-partner-fees/${id}/deactivate`,
   SYSTEM_RULES_RESCUE_PRICING: "/api/v1/system-rules/rescue-pricing",
   SYSTEM_RULES_MEMBER_LEVELS: "/api/v1/system-rules/member-levels",
+  ADMIN_SYSTEM_SETTINGS: "/api/v1/admin/settings",
+  ADMIN_SYSTEM_RULES: "/api/v1/admin/system-rules",
   ADMIN_SYSTEM_RULES_RESCUE_PRICING: "/api/v1/admin/system-rules/rescue-pricing",
 } as const;
