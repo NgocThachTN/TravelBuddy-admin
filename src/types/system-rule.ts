@@ -1,7 +1,12 @@
 export interface RescuePricingRules {
+  rescueArrivalRadiusMeters: number;
+  rescuePostArrivalNoShowWaitMinutes: number;
+  rescuePartnerNoShowResponseWaitMinutes: number;
+  rescuePartnerNoShowRadiusMeters: number;
   rescueCommissionTwoWheel: number;
   rescueCommissionFourWheel: number;
   rescueDepositPercent: number;
+  rescueNewTimeoutMinutes: number;
 }
 
 export type SystemConfigValueType =

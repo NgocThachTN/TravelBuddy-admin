@@ -25,12 +25,16 @@ const FIELD_LABELS = {
   rescue_commission_two_wheel: "Hoa hồng cứu hộ xe 2 bánh",
   rescue_commission_four_wheel: "Hoa hồng cứu hộ xe 4 bánh",
   rescue_deposit_percent: "Tỷ lệ đặt cọc cứu hộ (%)",
+  rescue_post_arrival_no_show_wait_minutes: "Thời gian an toàn trước khi báo không thấy",
+  rescue_partner_no_show_response_wait_minutes: "Thời gian khách hàng phản hồi khiếu nại vắng mặt",
 } as const;
 
 interface FormValue {
   rescueCommissionTwoWheel: string;
   rescueCommissionFourWheel: string;
   rescueDepositPercent: string;
+  rescuePostArrivalNoShowWaitMinutes: string;
+  rescuePartnerNoShowResponseWaitMinutes: string;
 }
 
 function toFormValue(data: RescuePricingRules): FormValue {
@@ -38,6 +42,8 @@ function toFormValue(data: RescuePricingRules): FormValue {
     rescueCommissionTwoWheel: String(data.rescueCommissionTwoWheel),
     rescueCommissionFourWheel: String(data.rescueCommissionFourWheel),
     rescueDepositPercent: String(data.rescueDepositPercent),
+    rescuePostArrivalNoShowWaitMinutes: String(data.rescuePostArrivalNoShowWaitMinutes),
+    rescuePartnerNoShowResponseWaitMinutes: String(data.rescuePartnerNoShowResponseWaitMinutes),
   };
 }
 
@@ -59,6 +65,8 @@ export default function PartnerCommissionSettings() {
     rescueCommissionTwoWheel: "",
     rescueCommissionFourWheel: "",
     rescueDepositPercent: "",
+    rescuePostArrivalNoShowWaitMinutes: "",
+    rescuePartnerNoShowResponseWaitMinutes: "",
   });
   const [original, setOriginal] = useState<FormValue | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +82,8 @@ export default function PartnerCommissionSettings() {
       form.rescueCommissionTwoWheel !== original.rescueCommissionTwoWheel
       || form.rescueCommissionFourWheel !== original.rescueCommissionFourWheel
       || form.rescueDepositPercent !== original.rescueDepositPercent
+      || form.rescuePostArrivalNoShowWaitMinutes !== original.rescuePostArrivalNoShowWaitMinutes
+      || form.rescuePartnerNoShowResponseWaitMinutes !== original.rescuePartnerNoShowResponseWaitMinutes
     );
   }, [form, original]);
 
@@ -131,6 +141,24 @@ export default function PartnerCommissionSettings() {
       return;
     }
 
+    const postArrivalNoShowWaitMinutes = parsePositiveInteger(form.rescuePostArrivalNoShowWaitMinutes);
+    if (postArrivalNoShowWaitMinutes === null || postArrivalNoShowWaitMinutes > 1440) {
+      setMessage({
+        kind: "error",
+        text: `${FIELD_LABELS.rescue_post_arrival_no_show_wait_minutes} phải là số nguyên trong khoảng 1 đến 1440 phút.`,
+      });
+      return;
+    }
+
+    const partnerNoShowResponseWaitMinutes = parsePositiveInteger(form.rescuePartnerNoShowResponseWaitMinutes);
+    if (partnerNoShowResponseWaitMinutes === null || partnerNoShowResponseWaitMinutes > 1440) {
+      setMessage({
+        kind: "error",
+        text: `${FIELD_LABELS.rescue_partner_no_show_response_wait_minutes} phải là số nguyên trong khoảng 1 đến 1440 phút.`,
+      });
+      return;
+    }
+
     const updates: Array<{ key: keyof typeof FIELD_LABELS; value: number }> = [];
 
     if (!original || twoWheel !== Number.parseInt(original.rescueCommissionTwoWheel, 10)) {
@@ -141,6 +169,24 @@ export default function PartnerCommissionSettings() {
     }
     if (!original || depositPercent !== Number.parseInt(original.rescueDepositPercent, 10)) {
       updates.push({ key: "rescue_deposit_percent", value: depositPercent });
+    }
+    if (
+      !original
+      || postArrivalNoShowWaitMinutes !== Number.parseInt(original.rescuePostArrivalNoShowWaitMinutes, 10)
+    ) {
+      updates.push({
+        key: "rescue_post_arrival_no_show_wait_minutes",
+        value: postArrivalNoShowWaitMinutes,
+      });
+    }
+    if (
+      !original
+      || partnerNoShowResponseWaitMinutes !== Number.parseInt(original.rescuePartnerNoShowResponseWaitMinutes, 10)
+    ) {
+      updates.push({
+        key: "rescue_partner_no_show_response_wait_minutes",
+        value: partnerNoShowResponseWaitMinutes,
+      });
     }
 
     if (updates.length === 0) {
@@ -242,6 +288,54 @@ export default function PartnerCommissionSettings() {
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
               %
             </span>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="rescuePostArrivalNoShowWaitMinutes">
+              {FIELD_LABELS.rescue_post_arrival_no_show_wait_minutes}
+            </Label>
+            <div className="relative">
+              <Input
+                id="rescuePostArrivalNoShowWaitMinutes"
+                type="number"
+                min={1}
+                max={1440}
+                step={1}
+                inputMode="numeric"
+                value={form.rescuePostArrivalNoShowWaitMinutes}
+                onChange={(event) => setField("rescuePostArrivalNoShowWaitMinutes", event.target.value)}
+                disabled={isLoading || isSaving}
+                className="pr-14"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                phút
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rescuePartnerNoShowResponseWaitMinutes">
+              {FIELD_LABELS.rescue_partner_no_show_response_wait_minutes}
+            </Label>
+            <div className="relative">
+              <Input
+                id="rescuePartnerNoShowResponseWaitMinutes"
+                type="number"
+                min={1}
+                max={1440}
+                step={1}
+                inputMode="numeric"
+                value={form.rescuePartnerNoShowResponseWaitMinutes}
+                onChange={(event) => setField("rescuePartnerNoShowResponseWaitMinutes", event.target.value)}
+                disabled={isLoading || isSaving}
+                className="pr-14"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-muted-foreground">
+                phút
+              </span>
+            </div>
           </div>
         </div>
 
