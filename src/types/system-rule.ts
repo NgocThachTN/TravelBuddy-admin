@@ -37,14 +37,6 @@ export interface UpsertAdminSystemRulePayload {
   description?: string | null;
 }
 
-export interface UpsertSystemSettingPayload {
-  key: string;
-  value: string;
-  valueType: SystemConfigValueType;
-  description?: string | null;
-  isPublic: boolean;
-}
-
 export interface AdminSystemRule {
   key: string;
   value: string;

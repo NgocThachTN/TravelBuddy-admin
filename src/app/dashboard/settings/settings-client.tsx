@@ -2,7 +2,6 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Database,
   Loader2,
   Pencil,
   Plus,
@@ -10,18 +9,14 @@ import {
   Save,
   Search,
   Settings2,
-  SlidersHorizontal,
 } from "lucide-react";
 import { extractApiError } from "@/lib/api-error";
 import {
   fetchAdminSystemRules,
-  fetchAdminSystemSettings,
   upsertAdminSystemRule,
-  upsertAdminSystemSetting,
 } from "@/lib/system-rule-api";
 import type {
   AdminSystemRule,
-  AdminSystemSetting,
   BePagedWrapper,
   SystemConfigValueType,
 } from "@/types";
@@ -44,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -53,11 +47,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
-type ActiveTab = "settings" | "rules";
-type ConfigRow = AdminSystemSetting | AdminSystemRule;
+type ConfigRow = AdminSystemRule;
 
 type Message = {
   kind: "success" | "error" | "info";
@@ -74,7 +66,6 @@ interface PagedState<T> {
 
 interface EditorState {
   mode: "create" | "edit";
-  tab: ActiveTab;
 }
 
 interface FormState {
@@ -82,7 +73,6 @@ interface FormState {
   value: string;
   valueType: SystemConfigValueType;
   description: string;
-  isPublic: boolean;
 }
 
 const VALUE_TYPES: SystemConfigValueType[] = [
@@ -101,7 +91,15 @@ const EMPTY_FORM: FormState = {
   value: "",
   valueType: "string",
   description: "",
-  isPublic: true,
+};
+
+const VALUE_TYPE_LABELS: Record<SystemConfigValueType, string> = {
+  string: "Chuỗi",
+  int: "Số nguyên",
+  long: "Số nguyên dài",
+  decimal: "Số thập phân",
+  bool: "Đúng hoặc sai",
+  json: "Dữ liệu cấu trúc",
 };
 
 function emptyPagedState<T>(): PagedState<T> {
@@ -130,8 +128,8 @@ function normalizeValueType(valueType: string | null | undefined): SystemConfigV
     : "string";
 }
 
-function isSetting(row: ConfigRow): row is AdminSystemSetting {
-  return "isPublic" in row;
+function formatValueType(valueType: string | null | undefined): string {
+  return VALUE_TYPE_LABELS[normalizeValueType(valueType)];
 }
 
 function getDescription(row: ConfigRow): string {
@@ -154,48 +152,24 @@ function formatDate(value: string | null | undefined): string {
   }).format(parsed);
 }
 
-function pageLabel(tab: ActiveTab): string {
-  return tab === "settings" ? "System Settings" : "System Rules";
+function pageLabel(): string {
+  return "quy tắc hệ thống";
 }
 
 export default function SettingsClient() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("settings");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [settingsPage, setSettingsPage] = useState(1);
   const [rulesPage, setRulesPage] = useState(1);
-  const [settings, setSettings] =
-    useState<PagedState<AdminSystemSetting>>(emptyPagedState);
   const [rules, setRules] = useState<PagedState<AdminSystemRule>>(emptyPagedState);
-  const [loading, setLoading] = useState<Record<ActiveTab, boolean>>({
-    settings: true,
-    rules: false,
-  });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  const loadSettings = useCallback(async () => {
-    setLoading((prev) => ({ ...prev, settings: true }));
-    try {
-      const response = await fetchAdminSystemSettings({
-        search: search || undefined,
-        pageNumber: settingsPage,
-        pageSize,
-      });
-      setSettings(toPagedState(response));
-    } catch (err) {
-      const apiError = extractApiError(err, "Cannot load system settings.");
-      setMessage({ kind: "error", text: apiError.message });
-    } finally {
-      setLoading((prev) => ({ ...prev, settings: false }));
-    }
-  }, [pageSize, search, settingsPage]);
-
   const loadRules = useCallback(async () => {
-    setLoading((prev) => ({ ...prev, rules: true }));
+    setLoading(true);
     try {
       const response = await fetchAdminSystemRules({
         search: search || undefined,
@@ -204,66 +178,49 @@ export default function SettingsClient() {
       });
       setRules(toPagedState(response));
     } catch (err) {
-      const apiError = extractApiError(err, "Cannot load system rules.");
+      const apiError = extractApiError(err, "Không tải được quy tắc hệ thống.");
       setMessage({ kind: "error", text: apiError.message });
     } finally {
-      setLoading((prev) => ({ ...prev, rules: false }));
+      setLoading(false);
     }
   }, [pageSize, rulesPage, search]);
 
   const reloadActive = useCallback(async () => {
-    if (activeTab === "settings") {
-      await loadSettings();
-      return;
-    }
-
     await loadRules();
-  }, [activeTab, loadRules, loadSettings]);
+  }, [loadRules]);
 
   useEffect(() => {
-    if (activeTab === "settings") {
-      void loadSettings();
-      return;
-    }
-
     void loadRules();
-  }, [activeTab, loadRules, loadSettings]);
+  }, [loadRules]);
 
-  const activeState = activeTab === "settings" ? settings : rules;
-  const isLoadingActive = loading[activeTab];
+  const activeState = rules;
+  const isLoadingActive = loading;
 
   const activeRows = useMemo<ConfigRow[]>(
-    () => (activeTab === "settings" ? settings.items : rules.items),
-    [activeTab, rules.items, settings.items],
+    () => rules.items,
+    [rules.items],
   );
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearch(searchInput.trim());
-    setSettingsPage(1);
     setRulesPage(1);
   }
 
   function handlePageSizeChange(value: string) {
     const nextPageSize = Number.parseInt(value, 10);
     setPageSize(Number.isFinite(nextPageSize) ? nextPageSize : DEFAULT_PAGE_SIZE);
-    setSettingsPage(1);
     setRulesPage(1);
   }
 
   function setActivePage(pageNumber: number) {
     const nextPage = Math.max(pageNumber, 1);
-    if (activeTab === "settings") {
-      setSettingsPage(nextPage);
-      return;
-    }
-
     setRulesPage(nextPage);
   }
 
   function openCreateDialog() {
     setForm(EMPTY_FORM);
-    setEditor({ mode: "create", tab: activeTab });
+    setEditor({ mode: "create" });
     setMessage(null);
   }
 
@@ -273,9 +230,8 @@ export default function SettingsClient() {
       value: row.value ?? "",
       valueType: normalizeValueType(row.valueType),
       description: row.description ?? "",
-      isPublic: isSetting(row) ? row.isPublic : true,
     });
-    setEditor({ mode: "edit", tab: activeTab });
+    setEditor({ mode: "edit" });
     setMessage(null);
   }
 
@@ -290,12 +246,12 @@ export default function SettingsClient() {
 
     const key = form.key.trim();
     if (!key) {
-      setMessage({ kind: "error", text: "Key is required." });
+      setMessage({ kind: "error", text: "Vui lòng nhập mã quy tắc." });
       return;
     }
 
     if (!VALUE_TYPES.includes(form.valueType)) {
-      setMessage({ kind: "error", text: "Value type is invalid." });
+      setMessage({ kind: "error", text: "Kiểu dữ liệu không hợp lệ." });
       return;
     }
 
@@ -308,32 +264,23 @@ export default function SettingsClient() {
 
     try {
       const description = form.description.trim() || null;
-      const response =
-        editor.tab === "settings"
-          ? await upsertAdminSystemSetting({
-              key,
-              value: form.value,
-              valueType: form.valueType,
-              description,
-              isPublic: form.isPublic,
-            })
-          : await upsertAdminSystemRule({
-              key,
-              value: form.value,
-              valueType: form.valueType,
-              description,
-            });
+      const response = await upsertAdminSystemRule({
+        key,
+        value: form.value,
+        valueType: form.valueType,
+        description,
+      });
 
       setEditor(null);
       await reloadActive();
       setMessage({
         kind: response.data.cacheRefreshed ? "success" : "info",
-        text: `${pageLabel(editor.tab)} saved. cacheRefreshed = ${String(
-          response.data.cacheRefreshed,
-        )}.`,
+        text: response.data.cacheRefreshed
+          ? "Đã lưu quy tắc và làm mới bộ nhớ đệm."
+          : "Đã lưu quy tắc. Bộ nhớ đệm chưa được làm mới.",
       });
     } catch (err) {
-      const apiError = extractApiError(err, "Cannot save system configuration.");
+      const apiError = extractApiError(err, "Không lưu được quy tắc hệ thống.");
       setMessage({ kind: "error", text: apiError.message });
     } finally {
       setSaving(false);
@@ -346,16 +293,16 @@ export default function SettingsClient() {
         <div className="space-y-1">
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <Settings2 className="h-6 w-6" />
-            System Configuration
+            Cài đặt hệ thống
           </h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
-            Manage database-backed settings and rules. Values are shown in plaintext
-            and Redis cache is refreshed after each save.
+            Cập nhật các quy tắc vận hành. Sau khi lưu, hệ thống sẽ làm mới bộ nhớ
+            đệm liên quan.
           </p>
         </div>
         <Button type="button" onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />
-          Create
+          Thêm quy tắc
         </Button>
       </div>
 
@@ -373,25 +320,8 @@ export default function SettingsClient() {
         </div>
       )}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          setActiveTab(value as ActiveTab);
-          setMessage(null);
-        }}
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <TabsList>
-            <TabsTrigger value="settings">
-              <Database className="h-4 w-4" />
-              System Settings
-            </TabsTrigger>
-            <TabsTrigger value="rules">
-              <SlidersHorizontal className="h-4 w-4" />
-              System Rules
-            </TabsTrigger>
-          </TabsList>
-
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
           <form
             className="flex flex-col gap-2 sm:flex-row sm:items-center"
             onSubmit={handleSearchSubmit}
@@ -401,23 +331,23 @@ export default function SettingsClient() {
               <Input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search key, value, description"
+                placeholder="Tìm theo mã, giá trị hoặc mô tả"
                 className="pl-9"
               />
             </div>
             <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-full sm:w-28">
-                <SelectValue placeholder="Page size" />
+                <SelectValue placeholder="Số dòng" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10 rows</SelectItem>
-                <SelectItem value="25">25 rows</SelectItem>
-                <SelectItem value="50">50 rows</SelectItem>
+                <SelectItem value="10">10 dòng</SelectItem>
+                <SelectItem value="25">25 dòng</SelectItem>
+                <SelectItem value="50">50 dòng</SelectItem>
               </SelectContent>
             </Select>
             <Button type="submit" variant="outline">
               <Search className="mr-2 h-4 w-4" />
-              Search
+              Tìm kiếm
             </Button>
             <Button
               type="button"
@@ -430,32 +360,21 @@ export default function SettingsClient() {
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
-              Reload
+              Làm mới
             </Button>
           </form>
         </div>
 
-        <TabsContent value="settings" className="mt-4">
-          <ConfigurationTable
-            rows={activeRows}
-            tab="settings"
-            isLoading={loading.settings}
-            onEdit={openEditDialog}
-          />
-        </TabsContent>
-        <TabsContent value="rules" className="mt-4">
-          <ConfigurationTable
-            rows={activeRows}
-            tab="rules"
-            isLoading={loading.rules}
-            onEdit={openEditDialog}
-          />
-        </TabsContent>
-      </Tabs>
+        <ConfigurationTable
+          rows={activeRows}
+          isLoading={loading}
+          onEdit={openEditDialog}
+        />
+      </div>
 
       <div className="flex flex-col gap-2 border-t pt-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>
-          Showing {activeRows.length} of {activeState.totalCount} rows.
+          Đang hiển thị {activeRows.length} trong {activeState.totalCount} dòng.
         </span>
         <div className="flex items-center gap-2">
           <Button
@@ -465,10 +384,10 @@ export default function SettingsClient() {
             disabled={isLoadingActive || activeState.pageNumber <= 1}
             onClick={() => setActivePage(activeState.pageNumber - 1)}
           >
-            Previous
+            Trước
           </Button>
           <span className="min-w-28 text-center">
-            Page {activeState.pageNumber} / {activeState.totalPages}
+            Trang {activeState.pageNumber} / {activeState.totalPages}
           </span>
           <Button
             type="button"
@@ -477,7 +396,7 @@ export default function SettingsClient() {
             disabled={isLoadingActive || activeState.pageNumber >= activeState.totalPages}
             onClick={() => setActivePage(activeState.pageNumber + 1)}
           >
-            Next
+            Sau
           </Button>
         </div>
       </div>
@@ -486,17 +405,18 @@ export default function SettingsClient() {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editor?.mode === "edit" ? "Edit" : "Create"} {editor ? pageLabel(editor.tab) : ""}
+              {editor?.mode === "edit" ? "Chỉnh sửa" : "Thêm"} quy tắc hệ thống
             </DialogTitle>
             <DialogDescription>
-              Save writes the database first, then refreshes the matching Redis cache key.
+              Sau khi lưu, hệ thống cập nhật cơ sở dữ liệu và làm mới bộ nhớ đệm
+              tương ứng.
             </DialogDescription>
           </DialogHeader>
 
           <form id="system-config-form" className="space-y-4" onSubmit={handleSave}>
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
               <div className="space-y-2">
-                <Label htmlFor="config-key">Key</Label>
+                <Label htmlFor="config-key">Mã quy tắc</Label>
                 <Input
                   id="config-key"
                   value={form.key}
@@ -504,11 +424,11 @@ export default function SettingsClient() {
                     setForm((prev) => ({ ...prev, key: event.target.value }))
                   }
                   disabled={saving || editor?.mode === "edit"}
-                  placeholder="example_key"
+                  placeholder="ma_quy_tac"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="config-value-type">Value type</Label>
+                <Label htmlFor="config-value-type">Kiểu dữ liệu</Label>
                 <Select
                   value={form.valueType}
                   onValueChange={(value) =>
@@ -520,12 +440,12 @@ export default function SettingsClient() {
                   disabled={saving}
                 >
                   <SelectTrigger id="config-value-type" className="w-full">
-                    <SelectValue placeholder="Type" />
+                    <SelectValue placeholder="Chọn kiểu" />
                   </SelectTrigger>
                   <SelectContent>
                     {VALUE_TYPES.map((valueType) => (
                       <SelectItem key={valueType} value={valueType}>
-                        {valueType}
+                        {VALUE_TYPE_LABELS[valueType]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -534,7 +454,7 @@ export default function SettingsClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="config-value">Value</Label>
+              <Label htmlFor="config-value">Giá trị</Label>
               <Textarea
                 id="config-value"
                 value={form.value}
@@ -543,12 +463,12 @@ export default function SettingsClient() {
                 }
                 disabled={saving}
                 className="min-h-32 font-mono text-sm"
-                placeholder='{"enabled": true}'
+                placeholder="Nhập giá trị áp dụng cho quy tắc"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="config-description">Description</Label>
+              <Label htmlFor="config-description">Mô tả</Label>
               <Textarea
                 id="config-description"
                 value={form.description}
@@ -557,33 +477,14 @@ export default function SettingsClient() {
                 }
                 disabled={saving}
                 className="min-h-20"
-                placeholder="Optional description"
+                placeholder="Ghi chú ngắn để người quản trị dễ hiểu"
               />
             </div>
-
-            {editor?.tab === "settings" && (
-              <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                <div>
-                  <Label htmlFor="config-is-public">Public setting</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Controls the isPublic flag in system_settings.
-                  </p>
-                </div>
-                <Switch
-                  id="config-is-public"
-                  checked={form.isPublic}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({ ...prev, isPublic: checked }))
-                  }
-                  disabled={saving}
-                />
-              </div>
-            )}
           </form>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={closeDialog} disabled={saving}>
-              Cancel
+              Hủy
             </Button>
             <Button type="submit" form="system-config-form" disabled={saving}>
               {saving ? (
@@ -591,7 +492,7 @@ export default function SettingsClient() {
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Save
+              Lưu
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -602,14 +503,12 @@ export default function SettingsClient() {
 
 interface ConfigurationTableProps {
   rows: ConfigRow[];
-  tab: ActiveTab;
   isLoading: boolean;
   onEdit: (row: ConfigRow) => void;
 }
 
 function ConfigurationTable({
   rows,
-  tab,
   isLoading,
   onEdit,
 }: ConfigurationTableProps) {
@@ -618,29 +517,28 @@ function ConfigurationTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-56">Key</TableHead>
-            <TableHead className="min-w-64">Value</TableHead>
-            <TableHead>Type</TableHead>
-            {tab === "settings" && <TableHead>Public</TableHead>}
-            <TableHead className="min-w-64">Description</TableHead>
-            <TableHead>Updated</TableHead>
-            <TableHead className="w-24 text-right">Actions</TableHead>
+            <TableHead className="min-w-56">Mã</TableHead>
+            <TableHead className="min-w-64">Giá trị</TableHead>
+            <TableHead>Kiểu dữ liệu</TableHead>
+            <TableHead className="min-w-64">Mô tả</TableHead>
+            <TableHead>Cập nhật lúc</TableHead>
+            <TableHead className="w-24 text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={tab === "settings" ? 7 : 6} className="h-28 text-center">
+              <TableCell colSpan={6} className="h-28 text-center">
                 <span className="inline-flex items-center text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading {pageLabel(tab)}
+                  Đang tải {pageLabel()}
                 </span>
               </TableCell>
             </TableRow>
           ) : rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={tab === "settings" ? 7 : 6} className="h-28 text-center">
-                No rows found.
+              <TableCell colSpan={6} className="h-28 text-center">
+                Chưa có dữ liệu phù hợp.
               </TableCell>
             </TableRow>
           ) : (
@@ -653,15 +551,8 @@ function ConfigurationTable({
                   </code>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{row.valueType}</Badge>
+                  <Badge variant="outline">{formatValueType(row.valueType)}</Badge>
                 </TableCell>
-                {tab === "settings" && (
-                  <TableCell>
-                    <Badge variant={isSetting(row) && row.isPublic ? "default" : "secondary"}>
-                      {isSetting(row) && row.isPublic ? "true" : "false"}
-                    </Badge>
-                  </TableCell>
-                )}
                 <TableCell className="max-w-sm whitespace-normal text-muted-foreground">
                   {getDescription(row)}
                 </TableCell>
@@ -674,7 +565,7 @@ function ConfigurationTable({
                     variant="ghost"
                     size="icon"
                     onClick={() => onEdit(row)}
-                    aria-label={`Edit ${row.key}`}
+                    aria-label={`Chỉnh sửa ${row.key}`}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>

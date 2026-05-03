@@ -49,21 +49,9 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function PUT(req: NextRequest) {
-  const token = await getToken(req);
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await req.json();
-
-  try {
-    const { data } = await backendApi.put(BACKEND_ROUTE, body, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return NextResponse.json(data);
-  } catch (err) {
-    const e = logAndExtract(err, "PUT admin system setting");
-    return NextResponse.json({ error: e.message }, { status: e.status });
-  }
+export async function PUT() {
+  return NextResponse.json(
+    { error: "Cấu hình chung chỉ dùng để xem. Chỉ quy tắc hệ thống được phép chỉnh sửa." },
+    { status: 405 },
+  );
 }

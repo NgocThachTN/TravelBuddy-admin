@@ -184,7 +184,6 @@ export type {
   SystemConfigQuery,
   UpdateAdminSystemRulePayload,
   UpsertAdminSystemRulePayload,
-  UpsertSystemSettingPayload,
   AdminSystemRule,
   AdminSystemSetting,
   MemberLevelCatalogLevel,

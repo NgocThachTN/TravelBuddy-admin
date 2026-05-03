@@ -8,7 +8,6 @@ import type {
   RescuePricingRules,
   SystemConfigQuery,
   UpsertAdminSystemRulePayload,
-  UpsertSystemSettingPayload,
   UpdateAdminSystemRulePayload,
 } from "@/types";
 
@@ -35,16 +34,6 @@ export async function fetchAdminSystemSettings(
   const { data } = await api.get<BePagedWrapper<AdminSystemSetting>>(
     API_ROUTES.ADMIN_SYSTEM_SETTINGS,
     { params },
-  );
-  return data;
-}
-
-export async function upsertAdminSystemSetting(
-  payload: UpsertSystemSettingPayload,
-): Promise<BeWrapper<AdminSystemSetting>> {
-  const { data } = await api.put<BeWrapper<AdminSystemSetting>>(
-    API_ROUTES.ADMIN_SYSTEM_SETTINGS,
-    payload,
   );
   return data;
 }
