@@ -36,6 +36,7 @@ export interface RescueRequestListItem {
   depositAmount: number | null;
   status: RescueRequestStatus | string | null;
   cancelReason: string | null;
+  cancelReasonText: string | null;
   rejectReasonCode: string | null;
   createdAt: string;
   receivedAt: string | null;
@@ -101,7 +102,14 @@ export const RESCUE_REQUEST_STATUSES: RescueRequestStatus[] = [
 export const RESCUE_REQUEST_MODERATOR_TARGET_STATUSES: Exclude<
   RescueRequestStatus,
   "New"
->[] = ["Received", "InProgress", "Arrived", "Completed", "Rejected", "Cancelled"];
+>[] = [
+  "Received",
+  "InProgress",
+  "Arrived",
+  "Completed",
+  "Rejected",
+  "Cancelled",
+];
 
 export const RESCUE_REQUEST_REJECT_REASONS: RescueRequestRejectReasonCode[] = [
   "NO_CAPACITY",
@@ -123,6 +131,9 @@ export const RESCUE_REQUEST_CANCEL_REASON_LABELS: Record<string, string> = {
   TRAVELER_CANCELLED: "Người đi hủy",
   NO_PARTNER_ACCEPTED: "Không có đối tác tiếp nhận",
   PARTNER_ABORTED: "Đối tác hủy",
+  PARTNER_CANNOT_REPAIR: "Đối tác không thể sửa chữa",
+  TRAVELER_CANNOT_FIND_PARTNER: "Người đi không thấy đối tác",
+  PARTNER_CANNOT_FIND_TRAVELER: "Đối tác không thấy người đi",
   SYSTEM_CANCELLED: "Hệ thống hủy",
 };
 

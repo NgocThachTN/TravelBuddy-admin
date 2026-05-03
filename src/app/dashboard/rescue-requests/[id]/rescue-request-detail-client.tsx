@@ -131,7 +131,12 @@ function PersonCard({
       <CardContent className="flex items-center gap-4 p-5">
         <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-muted">
           {avatarUrl ? (
-            <Image src={avatarUrl} alt={name || title} fill className="object-cover" />
+            <Image
+              src={avatarUrl}
+              alt={name || title}
+              fill
+              className="object-cover"
+            />
           ) : (
             <Icon className="h-6 w-6 text-muted-foreground" />
           )}
@@ -160,12 +165,13 @@ function ModeratorStatusDialog({
 }: {
   detail: RescueRequestDetail;
   loading: boolean;
-  onSubmit: (payload: UpdateModeratorRescueRequestStatusPayload) => Promise<void>;
+  onSubmit: (
+    payload: UpdateModeratorRescueRequestStatusPayload,
+  ) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<UpdateModeratorRescueRequestStatusPayload["status"]>(
-    "Received",
-  );
+  const [status, setStatus] =
+    useState<UpdateModeratorRescueRequestStatusPayload["status"]>("Received");
   const [reason, setReason] = useState("");
   const [rejectReasonCode, setRejectReasonCode] =
     useState<RescueRequestRejectReasonCode>("NO_CAPACITY");
@@ -181,7 +187,7 @@ function ModeratorStatusDialog({
 
   const selectedStatus = availableStatuses.includes(status)
     ? status
-    : availableStatuses[0] ?? "Received";
+    : (availableStatuses[0] ?? "Received");
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -249,7 +255,9 @@ function ModeratorStatusDialog({
             <Select
               value={selectedStatus}
               onValueChange={(value) =>
-                setStatus(value as UpdateModeratorRescueRequestStatusPayload["status"])
+                setStatus(
+                  value as UpdateModeratorRescueRequestStatusPayload["status"],
+                )
               }
             >
               <SelectTrigger id="rescue-status">
@@ -320,7 +328,9 @@ function ModeratorStatusDialog({
             </Button>
             <Button
               type="submit"
-              disabled={loading || availableStatuses.length === 0 || !reason.trim()}
+              disabled={
+                loading || availableStatuses.length === 0 || !reason.trim()
+              }
             >
               {loading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -437,19 +447,23 @@ export default function RescueRequestDetailClient({
   if (!detail) return null;
 
   const cancelReason = detail.cancelReason
-    ? RESCUE_REQUEST_CANCEL_REASON_LABELS[detail.cancelReason] ?? detail.cancelReason
+    ? (RESCUE_REQUEST_CANCEL_REASON_LABELS[detail.cancelReason] ??
+      detail.cancelReason)
     : null;
+  const cancelReasonText = detail.cancelReasonText?.trim() || null;
   const rejectReason = detail.rejectReasonCode
-    ? RESCUE_REQUEST_REJECT_REASON_LABELS[detail.rejectReasonCode] ??
-      detail.rejectReasonCode
+    ? (RESCUE_REQUEST_REJECT_REASON_LABELS[detail.rejectReasonCode] ??
+      detail.rejectReasonCode)
     : null;
   const moneyBreakdown = detail.moneyBreakdown;
-  const serviceAmount = moneyBreakdown?.serviceAmount ?? detail.servicesTotalAmount;
+  const serviceAmount =
+    moneyBreakdown?.serviceAmount ?? detail.servicesTotalAmount;
   const travelFeeAmount =
     moneyBreakdown?.travelFeeAmount ?? detail.travelFeeAmount;
   const totalOrderAmount =
     moneyBreakdown?.totalOrderAmount ?? detail.totalOrderAmount;
-  const depositPercent = moneyBreakdown?.depositPercent ?? detail.depositPercent;
+  const depositPercent =
+    moneyBreakdown?.depositPercent ?? detail.depositPercent;
   const depositAmount = moneyBreakdown?.depositAmount ?? detail.depositAmount;
   const commissionAmount =
     moneyBreakdown?.commissionAmount ?? detail.commissionAmount;
@@ -479,7 +493,8 @@ export default function RescueRequestDetailClient({
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Đối tác xử lý, thông tin người yêu cầu, dịch vụ và chi phí của đơn cứu hộ
+              Đối tác xử lý, thông tin người yêu cầu, dịch vụ và chi phí của đơn
+              cứu hộ
             </p>
           </div>
         </div>
@@ -563,16 +578,28 @@ export default function RescueRequestDetailClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="Tiền dịch vụ" value={formatCurrency(serviceAmount)} />
-            <InfoRow label="Phí di chuyển" value={formatCurrency(travelFeeAmount)} />
-            <InfoRow label="Tổng đơn" value={formatCurrency(totalOrderAmount)} />
+            <InfoRow
+              label="Tiền dịch vụ"
+              value={formatCurrency(serviceAmount)}
+            />
+            <InfoRow
+              label="Phí di chuyển"
+              value={formatCurrency(travelFeeAmount)}
+            />
+            <InfoRow
+              label="Tổng đơn"
+              value={formatCurrency(totalOrderAmount)}
+            />
             <InfoRow
               label="Cọc"
               value={`${formatCurrency(depositAmount)}${
                 depositPercent != null ? ` (${depositPercent}%)` : ""
               }`}
             />
-            <InfoRow label="Hoa hồng" value={formatCurrency(commissionAmount)} />
+            <InfoRow
+              label="Hoa hồng"
+              value={formatCurrency(commissionAmount)}
+            />
             <InfoRow
               label="Đối tác thực nhận"
               value={formatCurrency(partnerNetAmount)}
@@ -584,7 +611,9 @@ export default function RescueRequestDetailClient({
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="border border-border/50 shadow-none lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Dịch vụ đã chọn</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Dịch vụ đã chọn
+            </CardTitle>
             <CardDescription className="text-[13px]">
               Danh sách dịch vụ trong đơn cứu hộ
             </CardDescription>
@@ -601,7 +630,9 @@ export default function RescueRequestDetailClient({
                 {detail.serviceItems.length ? (
                   detail.serviceItems.map((item) => (
                     <TableRow key={item.servicePartnerOfferingId}>
-                      <TableCell className="font-medium">{item.serviceType}</TableCell>
+                      <TableCell className="font-medium">
+                        {item.serviceType}
+                      </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(item.unitPriceAmount)}
                       </TableCell>
@@ -609,7 +640,10 @@ export default function RescueRequestDetailClient({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={2}
+                      className="h-20 text-center text-muted-foreground"
+                    >
                       Chưa có dịch vụ.
                     </TableCell>
                   </TableRow>
@@ -639,7 +673,12 @@ export default function RescueRequestDetailClient({
               </div>
             ))}
             {cancelReason && <InfoRow label="Lý do hủy" value={cancelReason} />}
-            {rejectReason && <InfoRow label="Lý do từ chối" value={rejectReason} />}
+            {cancelReasonText && (
+              <InfoRow label="Chi tiết hủy" value={cancelReasonText} />
+            )}
+            {rejectReason && (
+              <InfoRow label="Lý do từ chối" value={rejectReason} />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -647,7 +686,9 @@ export default function RescueRequestDetailClient({
       {detail.travelerPhotoUrls.length > 0 && (
         <Card className="border border-border/50 shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ảnh người yêu cầu gửi</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Ảnh người yêu cầu gửi
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {detail.travelerPhotoUrls.map((url) => (
@@ -658,13 +699,17 @@ export default function RescueRequestDetailClient({
                 rel="noreferrer"
                 className="relative aspect-video overflow-hidden rounded-lg border border-border bg-muted"
               >
-                <Image src={url} alt="Ảnh sự cố" fill className="object-cover" />
+                <Image
+                  src={url}
+                  alt="Ảnh sự cố"
+                  fill
+                  className="object-cover"
+                />
               </a>
             ))}
           </CardContent>
         </Card>
       )}
-
     </div>
   );
 }
