@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw, Save } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, Save } from "lucide-react";
 import { fetchRescuePricingRules, updateRescuePricingRule } from "@/lib/system-rule-api";
 import { extractApiError } from "@/lib/api-error";
 import type { RescuePricingRules } from "@/types";
@@ -60,6 +60,19 @@ function parsePositiveInteger(value: string): number | null {
   return parsed;
 }
 
+function calculateMinimumServiceBasePrice(
+  commissionAmount: number,
+  depositPercent: number,
+): number {
+  return Math.ceil((commissionAmount * 100) / depositPercent);
+}
+
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  maximumFractionDigits: 0,
+  style: "currency",
+  currency: "VND",
+});
+
 export default function PartnerCommissionSettings() {
   const [form, setForm] = useState<FormValue>({
     rescueCommissionTwoWheel: "",
@@ -86,6 +99,31 @@ export default function PartnerCommissionSettings() {
       || form.rescuePartnerNoShowResponseWaitMinutes !== original.rescuePartnerNoShowResponseWaitMinutes
     );
   }, [form, original]);
+
+  const minimumBasePricePreview = useMemo(() => {
+    const twoWheel = parsePositiveInteger(form.rescueCommissionTwoWheel);
+    const fourWheel = parsePositiveInteger(form.rescueCommissionFourWheel);
+    const depositPercent = parsePositiveInteger(form.rescueDepositPercent);
+
+    if (
+      twoWheel === null
+      || fourWheel === null
+      || depositPercent === null
+      || depositPercent < 1
+      || depositPercent > 100
+    ) {
+      return null;
+    }
+
+    return {
+      twoWheel: calculateMinimumServiceBasePrice(twoWheel, depositPercent),
+      fourWheel: calculateMinimumServiceBasePrice(fourWheel, depositPercent),
+    };
+  }, [
+    form.rescueCommissionTwoWheel,
+    form.rescueCommissionFourWheel,
+    form.rescueDepositPercent,
+  ]);
 
   const loadRules = useCallback(async () => {
     setIsLoading(true);
@@ -290,6 +328,23 @@ export default function PartnerCommissionSettings() {
             </span>
           </div>
         </div>
+
+        {minimumBasePricePreview && (
+          <div className="flex gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="space-y-1">
+              <p className="font-medium">Giá cơ bản tối thiểu sau khi áp dụng rule hiện tại</p>
+              <p>
+                Xe 2 bánh: tối thiểu {vndFormatter.format(minimumBasePricePreview.twoWheel)}. Xe 4 bánh:
+                tối thiểu {vndFormatter.format(minimumBasePricePreview.fourWheel)}.
+              </p>
+              <p className="text-xs text-amber-800">
+                Hệ thống vẫn cho lưu rule. Dịch vụ hiện có thấp hơn mức này sẽ cần đối tác cập nhật khi tạo hoặc chỉnh
+                sửa dịch vụ.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
