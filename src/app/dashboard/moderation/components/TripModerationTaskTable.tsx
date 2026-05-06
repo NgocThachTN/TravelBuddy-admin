@@ -347,6 +347,50 @@ function normalizedCode(value: string | null | undefined) {
   return value?.trim().toLowerCase() || "";
 }
 
+function normalizedScanStatus(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") {
+    return ["notscanned", "clean", "flagged", "error"][value] ?? "";
+  }
+
+  const code = value.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    "0": "notscanned",
+    notscanned: "notscanned",
+    not_scanned: "notscanned",
+    "1": "clean",
+    clean: "clean",
+    safe: "clean",
+    "2": "flagged",
+    flagged: "flagged",
+    warning: "flagged",
+    violation: "flagged",
+    unsafe: "flagged",
+    "3": "error",
+    error: "error",
+  };
+
+  return aliases[code] ?? code;
+}
+
+function scanStatusLabel(value: number | string | null | undefined) {
+  const code = normalizedScanStatus(value);
+  if (code === "clean") return "Sạch";
+  if (code === "flagged") return "Cảnh báo";
+  if (code === "error") return "Lỗi";
+  if (code === "notscanned") return "Chưa quét";
+  return value === null || value === undefined ? "N/A" : String(value);
+}
+
+function scanStatusStyle(value: number | string | null | undefined) {
+  const code = normalizedScanStatus(value);
+  if (code === "clean") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (code === "flagged") return "bg-red-100 text-red-800 border-red-200";
+  if (code === "error") return "bg-amber-100 text-amber-800 border-amber-200";
+  if (code === "notscanned") return "bg-slate-100 text-slate-800 border-slate-200";
+  return "bg-muted text-muted-foreground border-border";
+}
+
 function moderationCodeStyle(value: string | null | undefined) {
   const code = normalizedCode(value);
   if (!code) return "bg-transparent text-muted-foreground border-border";
@@ -956,8 +1000,11 @@ export default function TripModerationTaskTable() {
                 <TableCell className="hidden md:table-cell">
                   <div className="flex flex-col gap-1.5">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        Kết quả: {task.aiStatus === 2 ? "Cảnh báo" : "Sạch"}
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[10px] font-semibold", scanStatusStyle(task.aiStatus))}
+                      >
+                        Kết quả: {scanStatusLabel(task.aiStatus)}
                       </Badge>
                     </div>
                   </div>
@@ -1110,15 +1157,10 @@ export default function TripModerationTaskTable() {
                         <div className="flex justify-between items-center">
                           <span>Trạng thái quét</span>
                           <span className={cn(
-                            "px-2 py-0.5 rounded-full text-xs font-bold border", 
-                            String(detailTrip?.scanStatus) === "Clean" || detailTrip?.scanStatus === 1 ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
-                            String(detailTrip?.scanStatus) === "Flagged" || detailTrip?.scanStatus === 2 ? "bg-red-100 text-red-800 border-red-200" :
-                            String(detailTrip?.scanStatus) === "NotScanned" || detailTrip?.scanStatus === 0 ? "bg-slate-100 text-slate-800 border-slate-200" : "bg-amber-100 text-amber-800 border-amber-200"
+                            "px-2 py-0.5 rounded-full text-xs font-bold border",
+                            scanStatusStyle(detailTrip?.scanStatus),
                           )}>
-                            {String(detailTrip?.scanStatus) === "Clean" || detailTrip?.scanStatus === 1 ? "Sạch" : 
-                             String(detailTrip?.scanStatus) === "Flagged" || detailTrip?.scanStatus === 2 ? "Cảnh báo" :
-                             String(detailTrip?.scanStatus) === "Error" || detailTrip?.scanStatus === 3 ? "Lỗi" :
-                             String(detailTrip?.scanStatus) === "NotScanned" || detailTrip?.scanStatus === 0 ? "Chưa quét" : (detailTrip?.scanStatus || "N/A")}
+                            {scanStatusLabel(detailTrip?.scanStatus)}
                           </span>
                         </div>
                       </div>
